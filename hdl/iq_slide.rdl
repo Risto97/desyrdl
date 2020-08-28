@@ -1,0 +1,44 @@
+// attention: default regwidth is 32
+reg sincos_value #(longint unsigned WIDTH = 18, boolean MODIFYABLE = true) {
+	default swmod = MODIFYABLE; // or false when we switch to constant tables
+
+	field {} val[WIDTH];
+};
+
+regfile sincos_channel #(longint unsigned TABLE_LEN = 5) {
+	// multiple sin/cos value pairs make up one channel
+	sincos_value #(.WIDTH(18), .MODIFYABLE(true)) sine[TABLE_LEN];
+	sincos_value #(.WIDTH(18), .MODIFYABLE(true)) cosine[TABLE_LEN];
+};
+
+regfile sincos_table #(longint unsigned TABLE_LEN = 5, longint unsigned FD_CHANNELS = 8) {
+	sincos_value #(.WIDTH(18), .MODIFYABLE(true)) val[FD_CHANNELS][TABLE_LEN];
+};
+
+/* "The only difference between the register file component (regfile) and the
+   addrmap component (see Clause 13) is an addrmap defines an RTL implementation
+   boundary where the regfile does not."
+*/
+regfile iq_slide #(longint unsigned WIDTH = 18, boolean MODIFYABLE = true, longint unsigned FD_CHANNELS = 8, longint unsigned TABLE_LEN = 5) {
+	// simple registers can be defined anonymously:
+	reg {
+		field {} cnt[32];
+	} overflow_cnt;
+
+	// doesn't work
+	//reg {swmod = MODIFYABLE; field {} val[WIDTH];} iq_cos[FD_CHANNELS][TABLE_LEN];
+	//reg {swmod = MODIFYABLE; field {} val[WIDTH];} iq_sin[FD_CHANNELS][TABLE_LEN];
+	reg {field {} val[18];} iq_sin[FD_CHANNELS][TABLE_LEN];
+
+	// To allow passing parameters to the registers,
+	// the sin/Cos tables are of a custom type that must have been defined above
+	//sincos_value #(.WIDTH(18), .MODIFYABLE(true)) table_cos[FD_CHANNELS][TABLE_LEN];
+	//sincos_value #(.WIDTH(18), .MODIFYABLE(true)) table_sin[FD_CHANNELS][TABLE_LEN];
+	//sincos_channel #(.TABLE_LEN(5)) table_combined[FD_CHANNELS]; // one table to hold sin/cos arrays
+	sincos_table word_iq_cos;
+	sincos_table word_iq_sin;
+};
+
+addrmap top {
+	iq_slide iq;
+};
