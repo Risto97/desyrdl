@@ -1,17 +1,14 @@
 // attention: default regwidth is 32
-reg sincos_value #(longint unsigned WIDTH = 18, boolean MODIFYABLE = true) {
-	default swmod = MODIFYABLE; // or false when we switch to constant tables
-
-	field {} val[WIDTH];
-};
-
-regfile sincos_channel #(longint unsigned TABLE_LEN = 5) {
-	// multiple sin/cos value pairs make up one channel
-	sincos_value #(.WIDTH(18), .MODIFYABLE(true)) sine[TABLE_LEN];
-	sincos_value #(.WIDTH(18), .MODIFYABLE(true)) cosine[TABLE_LEN];
-};
 
 regfile sincos_table #(longint unsigned TABLE_LEN = 5, longint unsigned FD_CHANNELS = 8) {
+	name = "Sine or cosine look-up table";
+	desc = "Values are arranged by channel on the first index and by position within the signal on the second index";
+	reg sincos_value #(longint unsigned WIDTH = 18, boolean MODIFYABLE = true) {
+		default swmod = MODIFYABLE; // or false when we switch to constant tables
+
+		field {} val[WIDTH];
+	};
+
 	sincos_value #(.WIDTH(18), .MODIFYABLE(true)) val[FD_CHANNELS][TABLE_LEN];
 };
 
@@ -22,23 +19,26 @@ regfile sincos_table #(longint unsigned TABLE_LEN = 5, longint unsigned FD_CHANN
 regfile iq_slide #(longint unsigned WIDTH = 18, boolean MODIFYABLE = true, longint unsigned FD_CHANNELS = 8, longint unsigned TABLE_LEN = 5) {
 	// simple registers can be defined anonymously:
 	reg {
+		name = "Overflow counter";
+		desc = "Increases by one for each clock with a detected overflow";
+
 		field {} cnt[32];
 	} overflow_cnt;
 
-	// doesn't work
-	//reg {swmod = MODIFYABLE; field {} val[WIDTH];} iq_cos[FD_CHANNELS][TABLE_LEN];
-	//reg {swmod = MODIFYABLE; field {} val[WIDTH];} iq_sin[FD_CHANNELS][TABLE_LEN];
-	reg {field {} val[18];} iq_sin[FD_CHANNELS][TABLE_LEN];
+	reg {
+		name = "Sine look-up table";
+		desc = "Values are arranged by channel on the first index and by position within the signal on the second index";
+		field {} val[18];
+	} iq_sin[FD_CHANNELS][TABLE_LEN];
 
 	// To allow passing parameters to the registers,
 	// the sin/Cos tables are of a custom type that must have been defined above
-	//sincos_value #(.WIDTH(18), .MODIFYABLE(true)) table_cos[FD_CHANNELS][TABLE_LEN];
-	//sincos_value #(.WIDTH(18), .MODIFYABLE(true)) table_sin[FD_CHANNELS][TABLE_LEN];
-	//sincos_channel #(.TABLE_LEN(5)) table_combined[FD_CHANNELS]; // one table to hold sin/cos arrays
 	sincos_table word_iq_cos;
 	sincos_table word_iq_sin;
 };
 
 addrmap top {
+	name = "Address map of the higher-level component, maybe LLRF Field Detection";
+
 	iq_slide iq;
 };
