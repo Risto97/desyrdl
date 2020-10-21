@@ -22,10 +22,14 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library work;
-use work.types.all;
+use work.pkg_types.all;
 use work.pkg_axi4.all; -- maybe rename to sth like pkg_axi4_<foocomponent>
+--use work.pkg_registers_common.all;
 
 entity generic_register is
+  generic (
+            g_fields : t_field_storage_info_arr
+          );
   port (
          pi_clock : in std_logic;
          pi_reset : in std_logic;
@@ -56,8 +60,8 @@ begin
   blk_fields: block
   begin
     -- storage type fields
-    gen_storage : for f in C_FIELD_STORAGE_INFO'range generate
-      constant field : t_field_storage_info := C_FIELD_STORAGE_INFO(f);
+    gen_storage : for f in g_fields'range generate
+      constant field : t_field_storage_info := g_fields(f);
     begin
       ins_field_storage : entity work.reg_field_storage
       generic map(

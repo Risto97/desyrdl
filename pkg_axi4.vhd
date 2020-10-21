@@ -82,15 +82,23 @@ package pkg_axi4 is
     hw_access : t_field_access;
     def_val : std_logic_vector(32-1 downto 0);
   end record;
-  type t_field_storage_info_arr is array (integer range <>) of t_field_storage_info;
+  type t_field_storage_info_arr is array (integer range 31 downto 0) of t_field_storage_info;
+  constant C_FIELD_NONE : t_field_storage_info := (0, 0, 0, false, C_NA, C_NA, (others => '0'));
 
   --
   -- this is only one specific register
   --
-  constant C_FIELD_STORAGE_INFO : t_field_storage_info_arr := (
+  constant C_WHATEVER_INFO : t_field_storage_info_arr := (
     (len => 16, upper => 31, lower => 16, hw_we => false, sw_access => C_RW, hw_access => C_R,  def_val => (others => '1')),
     (len => 8,  upper => 15, lower =>  8, hw_we => true,  sw_access => C_R , hw_access => C_RW, def_val => (others => '1')),
-    (len => 8,  upper =>  7, lower =>  0, hw_we => true,  sw_access => C_RW, hw_access => C_RW, def_val => (others => '1'))
+    (len => 8,  upper =>  7, lower =>  0, hw_we => true,  sw_access => C_RW, hw_access => C_RW, def_val => (others => '1')),
+    others => C_FIELD_NONE
+  );
+
+  constant C_ANOTHER_INFO : t_field_storage_info_arr := (
+    (len => 16, upper => 31, lower => 16, hw_we => false, sw_access => C_RW, hw_access => C_R,  def_val => (others => '1')),
+    (len => 16, upper => 15, lower =>  0, hw_we => true,  sw_access => C_R , hw_access => C_W,  def_val => (others => '1')),
+    others => C_FIELD_NONE
   );
 
   type t_field_type is (STORAGE, WIRE, COUNTER, INTERRUPT);
@@ -121,53 +129,125 @@ package pkg_axi4 is
     decr : std_logic;
   end record;
 
+  --
+  -- below: per regfile / module !
+  --
+
+  type t_regtype is (WHATEVER, ANOTHER);
+
+  type t_reg_info is record
+    regtype : t_regtype;
+    fields  : t_field_storage_info_arr;
+    N       : positive;
+    M       : positive;
+  end record;
+  type t_reg_info_array is array (integer range <>) of t_reg_info;
+  constant C_REGISTER_INFO : t_reg_info_array := (
+    (regtype => WHATEVER, fields => C_WHATEVER_INFO, N => 1, M => 2),
+    (regtype => ANOTHER, fields => C_ANOTHER_INFO, N => 1, M => 1)
+    --(WHATEVER, C_WHATEVER_INFO)
+  );
+
   -- contains up to 32 data bits plus the other signals (we, incr, ..)
   type t_reg_whatever_in is record
     -- fields
-    foo : t_field_signals_in(data(C_FIELD_STORAGE_INFO(0).len-1 downto 0));
-    bar : t_field_signals_in(data(C_FIELD_STORAGE_INFO(1).len-1 downto 0));
-    baz : t_field_signals_in(data(C_FIELD_STORAGE_INFO(2).len-1 downto 0));
+    foo : t_field_signals_in(data(C_WHATEVER_INFO(0).len-1 downto 0));
+    bar : t_field_signals_in(data(C_WHATEVER_INFO(1).len-1 downto 0));
+    baz : t_field_signals_in(data(C_WHATEVER_INFO(2).len-1 downto 0));
   end record;
+  type t_reg_whatever_2d_in is array (natural range C_REGISTER_INFO(0).M downto 0) of t_reg_whatever_in;
+  type t_reg_whatever_3d_in is array (natural range C_REGISTER_INFO(0).N downto 0) of t_reg_whatever_2d_in;
 
   type t_reg_whatever_out is record
     -- fields
-    foo : t_field_signals_out(data(C_FIELD_STORAGE_INFO(0).len-1 downto 0));
-    bar : t_field_signals_out(data(C_FIELD_STORAGE_INFO(1).len-1 downto 0));
-    baz : t_field_signals_out(data(C_FIELD_STORAGE_INFO(2).len-1 downto 0));
+    foo : t_field_signals_out(data(C_WHATEVER_INFO(0).len-1 downto 0));
+    bar : t_field_signals_out(data(C_WHATEVER_INFO(1).len-1 downto 0));
+    baz : t_field_signals_out(data(C_WHATEVER_INFO(2).len-1 downto 0));
   end record;
+  type t_reg_whatever_2d_out is array (natural range C_REGISTER_INFO(0).M downto 0) of t_reg_whatever_out;
+  type t_reg_whatever_3d_out is array (natural range C_REGISTER_INFO(0).N downto 0) of t_reg_whatever_2d_out;
 
-  function fun_slv_to_whatever (slv : std_logic_vector(32-1 downto 0)) return t_reg_whatever is
-    variable v_tmp : t_reg_whatever;
-  begin
-    v_tmp.foo := slv(C_FIELD_STORAGE_INFO(0).upper downto C_FIELD_STORAGE_INFO(0).lower);
-    v_tmp.bar := slv(C_FIELD_STORAGE_INFO(1).upper downto C_FIELD_STORAGE_INFO(1).lower);
-    v_tmp.baz := slv(C_FIELD_STORAGE_INFO(2).upper downto C_FIELD_STORAGE_INFO(2).lower);
-
-    return v_tmp;
-  end function;
-
-  function fun_whatever_to_slv (reg : t_reg_whatever) return std_logic_vector is
-    variable v_tmp : std_logic_vector(32-1 downto 0);
-  begin
-    v_tmp(C_FIELD_STORAGE_INFO(0).upper downto C_FIELD_STORAGE_INFO(0).lower) := reg.foo;
-    v_tmp(C_FIELD_STORAGE_INFO(1).upper downto C_FIELD_STORAGE_INFO(1).lower) := reg.bar;
-    v_tmp(C_FIELD_STORAGE_INFO(2).upper downto C_FIELD_STORAGE_INFO(2).lower) := reg.baz;
-
-    return v_tmp;
-  end function;
+  --
+  -- below: data I/O type definitions
+  --
 
   type t_registers_modname_in is record
-    --wawah : t_reg_wawah_in,
-    --uaohh : t_reg_uaohh_in,
-    whatever_0 : t_reg_whatever_in,
-    whatever_1 : t_reg_whatever_in
+    --wawah : t_reg_wawah_in;
+    --uaohh : t_reg_uaohh_in;
+    whatever : t_reg_whatever_3d_in;
   end record;
 
   type t_registers_modname_out is record
-    --wawah : t_reg_wawah_out,
-    --uaohh : t_reg_uaohh_out,
-    whatever_0 : t_reg_whatever_out,
-    whatever_1 : t_reg_whatever_out
+    --wawah : t_reg_wawah_out;
+    --uaohh : t_reg_uaohh_out;
+    whatever : t_reg_whatever_3d_out;
   end record;
 
-end package pkg_axi4;
+  function fun_slv_to_whatever (slv : std_logic_vector(32-1 downto 0)) return t_reg_whatever_out;
+  function fun_whatever_to_data (reg : t_reg_whatever_in) return std_logic_vector;
+  function fun_logic_to_data ( reg_info : t_reg_info ; regs : t_registers_modname_in ; i,j : integer ) return std_logic_vector;
+  function fun_logic_to_decr ( reg_info : t_reg_info ; regs : t_registers_modname_in ; i,j : integer ) return std_logic_vector;
+
+end pkg_axi4;
+
+package body pkg_axi4 is
+
+  --
+  -- functions
+  --
+
+  -- unpack
+  function fun_slv_to_whatever (slv : std_logic_vector(32-1 downto 0)) return t_reg_whatever_out is
+    variable v_tmp : t_reg_whatever_out;
+  begin
+    v_tmp.foo.data := slv(C_WHATEVER_INFO(0).upper downto C_WHATEVER_INFO(0).lower);
+    v_tmp.bar.data := slv(C_WHATEVER_INFO(1).upper downto C_WHATEVER_INFO(1).lower);
+    v_tmp.baz.data := slv(C_WHATEVER_INFO(2).upper downto C_WHATEVER_INFO(2).lower);
+
+    return v_tmp;
+  end function;
+
+  -- pack
+  function fun_whatever_to_data (reg : t_reg_whatever_in) return std_logic_vector is
+    variable v_tmp : std_logic_vector(32-1 downto 0);
+  begin
+    v_tmp(C_WHATEVER_INFO(0).upper downto C_WHATEVER_INFO(0).lower) := reg.foo.data;
+    v_tmp(C_WHATEVER_INFO(1).upper downto C_WHATEVER_INFO(1).lower) := reg.bar.data;
+    v_tmp(C_WHATEVER_INFO(2).upper downto C_WHATEVER_INFO(2).lower) := reg.baz.data;
+
+    return v_tmp;
+  end function;
+
+  function fun_logic_to_data ( reg_info : t_reg_info ; regs : t_registers_modname_in ; i,j : integer ) return std_logic_vector is
+    variable v_tmp : std_logic_vector(32-1 downto 0);
+  begin
+    case reg_info.regtype is
+      when WHATEVER =>
+        v_tmp := fun_whatever_to_data(regs.whatever(i)(j));
+        --v_tmp(reg_info.fields(<x>).upper downto reg_info.fields(<x>).lower) := regs.regname(i)(j).<fieldname>.data;
+        v_tmp(reg_info.fields(0).upper downto reg_info.fields(0).lower) := regs.whatever(i)(j).foo.data;
+        v_tmp(reg_info.fields(1).upper downto reg_info.fields(1).lower) := regs.whatever(i)(j).bar.data;
+        v_tmp(reg_info.fields(2).upper downto reg_info.fields(2).lower) := regs.whatever(i)(j).baz.data;
+      when others =>
+        v_tmp := (others => '0');
+    end case;
+
+    return v_tmp;
+  end function;
+
+  function fun_logic_to_decr ( reg_info : t_reg_info ; regs : t_registers_modname_in ; i,j : integer ) return std_logic_vector is
+    variable v_tmp : std_logic_vector(32-1 downto 0);
+  begin
+    case reg_info.regtype is
+      when WHATEVER =>
+        v_tmp(0) := regs.whatever(i)(j).foo.decr when C_WHATEVER_INFO(0).hw_we else '0'; -- FIXME?
+        v_tmp(1) := regs.whatever(i)(j).bar.decr when C_WHATEVER_INFO(1).hw_we else '0'; -- FIXME?
+        v_tmp(2) := regs.whatever(i)(j).baz.decr when C_WHATEVER_INFO(2).hw_we else '0'; -- FIXME?
+      when others =>
+        v_tmp := (others => '0');
+    end case;
+
+    return v_tmp;
+  end function;
+
+end package body;

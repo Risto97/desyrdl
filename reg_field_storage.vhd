@@ -23,7 +23,8 @@ use ieee.numeric_std.all;
 
 library work;
 use work.types.all;
-use work.pkg_axi4.all;
+use work.pkg_axi4.all; -- maybe rename to sth like pkg_axi4_<foocomponent>
+--use work.pkg_registers_common.all;
 
 entity reg_field_storage is
   generic (
