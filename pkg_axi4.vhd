@@ -8,6 +8,8 @@ use work.types.all;
 package pkg_axi4 is
   constant C_ADDR_W : integer := 8;
 
+  constant C_REGISTERS : integer := 1;
+
   -- address constants
   constant C_ADDR_WORD_FIRMWARE : integer := 0;
   constant C_ADDR_WORD_REVISION : integer := 1;
@@ -82,32 +84,90 @@ package pkg_axi4 is
   end record;
   type t_field_storage_info_arr is array (integer range <>) of t_field_storage_info;
 
+  --
   -- this is only one specific register
+  --
   constant C_FIELD_STORAGE_INFO : t_field_storage_info_arr := (
-    (len => 16, upper => 31, lower => 16, hw_we => true, sw_access => C_RW, hw_access => C_R,  def_val => (others => '1')),
-    (len => 8,  upper => 15, lower =>  8, hw_we => true, sw_access => C_R , hw_access => C_RW, def_val => (others => '1')),
-    (len => 8,  upper =>  7, lower =>  0, hw_we => true, sw_access => C_RW, hw_access => C_RW, def_val => (others => '1'))
+    (len => 16, upper => 31, lower => 16, hw_we => false, sw_access => C_RW, hw_access => C_R,  def_val => (others => '1')),
+    (len => 8,  upper => 15, lower =>  8, hw_we => true,  sw_access => C_R , hw_access => C_RW, def_val => (others => '1')),
+    (len => 8,  upper =>  7, lower =>  0, hw_we => true,  sw_access => C_RW, hw_access => C_RW, def_val => (others => '1'))
   );
 
-  -- TODO delete
-  type t_register_info is record
-    addr : integer;
-    --hw_rmask  : std_logic_vector(32-1 downto 0);
-    --hw_wmask  : std_logic_vector(32-1 downto 0);
-    hw : string(1 to 2);
-    sw_rmask  : std_logic_vector(32-1 downto 0);
-    sw_wmask  : std_logic_vector(32-1 downto 0);
+  type t_field_type is (STORAGE, WIRE, COUNTER, INTERRUPT);
+
+  type t_field_info is record
+    ftype : t_field_type;
+    len   : integer;
+    upper : integer;
+    lower : integer;
+    hw_we : boolean;
+    sw_access : t_field_access;
+    hw_access : t_field_access;
+    def_val : std_logic_vector(32-1 downto 0);
   end record;
-  type t_register_info_arr is array (integer range <>) of t_register_info;
+  type t_field_info_arr is array (integer range <>) of t_field_info;
 
-  constant C_REGISTER_INFO : t_register_info_arr := (
-    (addr => 0, hw => "na", sw_rmask => (others => '1'), sw_wmask => (others => '1')),
-    (addr => 1, hw => "rw", sw_rmask => (others => '1'), sw_wmask => (others => '1')),
-    (addr => 2, hw => "ro", sw_rmask => (others => '1'), sw_wmask => (others => '1'))
-  );
+  type t_field_signals_in is record
+    data : std_logic_vector; -- VHDL-2008 - check if Vivado can simulate this
+    we : std_logic;
+    incr : std_logic;
+    decr : std_logic;
+  end record;
 
-  --type t_registers_<name> is array (0 to C_REGISTERS-1) of 
-  --type t_registers is record
-  --  reg1 : t_register_reg1;
-    
+  type t_field_signals_out is record
+    data : std_logic_vector; -- VHDL-2008
+    we : std_logic;
+    incr : std_logic;
+    decr : std_logic;
+  end record;
+
+  -- contains up to 32 data bits plus the other signals (we, incr, ..)
+  type t_reg_whatever_in is record
+    -- fields
+    foo : t_field_signals_in(data(C_FIELD_STORAGE_INFO(0).len-1 downto 0));
+    bar : t_field_signals_in(data(C_FIELD_STORAGE_INFO(1).len-1 downto 0));
+    baz : t_field_signals_in(data(C_FIELD_STORAGE_INFO(2).len-1 downto 0));
+  end record;
+
+  type t_reg_whatever_out is record
+    -- fields
+    foo : t_field_signals_out(data(C_FIELD_STORAGE_INFO(0).len-1 downto 0));
+    bar : t_field_signals_out(data(C_FIELD_STORAGE_INFO(1).len-1 downto 0));
+    baz : t_field_signals_out(data(C_FIELD_STORAGE_INFO(2).len-1 downto 0));
+  end record;
+
+  function fun_slv_to_whatever (slv : std_logic_vector(32-1 downto 0)) return t_reg_whatever is
+    variable v_tmp : t_reg_whatever;
+  begin
+    v_tmp.foo := slv(C_FIELD_STORAGE_INFO(0).upper downto C_FIELD_STORAGE_INFO(0).lower);
+    v_tmp.bar := slv(C_FIELD_STORAGE_INFO(1).upper downto C_FIELD_STORAGE_INFO(1).lower);
+    v_tmp.baz := slv(C_FIELD_STORAGE_INFO(2).upper downto C_FIELD_STORAGE_INFO(2).lower);
+
+    return v_tmp;
+  end function;
+
+  function fun_whatever_to_slv (reg : t_reg_whatever) return std_logic_vector is
+    variable v_tmp : std_logic_vector(32-1 downto 0);
+  begin
+    v_tmp(C_FIELD_STORAGE_INFO(0).upper downto C_FIELD_STORAGE_INFO(0).lower) := reg.foo;
+    v_tmp(C_FIELD_STORAGE_INFO(1).upper downto C_FIELD_STORAGE_INFO(1).lower) := reg.bar;
+    v_tmp(C_FIELD_STORAGE_INFO(2).upper downto C_FIELD_STORAGE_INFO(2).lower) := reg.baz;
+
+    return v_tmp;
+  end function;
+
+  type t_registers_modname_in is record
+    --wawah : t_reg_wawah_in,
+    --uaohh : t_reg_uaohh_in,
+    whatever_0 : t_reg_whatever_in,
+    whatever_1 : t_reg_whatever_in
+  end record;
+
+  type t_registers_modname_out is record
+    --wawah : t_reg_wawah_out,
+    --uaohh : t_reg_uaohh_out,
+    whatever_0 : t_reg_whatever_out,
+    whatever_1 : t_reg_whatever_out
+  end record;
+
 end package pkg_axi4;
