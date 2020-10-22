@@ -53,10 +53,7 @@ architecture arch of top is
   signal adapter_wdata : std_logic_vector(32-1 downto 0);
   signal adapter_rdata : t_32BitArray(G_REGISTERS-1 downto 0);
 
-  signal register_incr : std_logic_vector(32-1 downto 0);
-  signal register_we : std_logic_vector(32-1 downto 0);
-  signal register_data_in : std_logic_vector(32-1 downto 0);
-  signal register_data_out : std_logic_vector(32-1 downto 0);
+  signal logic_regs : t_registers_modname_out;
 begin
   ins_adapter: entity work.adapter_axi4
   generic map (
@@ -92,52 +89,39 @@ begin
              S_AXI_RREADY  => S_AXI_RREADY
            );
 
+  po_logic_regs <= logic_regs;
+
   gen_regs : for r in C_REGISTER_INFO'range generate
     constant l_reg_info : t_reg_info := C_REGISTER_INFO(r);
   begin
     gen_N : for i in 0 to l_reg_info.N-1 generate
     begin
       gen_M: for j in 0 to l_reg_info.M-1 generate
+        signal l_reg_decr     : std_logic_vector(32-1 downto 0);
         signal l_reg_incr     : std_logic_vector(32-1 downto 0);
         signal l_reg_we       : std_logic_vector(32-1 downto 0);
         signal l_reg_data_in  : std_logic_vector(32-1 downto 0);
         signal l_reg_data_out : std_logic_vector(32-1 downto 0);
       begin
-        -- TODO try moving this to a function within the package
-        case l_reg_info.regtype is
-          when WHATEVER =>
-            l_reg_decr    <= fun_logic_to_decr(l_reg_info, pi_logic_regs, i, j);
-            l_reg_incr    <= fun_logic_to_incr(l_reg_info, pi_logic_regs, i, j);
-            l_reg_we      <= fun_logic_to_we(l_reg_info, pi_logic_regs, i, j);
-            l_reg_data_in <= fun_logic_to_data(l_reg_info, pi_logic_regs, i, j);
 
-            -- problematic: function must return the fields of this specific register type,
-            -- or be a procedure with po_logic_regs as an inout or so
-            po_logic_regs.whatever(i)(j) <= fun_reg_to_logic(l_reg_info, l_reg_data_out);
-          when ANOTHER =>
-            l_reg_decr    <= fun_logic_to_decr(l_reg_info, pi_logic_regs, i, j);
-            l_reg_incr    <= fun_logic_to_incr(l_reg_info, pi_logic_regs, i, j);
-            l_reg_we      <= fun_logic_to_we(l_reg_info, pi_logic_regs, i, j);
-            l_reg_data_in <= fun_logic_to_data(l_reg_info, pi_logic_regs, i, j);
-
-            po_logic_regs.another(i)(j) <= fun_reg_to_logic(l_reg_info, l_reg_data_out);
-          when others =>
-            null;
-        end case;
+        l_reg_decr    <= fun_logic_to_decr(l_reg_info, pi_logic_regs, i, j);
+        l_reg_incr    <= fun_logic_to_incr(l_reg_info, pi_logic_regs, i, j);
+        l_reg_we      <= fun_logic_to_we(l_reg_info, pi_logic_regs, i, j);
+        l_reg_data_in <= fun_logic_to_data(l_reg_info, pi_logic_regs, i, j);
 
         ins_reg: entity work.generic_register
         generic map (
                       -- contains an array of field info
-                      g_info => l_reg_info.fields
+                      g_fields => l_reg_info.fields
                     )
         port map (
-                   pi_clock => pi_clock,
+                   pi_clock => pi_clk,
                    pi_reset => pi_reset,
 
                    -- to/from adapter
                    pi_adapter_stb  => adapter_stb(r),
                    pi_adapter_we   => adapter_we,
-                   po_adapter_err  => adapter_err
+                   po_adapter_err  => adapter_err,
                    pi_adapter_data => adapter_wdata,
                    po_adapter_data => adapter_rdata(r),
 

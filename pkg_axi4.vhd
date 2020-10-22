@@ -187,6 +187,16 @@ package pkg_axi4 is
   function fun_whatever_to_data (reg : t_reg_whatever_in) return std_logic_vector;
   function fun_logic_to_data ( reg_info : t_reg_info ; regs : t_registers_modname_in ; i,j : integer ) return std_logic_vector;
   function fun_logic_to_decr ( reg_info : t_reg_info ; regs : t_registers_modname_in ; i,j : integer ) return std_logic_vector;
+  function fun_logic_to_incr ( reg_info : t_reg_info ; regs : t_registers_modname_in ; i,j : integer ) return std_logic_vector;
+  function fun_logic_to_we ( reg_info : t_reg_info ; regs : t_registers_modname_in ; i,j : integer ) return std_logic_vector;
+
+  procedure prd_reg_to_logic (
+                               constant reg_info : in t_reg_info ;
+                               signal logic_regs : inout t_registers_modname_out ;
+                               signal reg_data : in std_logic_vector ;
+                               signal i : in integer ;
+                               signal j : in integer
+                             );
 
 end pkg_axi4;
 
@@ -249,5 +259,55 @@ package body pkg_axi4 is
 
     return v_tmp;
   end function;
+
+  function fun_logic_to_incr ( reg_info : t_reg_info ; regs : t_registers_modname_in ; i,j : integer ) return std_logic_vector is
+    variable v_tmp : std_logic_vector(32-1 downto 0);
+  begin
+    case reg_info.regtype is
+      when WHATEVER =>
+        v_tmp(0) := regs.whatever(i)(j).foo.incr when C_WHATEVER_INFO(0).hw_we else '0'; -- FIXME
+        v_tmp(1) := regs.whatever(i)(j).bar.incr when C_WHATEVER_INFO(1).hw_we else '0'; -- FIXME
+        v_tmp(2) := regs.whatever(i)(j).baz.incr when C_WHATEVER_INFO(2).hw_we else '0'; -- FIXME
+      when others =>
+        v_tmp := (others => '0');
+    end case;
+
+    return v_tmp;
+  end function;
+
+  function fun_logic_to_we ( reg_info : t_reg_info ; regs : t_registers_modname_in ; i,j : integer ) return std_logic_vector is
+    variable v_tmp : std_logic_vector(32-1 downto 0);
+  begin
+    case reg_info.regtype is
+      when WHATEVER =>
+        v_tmp(0) := regs.whatever(i)(j).foo.we when C_WHATEVER_INFO(0).hw_we else '0'; -- FIXME?
+        v_tmp(1) := regs.whatever(i)(j).bar.we when C_WHATEVER_INFO(1).hw_we else '0'; -- FIXME?
+        v_tmp(2) := regs.whatever(i)(j).baz.we when C_WHATEVER_INFO(2).hw_we else '0'; -- FIXME?
+      when others =>
+        v_tmp := (others => '0');
+    end case;
+
+    return v_tmp;
+  end function;
+
+  procedure prd_reg_to_logic (
+                               constant reg_info : in t_reg_info ;
+                               signal logic_regs : inout t_registers_modname_out ;
+                               signal reg_data : in std_logic_vector ; 
+                               signal i : in integer ;
+                               signal j : in integer
+                             ) is
+  begin
+    case reg_info.regtype is
+      when WHATEVER =>
+            -- problematic: function must return the fields of this specific register type,
+            -- or be a procedure with po_logic_regs as an inout or so
+        logic_regs.whatever(i)(j) <= fun_slv_to_whatever(reg_data);
+      --when ANOTHER =>
+        --logic_regs.another(i)(j) <= fun_slv_to_another(l_reg_data_out);
+      when others =>
+        null;
+    end case;
+  end procedure;
 
 end package body;
