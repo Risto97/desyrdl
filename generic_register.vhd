@@ -28,7 +28,7 @@ use work.pkg_axi4.all; -- maybe rename to sth like pkg_axi4_<foocomponent>
 
 entity generic_register is
   generic (
-            g_fields : t_field_storage_info_arr
+            g_fields : t_field_info_arr
           );
   port (
          pi_clock : in std_logic;
@@ -57,12 +57,11 @@ begin
   -- TODO implement in fields
   po_adapter_err <= '0';
 
-  blk_fields: block
+  gen_fields : for f in g_fields'range generate
+    constant field : t_field_info := g_fields(f);
   begin
     -- storage type fields
-    gen_storage : for f in g_fields'range generate
-      constant field : t_field_storage_info := g_fields(f);
-    begin
+    gen_storage : if field.ftype = STORAGE generate
       ins_field_storage : entity work.reg_field_storage
       generic map(
                    g_info => field
@@ -74,7 +73,7 @@ begin
                  pi_sw_we   => pi_adapter_we,
                  pi_sw_data => pi_adapter_data(field.upper downto field.lower),
                  po_sw_data => po_adapter_data(field.upper downto field.lower),
-                 pi_hw_we   => pi_logic_we(f), -- TODO wrong!
+                 pi_hw_we   => pi_logic_we(f), -- TODO wrong?
                  pi_hw_data => pi_logic_data(field.upper downto field.lower),
                  po_hw_data => po_logic_data(field.upper downto field.lower)
                );
@@ -112,5 +111,5 @@ begin
 --                 pi_hw_incr => pi_logic_data(field.incr)
 --               );
 --    end generate;
-  end block blk_fields;
+  end generate gen_fields;
 end architecture;

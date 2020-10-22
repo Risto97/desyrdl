@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library work;
-use work.types.all;
+use work.pkg_types.all;
 
 package pkg_axi4 is
   constant C_ADDR_W : integer := 8;
@@ -83,23 +83,7 @@ package pkg_axi4 is
     def_val : std_logic_vector(32-1 downto 0);
   end record;
   type t_field_storage_info_arr is array (integer range 31 downto 0) of t_field_storage_info;
-  constant C_FIELD_NONE : t_field_storage_info := (0, 0, 0, false, C_NA, C_NA, (others => '0'));
-
-  --
-  -- this is only one specific register
-  --
-  constant C_WHATEVER_INFO : t_field_storage_info_arr := (
-    (len => 16, upper => 31, lower => 16, hw_we => false, sw_access => C_RW, hw_access => C_R,  def_val => (others => '1')),
-    (len => 8,  upper => 15, lower =>  8, hw_we => true,  sw_access => C_R , hw_access => C_RW, def_val => (others => '1')),
-    (len => 8,  upper =>  7, lower =>  0, hw_we => true,  sw_access => C_RW, hw_access => C_RW, def_val => (others => '1')),
-    others => C_FIELD_NONE
-  );
-
-  constant C_ANOTHER_INFO : t_field_storage_info_arr := (
-    (len => 16, upper => 31, lower => 16, hw_we => false, sw_access => C_RW, hw_access => C_R,  def_val => (others => '1')),
-    (len => 16, upper => 15, lower =>  0, hw_we => true,  sw_access => C_R , hw_access => C_W,  def_val => (others => '1')),
-    others => C_FIELD_NONE
-  );
+  constant C_FIELD_STORAGE_NONE : t_field_storage_info := (0, 0, 0, false, C_NA, C_NA, (others => '0'));
 
   type t_field_type is (STORAGE, WIRE, COUNTER, INTERRUPT);
 
@@ -113,7 +97,21 @@ package pkg_axi4 is
     hw_access : t_field_access;
     def_val : std_logic_vector(32-1 downto 0);
   end record;
-  type t_field_info_arr is array (integer range <>) of t_field_info;
+  type t_field_info_arr is array (integer range 31 downto 0) of t_field_info;
+  constant C_FIELD_NONE : t_field_info := (WIRE, 0, 0, 0, false, C_NA, C_NA, (others => '0'));
+
+  constant C_WHATEVER_INFO : t_field_info_arr := (
+    (ftype => STORAGE, len => 16, upper => 31, lower => 16, hw_we => false, sw_access => C_RW, hw_access => C_R,  def_val => (others => '1')),
+    (ftype => STORAGE, len => 8,  upper => 15, lower =>  8, hw_we => true,  sw_access => C_R , hw_access => C_RW, def_val => (others => '1')),
+    (ftype => STORAGE, len => 8,  upper =>  7, lower =>  0, hw_we => true,  sw_access => C_RW, hw_access => C_RW, def_val => (others => '1')),
+    others => C_FIELD_NONE
+  );
+
+  constant C_ANOTHER_INFO : t_field_info_arr := (
+    (ftype => STORAGE, len => 16, upper => 31, lower => 16, hw_we => false, sw_access => C_RW, hw_access => C_R,  def_val => (others => '1')),
+    (ftype => STORAGE, len => 16, upper => 15, lower =>  0, hw_we => true,  sw_access => C_R , hw_access => C_W,  def_val => (others => '1')),
+    others => C_FIELD_NONE
+  );
 
   type t_field_signals_in is record
     data : std_logic_vector; -- VHDL-2008 - check if Vivado can simulate this
@@ -137,7 +135,7 @@ package pkg_axi4 is
 
   type t_reg_info is record
     regtype : t_regtype;
-    fields  : t_field_storage_info_arr;
+    fields  : t_field_info_arr;
     N       : positive;
     M       : positive;
   end record;

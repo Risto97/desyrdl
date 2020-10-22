@@ -22,14 +22,14 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library work;
-use work.types.all;
+use work.pkg_types.all;
 use work.pkg_axi4.all; -- maybe rename to sth like pkg_axi4_<foocomponent>
 --use work.pkg_registers_common.all;
 
 entity reg_field_storage is
   generic (
             -- contains an array of field info
-            g_info : t_field_storage_info
+            g_info : t_field_info
           );
   port (
          pi_clock : in std_logic;
