@@ -109,6 +109,11 @@ begin
         l_reg_we      <= fun_logic_to_we(l_reg_info, pi_logic_regs, i, j);
         l_reg_data_in <= fun_logic_to_data(l_reg_info, pi_logic_regs, i, j);
 
+        process(l_reg_data_out)
+        begin
+          prd_reg_to_logic(l_reg_info, logic_regs, l_reg_data_out, i, j);
+        end process;
+
         ins_reg: entity work.generic_register
         generic map (
                       -- contains an array of field info

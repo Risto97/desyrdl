@@ -192,8 +192,8 @@ package pkg_axi4 is
                                constant reg_info : in t_reg_info ;
                                signal logic_regs : inout t_registers_modname_out ;
                                signal reg_data : in std_logic_vector ;
-                               signal i : in integer ;
-                               signal j : in integer
+                               constant i : in integer ;
+                               constant j : in integer
                              );
 
 end pkg_axi4;
@@ -292,8 +292,8 @@ package body pkg_axi4 is
                                constant reg_info : in t_reg_info ;
                                signal logic_regs : inout t_registers_modname_out ;
                                signal reg_data : in std_logic_vector ; 
-                               signal i : in integer ;
-                               signal j : in integer
+                               constant i : in integer ;
+                               constant j : in integer
                              ) is
   begin
     case reg_info.regtype is
