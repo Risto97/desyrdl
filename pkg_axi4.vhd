@@ -8,8 +8,6 @@ use work.pkg_types.all;
 package pkg_axi4 is
   constant C_ADDR_W : integer := 8;
 
-  constant C_REGISTERS : integer := 1;
-
   -- address constants
   constant C_ADDR_WORD_FIRMWARE : integer := 0;
   constant C_ADDR_WORD_REVISION : integer := 1;
@@ -131,18 +129,25 @@ package pkg_axi4 is
   -- below: per regfile / module !
   --
 
+  constant C_REGNAMES  : integer := 2;
+  constant C_REGISTERS : integer := 3;
+
   type t_regtype is (WHATEVER, ANOTHER);
 
   type t_reg_info is record
+    addr    : integer;
     regtype : t_regtype;
     fields  : t_field_info_arr;
     N       : positive;
     M       : positive;
   end record;
-  type t_reg_info_array is array (integer range <>) of t_reg_info;
+  -- Maybe better to constrain t_reg_info_array. Vivado shows weird indices when unconstrained.
+  -- Must be the number of distinct register names, not one for each 2D/3D array element!
+  type t_reg_info_array is array (integer range C_REGNAMES-1 downto 0) of t_reg_info;
+
   constant C_REGISTER_INFO : t_reg_info_array := (
-    (regtype => WHATEVER, fields => C_WHATEVER_INFO, N => 1, M => 2),
-    (regtype => ANOTHER, fields => C_ANOTHER_INFO, N => 1, M => 1)
+    (addr => 16, regtype => WHATEVER, fields => C_WHATEVER_INFO, N => 1, M => 2),
+    (addr => 32, regtype => ANOTHER, fields => C_ANOTHER_INFO, N => 1, M => 1)
     --(WHATEVER, C_WHATEVER_INFO)
   );
 
@@ -191,7 +196,7 @@ package pkg_axi4 is
   procedure prd_reg_to_logic (
                                constant reg_info : in t_reg_info ;
                                signal logic_regs : inout t_registers_modname_out ;
-                               signal reg_data : in std_logic_vector ;
+                               signal reg_data : in std_logic_vector(32-1 downto 0) ;
                                constant i : in integer ;
                                constant j : in integer
                              );
@@ -248,9 +253,9 @@ package body pkg_axi4 is
   begin
     case reg_info.regtype is
       when WHATEVER =>
-        v_tmp(0) := regs.whatever(i)(j).foo.decr when C_WHATEVER_INFO(0).hw_we else '0'; -- FIXME?
-        v_tmp(1) := regs.whatever(i)(j).bar.decr when C_WHATEVER_INFO(1).hw_we else '0'; -- FIXME?
-        v_tmp(2) := regs.whatever(i)(j).baz.decr when C_WHATEVER_INFO(2).hw_we else '0'; -- FIXME?
+        v_tmp(0) := regs.whatever(i)(j).foo.decr ; -- FIXME?
+        v_tmp(1) := regs.whatever(i)(j).bar.decr ; -- FIXME?
+        v_tmp(2) := regs.whatever(i)(j).baz.decr ; -- FIXME?
       when others =>
         v_tmp := (others => '0');
     end case;
@@ -291,7 +296,7 @@ package body pkg_axi4 is
   procedure prd_reg_to_logic (
                                constant reg_info : in t_reg_info ;
                                signal logic_regs : inout t_registers_modname_out ;
-                               signal reg_data : in std_logic_vector ; 
+                               signal reg_data : in std_logic_vector(32-1 downto 0) ;
                                constant i : in integer ;
                                constant j : in integer
                              ) is

@@ -8,7 +8,7 @@ use work.pkg_axi4.all; -- maybe rename to sth like pkg_axi4_<foocomponent>
 
 entity top is
   generic(
-    g_adapter_id : integer; -- something like C_ADAPTER_LLRF_FD;
+    --g_adapter_id : integer; -- something like C_ADAPTER_LLRF_FD;
     G_ADDR_W : integer := 8;
     G_REGISTERS : natural := 0
   );
@@ -47,18 +47,18 @@ architecture arch of top is
   signal clk : std_logic;
   signal reset : std_logic;
 
-  signal adapter_stb : std_logic_vector(C_REGISTER_INFO'length-1 downto 0);
+  signal adapter_stb : std_logic_vector(C_REGISTERS-1 downto 0);
   signal adapter_we  : std_logic;
   signal adapter_err : std_logic;
   signal adapter_wdata : std_logic_vector(32-1 downto 0);
-  signal adapter_rdata : t_32BitArray(G_REGISTERS-1 downto 0);
+  signal adapter_rdata : t_32BitArray(C_REGISTERS-1 downto 0);
 
   signal logic_regs : t_registers_modname_out;
 begin
   ins_adapter: entity work.adapter_axi4
   generic map (
                 G_ADDR_W    => G_ADDR_W,
-                G_REGISTERS => C_REGISTER_INFO'length-1
+                G_REGISTERS => C_REGISTERS
               )
   port map (
              pi_regs       => adapter_rdata,
@@ -109,7 +109,7 @@ begin
         l_reg_we      <= fun_logic_to_we(l_reg_info, pi_logic_regs, i, j);
         l_reg_data_in <= fun_logic_to_data(l_reg_info, pi_logic_regs, i, j);
 
-        process(l_reg_data_out)
+        process(logic_regs, l_reg_data_out)
         begin
           prd_reg_to_logic(l_reg_info, logic_regs, l_reg_data_out, i, j);
         end process;

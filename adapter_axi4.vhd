@@ -18,7 +18,8 @@ entity adapter_axi4 is
     G_REGISTERS : natural := 0
   );
   port (
-    pi_regs : in t_32BitArray(G_REGISTERS-1 downto 0); -- get range from generic N_REGS
+    -- one element for each register, so N elements for a 2D register with length N
+    pi_regs : in t_32BitArray(G_REGISTERS-1 downto 0);
     pi_err  : in  std_logic;
 
     po_stb  : out std_logic_vector(G_REGISTERS-1 downto 0);
@@ -58,23 +59,23 @@ architecture arch of adapter_axi4 is
   -- read
   type t_state_read is (sReadIdle, sReadValid);
   signal state_read : t_state_read;
-  
+
   signal rdata_reg : std_logic_vector(31 downto 0);
   signal raddr_word : integer;
-  
+
   signal arready_wire : std_logic;
   signal rvalid_wire : std_logic;
-  
+
   -- write
   type t_state_write is (sWriteIdle, sWriteWaitData, sWriteWaitAddr, sWriteResp);
   signal state_write : t_state_write;
   signal state_write_prev : t_state_write;
-  
+
   signal waddr_reg : std_logic_vector(G_ADDR_W-1 downto 0);
   signal wdata_reg : std_logic_vector(31 downto 0);
-  
+
   signal waddr_word : integer;
-  
+
   signal awready_wire : std_logic;
   signal wready_wire : std_logic;
   signal bvalid_wire : std_logic;
@@ -91,10 +92,14 @@ begin
     if rising_edge(clk) then
       rdata_reg <= (others => '0');
 
-      for i in C_ADDR_ARRAY'range loop
-        if raddr_word = C_ADDR_ARRAY(i) then
-          rdata_reg <= pi_regs(i);
-        end if;
+      for i in C_REGISTER_INFO'range loop
+        for j in 0 to C_REGISTER_INFO(i).N-1 loop
+          for k in 0 to C_REGISTER_INFO(i).M-1 loop
+            if raddr_word = C_REGISTER_INFO(i).addr+j*C_REGISTER_INFO(i).M+k then
+              rdata_reg <= pi_regs(i+j*C_REGISTER_INFO(i).M+k);
+            end if;
+          end loop;
+        end loop;
       end loop;
 
 

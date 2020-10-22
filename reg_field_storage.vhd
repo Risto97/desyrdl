@@ -79,7 +79,7 @@ begin
       if rising_edge(pi_clock) then
         if pi_reset = '1' then
           -- doesn't make so much sense here
-          field_reg <= g_info.def_val;
+          field_reg <= g_info.def_val(g_info.len-1 downto 0);
         else
           -- hardware writes all the time and software can only read
           field_reg <= pi_hw_data;
