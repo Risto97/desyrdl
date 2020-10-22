@@ -9,8 +9,7 @@ use work.pkg_axi4.all; -- maybe rename to sth like pkg_axi4_<foocomponent>
 entity top is
   generic(
     --g_adapter_id : integer; -- something like C_ADAPTER_LLRF_FD;
-    G_ADDR_W : integer := 8;
-    G_REGISTERS : natural := 0
+    G_ADDR_W : integer := 8
   );
   port (
     pi_clk           : in std_logic;
@@ -94,9 +93,9 @@ begin
   gen_regs : for r in C_REGISTER_INFO'range generate
     constant l_reg_info : t_reg_info := C_REGISTER_INFO(r);
   begin
-    gen_N : for i in 0 to l_reg_info.N-1 generate
+    gen_N : for i in 0 to l_reg_info.N-1 generate  -- outer dim, for 3D arrays
     begin
-      gen_M: for j in 0 to l_reg_info.M-1 generate
+      gen_M: for j in 0 to l_reg_info.M-1 generate -- inner dim, for 2D arrays
         signal l_reg_decr     : std_logic_vector(32-1 downto 0);
         signal l_reg_incr     : std_logic_vector(32-1 downto 0);
         signal l_reg_we       : std_logic_vector(32-1 downto 0);

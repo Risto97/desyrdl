@@ -143,7 +143,7 @@ package pkg_axi4 is
   end record;
   -- Maybe better to constrain t_reg_info_array. Vivado shows weird indices when unconstrained.
   -- Must be the number of distinct register names, not one for each 2D/3D array element!
-  type t_reg_info_array is array (integer range C_REGNAMES-1 downto 0) of t_reg_info;
+  type t_reg_info_array is array (0 to C_REGNAMES-1) of t_reg_info;
 
   constant C_REGISTER_INFO : t_reg_info_array := (
     0 => (addr => 16, regtype => WHATEVER, fields => C_WHATEVER_INFO, N => 1, M => 2),
@@ -158,8 +158,8 @@ package pkg_axi4 is
     bar : t_field_signals_in(data(C_WHATEVER_INFO(1).len-1 downto 0));
     baz : t_field_signals_in(data(C_WHATEVER_INFO(2).len-1 downto 0));
   end record;
-  type t_reg_whatever_2d_in is array (natural range C_REGISTER_INFO(0).N-1 downto 0) of t_reg_whatever_in;
-  type t_reg_whatever_3d_in is array (natural range C_REGISTER_INFO(0).M-1 downto 0) of t_reg_whatever_2d_in;
+  type t_reg_whatever_2d_in is array (0 to C_REGISTER_INFO(0).M-1) of t_reg_whatever_in;
+  type t_reg_whatever_3d_in is array (0 to C_REGISTER_INFO(0).N-1) of t_reg_whatever_2d_in;
 
   type t_reg_whatever_out is record
     -- fields
@@ -167,8 +167,8 @@ package pkg_axi4 is
     bar : t_field_signals_out(data(C_WHATEVER_INFO(1).len-1 downto 0));
     baz : t_field_signals_out(data(C_WHATEVER_INFO(2).len-1 downto 0));
   end record;
-  type t_reg_whatever_2d_out is array (natural range C_REGISTER_INFO(0).N-1 downto 0) of t_reg_whatever_out;
-  type t_reg_whatever_3d_out is array (natural range C_REGISTER_INFO(0).M-1 downto 0) of t_reg_whatever_2d_out;
+  type t_reg_whatever_2d_out is array (0 to C_REGISTER_INFO(0).M-1) of t_reg_whatever_out;
+  type t_reg_whatever_3d_out is array (0 to C_REGISTER_INFO(0).N-1) of t_reg_whatever_2d_out;
 
   --
   -- below: data I/O type definitions
