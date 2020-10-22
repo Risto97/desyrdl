@@ -146,8 +146,8 @@ package pkg_axi4 is
   type t_reg_info_array is array (integer range C_REGNAMES-1 downto 0) of t_reg_info;
 
   constant C_REGISTER_INFO : t_reg_info_array := (
-    (addr => 16, regtype => WHATEVER, fields => C_WHATEVER_INFO, N => 1, M => 2),
-    (addr => 32, regtype => ANOTHER, fields => C_ANOTHER_INFO, N => 1, M => 1)
+    0 => (addr => 16, regtype => WHATEVER, fields => C_WHATEVER_INFO, N => 1, M => 2),
+    1 => (addr => 32, regtype => ANOTHER, fields => C_ANOTHER_INFO, N => 1, M => 1)
     --(WHATEVER, C_WHATEVER_INFO)
   );
 
