@@ -52,7 +52,8 @@ architecture arch of top is
   signal adapter_wdata : std_logic_vector(32-1 downto 0);
   signal adapter_rdata : t_32BitArray(C_REGISTERS-1 downto 0);
 
-  signal logic_regs : t_registers_modname_out;
+  shared variable v_regs_out : t_regs_out;
+
 begin
   ins_adapter: entity work.adapter_axi4
   generic map (
@@ -88,7 +89,7 @@ begin
              S_AXI_RREADY  => S_AXI_RREADY
            );
 
-  po_logic_regs <= logic_regs;
+  po_logic_regs <= v_regs_out.get;
 
   gen_regs : for r in C_REGISTER_INFO'range generate
     constant l_reg_info : t_reg_info := C_REGISTER_INFO(r);
@@ -108,10 +109,7 @@ begin
         l_reg_we      <= fun_logic_to_we(l_reg_info, pi_logic_regs, i, j);
         l_reg_data_in <= fun_logic_to_data(l_reg_info, pi_logic_regs, i, j);
 
-        process(logic_regs, l_reg_data_out)
-        begin
-          prd_reg_to_logic(l_reg_info, logic_regs, l_reg_data_out, i, j);
-        end process;
+        v_regs_out.prd_reg_to_logic(l_reg_info, l_reg_data_out, i, j);
 
         ins_reg: entity work.generic_register
         generic map (

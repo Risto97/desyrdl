@@ -186,6 +186,17 @@ package pkg_axi4 is
     whatever : t_reg_whatever_3d_out;
   end record;
 
+  type t_regs_out is protected
+    procedure prd_reg_to_logic (
+                                 constant reg_info : in t_reg_info ;
+                                 signal reg_data : in std_logic_vector(32-1 downto 0) ;
+                                 constant i : in integer ;
+                                 constant j : in integer
+                               );
+    impure function get return t_registers_modname_out;
+  end protected t_regs_out;
+
+
   function fun_slv_to_whatever (slv : std_logic_vector(32-1 downto 0)) return t_reg_whatever_out;
   function fun_whatever_to_data (reg : t_reg_whatever_in) return std_logic_vector;
   function fun_logic_to_data ( reg_info : t_reg_info ; regs : t_registers_modname_in ; i,j : integer ) return std_logic_vector;
@@ -193,18 +204,9 @@ package pkg_axi4 is
   function fun_logic_to_incr ( reg_info : t_reg_info ; regs : t_registers_modname_in ; i,j : integer ) return std_logic_vector;
   function fun_logic_to_we ( reg_info : t_reg_info ; regs : t_registers_modname_in ; i,j : integer ) return std_logic_vector;
 
-  procedure prd_reg_to_logic (
-                               constant reg_info : in t_reg_info ;
-                               signal logic_regs : inout t_registers_modname_out ;
-                               signal reg_data : in std_logic_vector(32-1 downto 0) ;
-                               constant i : in integer ;
-                               constant j : in integer
-                             );
-
 end pkg_axi4;
 
 package body pkg_axi4 is
-
   --
   -- functions
   --
@@ -293,24 +295,37 @@ package body pkg_axi4 is
     return v_tmp;
   end function;
 
-  procedure prd_reg_to_logic (
-                               constant reg_info : in t_reg_info ;
-                               signal logic_regs : inout t_registers_modname_out ;
-                               signal reg_data : in std_logic_vector(32-1 downto 0) ;
-                               constant i : in integer ;
-                               constant j : in integer
-                             ) is
-  begin
-    case reg_info.regtype is
-      when WHATEVER =>
-            -- problematic: function must return the fields of this specific register type,
-            -- or be a procedure with po_logic_regs as an inout or so
-        logic_regs.whatever(i)(j) <= fun_slv_to_whatever(reg_data);
-      --when ANOTHER =>
-        --logic_regs.another(i)(j) <= fun_slv_to_another(l_reg_data_out);
-      when others =>
-        null;
-    end case;
-  end procedure;
+  type t_regs_out is protected body
+
+    variable v_logic_regs : t_registers_modname_out;
+
+    procedure prd_reg_to_logic (
+                                 constant reg_info : in t_reg_info ;
+                                 signal reg_data : in std_logic_vector(32-1 downto 0) ;
+                                 constant i : in integer ;
+                                 constant j : in integer
+                               ) is
+    begin
+      case reg_info.regtype is
+        when WHATEVER =>
+              -- problematic: function must return the fields of this specific register type,
+              -- or be a procedure with po_logic_regs as an inout or so
+          report "Assigning whatever(" & integer'image(i) & ")(" & integer'image(j) & ")" severity note;
+          v_logic_regs.whatever(i)(j) := fun_slv_to_whatever(reg_data);
+        --when ANOTHER =>
+          --v_logic_regs.another(i)(j) <= fun_slv_to_another(l_reg_data_out);
+        when others =>
+          null;
+      end case;
+    end procedure;
+
+    -- impure: doesn't always return the same value with the same set of parameters.
+    -- Here it accesses a variable within this protected type.
+    impure function get return t_registers_modname_out is
+    begin
+      return v_logic_regs;
+    end function get;
+
+  end protected body t_regs_out;
 
 end package body;
