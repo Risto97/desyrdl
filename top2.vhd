@@ -85,13 +85,11 @@ begin
              S_AXI_RREADY  => S_AXI_RREADY
            );
 
-  process(logic_regs)
-  begin
-    po_logic_regs <= logic_regs;
-  end process;
-
-  gen_regs : for r in C_REGISTER_INFO'range generate
-    constant l_reg_info : t_reg_info := C_REGISTER_INFO(r);
+  -- duplicated blocks below
+  -- index 0 regname whatever
+  blk_0_whatever : block
+    constant l_r : integer := 0;
+    constant l_reg_info : t_reg_info := C_REGISTER_INFO(l_r);
   begin
     gen_N : for i in 0 to l_reg_info.N-1 generate  -- outer dim, for 3D arrays
     begin
@@ -108,7 +106,9 @@ begin
         l_reg_we      <= fun_logic_to_we(l_reg_info, pi_logic_regs, i, j);
         l_reg_data_in <= fun_logic_to_data(l_reg_info, pi_logic_regs, i, j);
 
-        prd_reg_to_logic(l_reg_info, logic_regs, l_reg_data_out, i, j);
+        -- logic_regs.<regname>
+        po_logic_regs.whatever(i,j) <= fun_slv_to_whatever(l_reg_data_out);
+        --prd_reg_to_logic(l_reg_info, logic_regs, l_reg_data_out, i, j);
 
         ins_reg: entity work.generic_register
         generic map (
@@ -120,11 +120,11 @@ begin
                    pi_reset => pi_reset,
 
                    -- to/from adapter
-                   pi_adapter_stb  => adapter_stb(r),
+                   pi_adapter_stb  => adapter_stb(l_r+i*l_reg_info.N+j),
                    pi_adapter_we   => adapter_we,
                    po_adapter_err  => adapter_err,
                    pi_adapter_data => adapter_wdata,
-                   po_adapter_data => adapter_rdata(r),
+                   po_adapter_data => adapter_rdata(l_r+i*l_reg_info.N+j),
 
                    -- to/from our IP
                    pi_logic_incr => l_reg_incr,
@@ -135,7 +135,7 @@ begin
 
       end generate;
     end generate;
-  end generate;
+  end block;
 
 end architecture;
 

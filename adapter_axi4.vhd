@@ -198,11 +198,15 @@ begin
     -- default (swmod)
 
       if state_write = sWriteResp and state_write_prev /= sWriteResp then
-        for i in C_ADDR_ARRAY'range loop
-          if waddr_word = C_ADDR_ARRAY(i) then
-            po_stb(i) <= '1';
-            po_data <= wdata_reg;
-          end if;
+        for i in C_REGISTER_INFO'range loop
+          for j in 0 to C_REGISTER_INFO(i).N-1 loop
+            for k in 0 to C_REGISTER_INFO(i).M-1 loop
+              if waddr_word = C_REGISTER_INFO(i).addr+j*C_REGISTER_INFO(i).M+k then
+                po_stb(i+j*C_REGISTER_INFO(i).M+k) <= '1';
+                po_data <= wdata_reg;
+              end if;
+            end loop;
+          end loop;
         end loop;
       end if;
     end if;
