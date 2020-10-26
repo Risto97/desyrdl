@@ -43,9 +43,6 @@ entity top is
 end entity;
 
 architecture arch of top is
-  signal clk : std_logic;
-  signal reset : std_logic;
-
   signal adapter_stb : std_logic_vector(C_REGISTERS-1 downto 0);
   signal adapter_we  : std_logic;
   signal adapter_err : std_logic;
@@ -65,8 +62,8 @@ begin
              po_we         => adapter_we,
              pi_err        => adapter_err,
              po_data       => adapter_wdata,
-             clk           => clk,
-             reset         => reset,
+             clk           => pi_clk,
+             reset         => pi_reset,
              S_AXI_AWADDR  => S_AXI_AWADDR,
              S_AXI_AWPROT  => S_AXI_AWPROT,
              S_AXI_AWVALID => S_AXI_AWVALID,
@@ -88,7 +85,10 @@ begin
              S_AXI_RREADY  => S_AXI_RREADY
            );
 
-  po_logic_regs <= logic_regs;
+  process(logic_regs)
+  begin
+    po_logic_regs <= logic_regs;
+  end process;
 
   gen_regs : for r in C_REGISTER_INFO'range generate
     constant l_reg_info : t_reg_info := C_REGISTER_INFO(r);
@@ -108,10 +108,7 @@ begin
         l_reg_we      <= fun_logic_to_we(l_reg_info, pi_logic_regs, i, j);
         l_reg_data_in <= fun_logic_to_data(l_reg_info, pi_logic_regs, i, j);
 
-        process(logic_regs, l_reg_data_out)
-        begin
-          prd_reg_to_logic(l_reg_info, logic_regs, l_reg_data_out, i, j);
-        end process;
+        prd_reg_to_logic(l_reg_info, logic_regs, l_reg_data_out, i, j);
 
         ins_reg: entity work.generic_register
         generic map (

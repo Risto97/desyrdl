@@ -158,8 +158,8 @@ package pkg_axi4 is
     bar : t_field_signals_in(data(C_WHATEVER_INFO(1).len-1 downto 0));
     baz : t_field_signals_in(data(C_WHATEVER_INFO(2).len-1 downto 0));
   end record;
-  type t_reg_whatever_2d_in is array (0 to C_REGISTER_INFO(0).M-1) of t_reg_whatever_in;
-  type t_reg_whatever_3d_in is array (0 to C_REGISTER_INFO(0).N-1) of t_reg_whatever_2d_in;
+  type t_reg_whatever_2d_in is array (integer range <>) of t_reg_whatever_in;
+  type t_reg_whatever_3d_in is array (integer range <>, integer range <>) of t_reg_whatever_in;
 
   type t_reg_whatever_out is record
     -- fields
@@ -167,8 +167,8 @@ package pkg_axi4 is
     bar : t_field_signals_out(data(C_WHATEVER_INFO(1).len-1 downto 0));
     baz : t_field_signals_out(data(C_WHATEVER_INFO(2).len-1 downto 0));
   end record;
-  type t_reg_whatever_2d_out is array (0 to C_REGISTER_INFO(0).M-1) of t_reg_whatever_out;
-  type t_reg_whatever_3d_out is array (0 to C_REGISTER_INFO(0).N-1) of t_reg_whatever_2d_out;
+  type t_reg_whatever_2d_out is array (integer range <>) of t_reg_whatever_out;
+  type t_reg_whatever_3d_out is array (integer range <>, integer range <>) of t_reg_whatever_out;
 
   --
   -- below: data I/O type definitions
@@ -177,13 +177,13 @@ package pkg_axi4 is
   type t_registers_modname_in is record
     --wawah : t_reg_wawah_in;
     --uaohh : t_reg_uaohh_in;
-    whatever : t_reg_whatever_3d_in;
+    whatever : t_reg_whatever_3d_in(0 to C_REGISTER_INFO(0).N-1, 0 to C_REGISTER_INFO(0).M-1);
   end record;
 
   type t_registers_modname_out is record
     --wawah : t_reg_wawah_out;
     --uaohh : t_reg_uaohh_out;
-    whatever : t_reg_whatever_3d_out;
+    whatever : t_reg_whatever_3d_out(0 to C_REGISTER_INFO(0).N-1, 0 to C_REGISTER_INFO(0).M-1);
   end record;
 
   function fun_slv_to_whatever (slv : std_logic_vector(32-1 downto 0)) return t_reg_whatever_out;
@@ -236,11 +236,11 @@ package body pkg_axi4 is
   begin
     case reg_info.regtype is
       when WHATEVER =>
-        v_tmp := fun_whatever_to_data(regs.whatever(i)(j));
-        --v_tmp(reg_info.fields(<x>).upper downto reg_info.fields(<x>).lower) := regs.regname(i)(j).<fieldname>.data;
-        v_tmp(reg_info.fields(0).upper downto reg_info.fields(0).lower) := regs.whatever(i)(j).foo.data;
-        v_tmp(reg_info.fields(1).upper downto reg_info.fields(1).lower) := regs.whatever(i)(j).bar.data;
-        v_tmp(reg_info.fields(2).upper downto reg_info.fields(2).lower) := regs.whatever(i)(j).baz.data;
+        v_tmp := fun_whatever_to_data(regs.whatever(i,j));
+        --v_tmp(reg_info.fields(<x>).upper downto reg_info.fields(<x>).lower) := regs.regname(i,j).<fieldname>.data;
+        v_tmp(reg_info.fields(0).upper downto reg_info.fields(0).lower) := regs.whatever(i,j).foo.data;
+        v_tmp(reg_info.fields(1).upper downto reg_info.fields(1).lower) := regs.whatever(i,j).bar.data;
+        v_tmp(reg_info.fields(2).upper downto reg_info.fields(2).lower) := regs.whatever(i,j).baz.data;
       when others =>
         v_tmp := (others => '0');
     end case;
@@ -253,9 +253,9 @@ package body pkg_axi4 is
   begin
     case reg_info.regtype is
       when WHATEVER =>
-        v_tmp(0) := regs.whatever(i)(j).foo.decr ; -- FIXME?
-        v_tmp(1) := regs.whatever(i)(j).bar.decr ; -- FIXME?
-        v_tmp(2) := regs.whatever(i)(j).baz.decr ; -- FIXME?
+        v_tmp(0) := regs.whatever(i,j).foo.decr ; -- FIXME?
+        v_tmp(1) := regs.whatever(i,j).bar.decr ; -- FIXME?
+        v_tmp(2) := regs.whatever(i,j).baz.decr ; -- FIXME?
       when others =>
         v_tmp := (others => '0');
     end case;
@@ -268,9 +268,9 @@ package body pkg_axi4 is
   begin
     case reg_info.regtype is
       when WHATEVER =>
-        v_tmp(0) := regs.whatever(i)(j).foo.incr when C_WHATEVER_INFO(0).hw_we else '0'; -- FIXME
-        v_tmp(1) := regs.whatever(i)(j).bar.incr when C_WHATEVER_INFO(1).hw_we else '0'; -- FIXME
-        v_tmp(2) := regs.whatever(i)(j).baz.incr when C_WHATEVER_INFO(2).hw_we else '0'; -- FIXME
+        v_tmp(0) := regs.whatever(i,j).foo.incr when C_WHATEVER_INFO(0).hw_we else '0'; -- FIXME
+        v_tmp(1) := regs.whatever(i,j).bar.incr when C_WHATEVER_INFO(1).hw_we else '0'; -- FIXME
+        v_tmp(2) := regs.whatever(i,j).baz.incr when C_WHATEVER_INFO(2).hw_we else '0'; -- FIXME
       when others =>
         v_tmp := (others => '0');
     end case;
@@ -278,14 +278,15 @@ package body pkg_axi4 is
     return v_tmp;
   end function;
 
+  -- pass an enumerated identifier for the register instead of reg_info --> function gets 
   function fun_logic_to_we ( reg_info : t_reg_info ; regs : t_registers_modname_in ; i,j : integer ) return std_logic_vector is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
     case reg_info.regtype is
       when WHATEVER =>
-        v_tmp(0) := regs.whatever(i)(j).foo.we when C_WHATEVER_INFO(0).hw_we else '0'; -- FIXME?
-        v_tmp(1) := regs.whatever(i)(j).bar.we when C_WHATEVER_INFO(1).hw_we else '0'; -- FIXME?
-        v_tmp(2) := regs.whatever(i)(j).baz.we when C_WHATEVER_INFO(2).hw_we else '0'; -- FIXME?
+        v_tmp(0) := regs.whatever(i,j).foo.we when C_WHATEVER_INFO(0).hw_we else '0'; -- FIXME?
+        v_tmp(1) := regs.whatever(i,j).bar.we when C_WHATEVER_INFO(1).hw_we else '0'; -- FIXME?
+        v_tmp(2) := regs.whatever(i,j).baz.we when C_WHATEVER_INFO(2).hw_we else '0'; -- FIXME?
       when others =>
         v_tmp := (others => '0');
     end case;
@@ -305,9 +306,9 @@ package body pkg_axi4 is
       when WHATEVER =>
             -- problematic: function must return the fields of this specific register type,
             -- or be a procedure with po_logic_regs as an inout or so
-        logic_regs.whatever(i)(j) <= fun_slv_to_whatever(reg_data);
+        logic_regs.whatever(i,j) <= fun_slv_to_whatever(reg_data);
       --when ANOTHER =>
-        --logic_regs.another(i)(j) <= fun_slv_to_another(l_reg_data_out);
+        --logic_regs.another(i,j) <= fun_slv_to_another(l_reg_data_out);
       when others =>
         null;
     end case;
