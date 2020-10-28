@@ -5,7 +5,7 @@ use ieee.numeric_std_unsigned.all ;
 
 library work;
 use work.pkg_types.all;
-use work.pkg_axi4.all; -- maybe rename to sth like pkg_axi4_<foocomponent>
+use work.pkg_reg_marsupials.all; -- maybe rename to sth like pkg_axi4_<foocomponent>
 
 library osvvm ;
   context osvvm.OsvvmContext ;

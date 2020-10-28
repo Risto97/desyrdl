@@ -4,26 +4,13 @@ use ieee.numeric_std.all;
 
 library work;
 use work.pkg_types.all;
+use work.pkg_reg.all;
 
-package pkg_axi4 is
-  constant C_ADDR_W : integer := 8;
+package pkg_reg_marsupials is
 
---  type t_dpm_list is record
---    base_array : t_IntegerArray(0 to C_MEMORIES-1);
---    width_array : t_IntegerArray(0 to C_MEMORIES-1);
---  end record t_dpm_list;
---
---  constant C_DPM_ARRAY : t_dpm_list := (
---    (C_ADDR_AREA_SIN, C_ADDR_AREA_COS),
---    (C_WIDTH_AREA_SIN, C_WIDTH_AREA_COS)
---  );
---
---  type t_dpm_array_i is record
---    ena  : std_logic;
---    wr   : std_logic;
---    addr : std_logic_vector(C_ADDR_W-1 downto 0);
---    data : std_logic_vector(32-1 downto 0);
---  end record t_dpm_array;
+  -----------------------------------------------
+  -- below: common declarations
+  -----------------------------------------------
 
   --type t_field_access is (R, W, RW, NA);
   subtype t_field_access is std_logic_vector(1 downto 0);
@@ -61,10 +48,30 @@ package pkg_axi4 is
     decr : std_logic;
   end record;
 
-  --
+  -----------------------------------------------
   -- below: per regfile / module !
-  --
+  -----------------------------------------------
 
+  constant C_ADDR_W : integer := 8;
+
+--  type t_dpm_list is record
+--    base_array : t_IntegerArray(0 to C_MEMORIES-1);
+--    width_array : t_IntegerArray(0 to C_MEMORIES-1);
+--  end record t_dpm_list;
+--
+--  constant C_DPM_ARRAY : t_dpm_list := (
+--    (C_ADDR_AREA_SIN, C_ADDR_AREA_COS),
+--    (C_WIDTH_AREA_SIN, C_WIDTH_AREA_COS)
+--  );
+--
+--  type t_dpm_array_i is record
+--    ena  : std_logic;
+--    wr   : std_logic;
+--    addr : std_logic_vector(C_ADDR_W-1 downto 0);
+--    data : std_logic_vector(32-1 downto 0);
+--  end record t_dpm_array;
+
+  -- must be calculated by register tool
   constant C_REGNAMES  : integer := 2;
   constant C_REGISTERS : integer := 3;
 
@@ -158,7 +165,6 @@ package pkg_axi4 is
   -- functions for wombat
   function fun_slv_to_wombat (slv : std_logic_vector(32-1 downto 0)) return t_reg_wombat_out;
   function fun_wombat_to_data (reg : t_reg_wombat_in) return std_logic_vector;
-  function fun_logic_to_data ( reg_info : t_reg_info ; regs : t_registers_marsupials_in ; i,j : integer ) return std_logic_vector;
   function fun_logic_to_decr ( reg_info : t_reg_info ; regs : t_registers_marsupials_in ; i,j : integer ) return std_logic_vector;
   function fun_logic_to_incr ( reg_info : t_reg_info ; regs : t_registers_marsupials_in ; i,j : integer ) return std_logic_vector;
   function fun_logic_to_we ( reg_info : t_reg_info ; regs : t_registers_marsupials_in ; i,j : integer ) return std_logic_vector;
@@ -169,14 +175,10 @@ package pkg_axi4 is
   function fun_koala_to_decr (reg : t_reg_koala_in) return std_logic_vector;
   function fun_koala_to_incr (reg : t_reg_koala_in) return std_logic_vector;
   function fun_koala_to_we   (reg : t_reg_koala_in) return std_logic_vector;
-end pkg_axi4;
 
-package body pkg_axi4 is
+end package pkg_reg_marsupials;
 
-  --
-  -- functions
-  --
-
+package body pkg_reg_marsupials is
   -- unpack
   function fun_slv_to_wombat (slv : std_logic_vector(32-1 downto 0)) return t_reg_wombat_out is
     variable v_tmp : t_reg_wombat_out;
@@ -195,23 +197,6 @@ package body pkg_axi4 is
     v_tmp(C_WOMBAT_INFO(0).upper downto C_WOMBAT_INFO(0).lower) := reg.foo.data;
     v_tmp(C_WOMBAT_INFO(1).upper downto C_WOMBAT_INFO(1).lower) := reg.bar.data;
     v_tmp(C_WOMBAT_INFO(2).upper downto C_WOMBAT_INFO(2).lower) := reg.baz.data;
-
-    return v_tmp;
-  end function;
-
-  function fun_logic_to_data ( reg_info : t_reg_info ; regs : t_registers_marsupials_in ; i,j : integer ) return std_logic_vector is
-    variable v_tmp : std_logic_vector(32-1 downto 0);
-  begin
-    case reg_info.regtype is
-      when WOMBAT =>
-        v_tmp := fun_wombat_to_data(regs.wombat(i,j));
-        --v_tmp(reg_info.fields(<x>).upper downto reg_info.fields(<x>).lower) := regs.regname(i,j).<fieldname>.data;
-        v_tmp(reg_info.fields(0).upper downto reg_info.fields(0).lower) := regs.wombat(i,j).foo.data;
-        v_tmp(reg_info.fields(1).upper downto reg_info.fields(1).lower) := regs.wombat(i,j).bar.data;
-        v_tmp(reg_info.fields(2).upper downto reg_info.fields(2).lower) := regs.wombat(i,j).baz.data;
-      when others =>
-        v_tmp := (others => '0');
-    end case;
 
     return v_tmp;
   end function;

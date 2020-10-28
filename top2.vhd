@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 
 library work;
 use work.pkg_types.all;
-use work.pkg_axi4.all; -- maybe rename to sth like pkg_axi4_<foocomponent>
+use work.pkg_reg_marsupials.all; -- maybe rename to sth like pkg_axi4_<foocomponent>
 
 entity top is
   generic(
@@ -103,7 +103,7 @@ begin
         l_reg_decr    <= fun_logic_to_decr(l_reg_info, pi_logic_regs, i, j);
         l_reg_incr    <= fun_logic_to_incr(l_reg_info, pi_logic_regs, i, j);
         l_reg_we      <= fun_logic_to_we(l_reg_info, pi_logic_regs, i, j);
-        l_reg_data_in <= fun_logic_to_data(l_reg_info, pi_logic_regs, i, j);
+        l_reg_data_in <= fun_wombat_to_data(pi_logic_regs.wombat(i,j));
 
         -- logic_regs.<regname>
         po_logic_regs.wombat(i,j) <= fun_slv_to_wombat(l_reg_data_out);

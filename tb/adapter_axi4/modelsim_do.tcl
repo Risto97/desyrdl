@@ -5,7 +5,7 @@ build OsvvmLibraries/OsvvmLibraries.pro
 
 library osvvm_my_tb
 analyze ../../../desy_lib_svn/pkg/PKG_TYPES.vhd
-analyze ../../pkg_axi4.vhd
+analyze ../../pkg_reg_marsupials.vhd
 analyze ../../reg_field_storage.vhd
 analyze ../../generic_register.vhd
 analyze ../../adapter_axi4.vhd

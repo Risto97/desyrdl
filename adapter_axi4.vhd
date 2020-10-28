@@ -10,7 +10,7 @@ use ieee.numeric_std.all;
 
 library work;
 use work.pkg_types.all;
-use work.pkg_axi4.all; -- maybe rename to sth like pkg_axi4_foocomponent
+use work.pkg_reg_marsupials.all; -- maybe rename to sth like pkg_axi4_foocomponent
 
 entity adapter_axi4 is
   generic (
