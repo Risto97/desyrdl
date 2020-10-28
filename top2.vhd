@@ -37,10 +37,10 @@ entity top is
     S_AXI_RREADY  : in std_logic;
 
     -- logic
-    pi_logic_regs : in t_registers_modname_in;
-    po_logic_regs : out t_registers_modname_out
+    pi_logic_regs : in t_registers_marsupials_in;
+    po_logic_regs : out t_registers_marsupials_out
   );
-end entity;
+end entity top;
 
 architecture arch of top is
   signal adapter_stb : std_logic_vector(C_REGISTERS-1 downto 0);
@@ -49,7 +49,6 @@ architecture arch of top is
   signal adapter_wdata : std_logic_vector(32-1 downto 0);
   signal adapter_rdata : t_32BitArray(C_REGISTERS-1 downto 0);
 
-  signal logic_regs : t_registers_modname_out;
 begin
   ins_adapter: entity work.adapter_axi4
   generic map (
@@ -86,8 +85,8 @@ begin
            );
 
   -- duplicated blocks below
-  -- index 0 regname whatever
-  blk_0_whatever : block
+  -- index 0 regname wombat
+  blk_0_wombat : block
     constant l_r : integer := 0;
     constant l_reg_info : t_reg_info := C_REGISTER_INFO(l_r);
   begin
@@ -107,8 +106,59 @@ begin
         l_reg_data_in <= fun_logic_to_data(l_reg_info, pi_logic_regs, i, j);
 
         -- logic_regs.<regname>
-        po_logic_regs.whatever(i,j) <= fun_slv_to_whatever(l_reg_data_out);
-        --prd_reg_to_logic(l_reg_info, logic_regs, l_reg_data_out, i, j);
+        po_logic_regs.wombat(i,j) <= fun_slv_to_wombat(l_reg_data_out);
+
+        ins_reg: entity work.generic_register
+        generic map (
+                      -- contains an array of field info
+                      g_fields => l_reg_info.fields
+                    )
+        port map (
+                   pi_clock => pi_clk,
+                   pi_reset => pi_reset,
+
+                   -- to/from adapter
+                   pi_adapter_stb  => adapter_stb(l_r+i*l_reg_info.N+j),
+                   pi_adapter_we   => adapter_we,
+                   po_adapter_err  => adapter_err,
+                   pi_adapter_data => adapter_wdata,
+                   po_adapter_data => adapter_rdata(l_r+i*l_reg_info.N+j),
+
+                   -- to/from our IP
+                   pi_logic_incr => l_reg_incr,
+                   pi_logic_we   => l_reg_we,
+                   pi_logic_data => l_reg_data_in,
+                   po_logic_data => l_reg_data_out
+                 );
+
+      end generate;
+    end generate;
+  end block;
+
+  -- index 1 regname koala
+  blk_1_koala : block
+    constant l_r : integer := 1;
+    constant l_reg_info : t_reg_info := C_REGISTER_INFO(l_r);
+  begin
+    gen_N : for i in 0 to l_reg_info.N-1 generate  -- outer dim, for 3D arrays
+    begin
+      gen_M: for j in 0 to l_reg_info.M-1 generate -- inner dim, for 2D arrays
+        signal l_reg_decr     : std_logic_vector(32-1 downto 0);
+        signal l_reg_incr     : std_logic_vector(32-1 downto 0);
+        signal l_reg_we       : std_logic_vector(32-1 downto 0);
+        signal l_reg_data_in  : std_logic_vector(32-1 downto 0);
+        signal l_reg_data_out : std_logic_vector(32-1 downto 0);
+      begin
+
+        -- START dynamic part
+        l_reg_decr    <= fun_koala_to_decr(pi_logic_regs.koala(i,j));
+        l_reg_incr    <= fun_koala_to_incr(pi_logic_regs.koala(i,j));
+        l_reg_we      <= fun_koala_to_we(pi_logic_regs.koala(i,j));
+        l_reg_data_in <= fun_koala_to_data(pi_logic_regs.koala(i,j));
+
+        -- logic_regs.<regname>(i,j) <= fun_slv_to_<regname>(l_reg_data_out);
+        po_logic_regs.koala(i,j) <= fun_slv_to_koala(l_reg_data_out);
+        -- END dynamic part
 
         ins_reg: entity work.generic_register
         generic map (
