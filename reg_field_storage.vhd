@@ -51,7 +51,8 @@ architecture rtl of reg_field_storage is
 begin
 
   -- check if the hardware side (logic) has a write enable signal
-  gen_hw_we : if g_info.hw_we generate
+  -- or has no write access to the register
+  gen_hw_we : if g_info.hw_we or g_info.hw_access(0) = '0' generate
     prs_write : process(pi_clock)
     begin
       if rising_edge(pi_clock) then
@@ -59,10 +60,10 @@ begin
           field_reg <= g_info.def_val(g_info.len-1 downto 0);
         else
           -- software write has precedence FIXME
-          if pi_sw_we = '1' and g_info.sw_access(0) = '1' then
+          if pi_sw_stb = '1' and pi_sw_we = '1' and (g_info.sw_access = C_W or g_info.sw_access = C_RW) then
             field_reg <= pi_sw_data;
           -- hardware write might get lost FIXME
-          elsif pi_hw_we = '1' and g_info.hw_access(0) = '1' then
+          elsif pi_hw_we = '1' and (g_info.hw_access = C_W or g_info.hw_access = C_RW) then
             field_reg <= pi_hw_data;
           else
             field_reg <= field_reg;
@@ -73,7 +74,7 @@ begin
   end generate;
 
   -- write from logic continuously if there is no write enable
-  gen_hw_no_we : if not g_info.hw_we generate
+  gen_hw_no_we : if not g_info.hw_we and g_info.hw_access(0) = '1' generate
     prs_write : process(pi_clock)
     begin
       if rising_edge(pi_clock) then
