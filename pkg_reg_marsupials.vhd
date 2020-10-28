@@ -91,9 +91,9 @@ package pkg_reg_marsupials is
   type t_reg_info_array is array (0 to C_REGNAMES-1) of t_reg_info;
 
   constant C_WOMBAT_INFO : t_field_info_arr := (
-    0 => (ftype => STORAGE, len => 16, upper => 31, lower => 16, hw_we => false, sw_access => C_RW, hw_access => C_R,  def_val => (others => '1')),
-    1 => (ftype => STORAGE, len => 8,  upper => 15, lower =>  8, hw_we => true,  sw_access => C_R , hw_access => C_RW, def_val => (others => '1')),
-    2 => (ftype => STORAGE, len => 8,  upper =>  7, lower =>  0, hw_we => true,  sw_access => C_RW, hw_access => C_RW, def_val => (others => '1')),
+    0 => (ftype => STORAGE, len => 16, upper => 31, lower => 16, hw_we => false, sw_access => C_RW, hw_access => C_R,  def_val => (others => '1')), -- foo
+    1 => (ftype => STORAGE, len => 8,  upper => 15, lower =>  8, hw_we => true,  sw_access => C_R , hw_access => C_RW, def_val => (others => '1')), -- bar
+    2 => (ftype => STORAGE, len => 8,  upper =>  7, lower =>  0, hw_we => true,  sw_access => C_RW, hw_access => C_RW, def_val => (others => '1')), -- baz
     others => C_FIELD_NONE
   );
 
@@ -108,6 +108,9 @@ package pkg_reg_marsupials is
     1 => (addr => 32, regtype => KOALA, fields => C_KOALA_INFO, N => 1, M => 1)
   );
 
+  -----------------------------------------------
+  -- register type: wombat
+  -----------------------------------------------
   -- contains up to 32 data bits plus the other signals (we, incr, ..)
   type t_reg_wombat_in is record
     -- fields
@@ -127,6 +130,9 @@ package pkg_reg_marsupials is
   type t_reg_wombat_2d_out is array (integer range <>) of t_reg_wombat_out;
   type t_reg_wombat_3d_out is array (integer range <>, integer range <>) of t_reg_wombat_out;
 
+  -----------------------------------------------
+  -- register type: koala
+  -----------------------------------------------
   -- contains up to 32 data bits plus the other signals (we, incr, ..)
   type t_reg_koala_in is record
     -- fields
@@ -144,10 +150,9 @@ package pkg_reg_marsupials is
   type t_reg_koala_2d_out is array (integer range <>) of t_reg_koala_out;
   type t_reg_koala_3d_out is array (integer range <>, integer range <>) of t_reg_koala_out;
 
-  --
-  -- below: data I/O type definitions
-  --
-
+  -----------------------------------------------
+  -- module I/O types: marsupials
+  -----------------------------------------------
   type t_registers_marsupials_in is record
     --wawah : t_reg_wawah_in;
     --uaohh : t_reg_uaohh_in;
@@ -162,14 +167,18 @@ package pkg_reg_marsupials is
     koala  : t_reg_koala_3d_out(0 to C_REGISTER_INFO(1).N-1, 0 to C_REGISTER_INFO(1).M-1);
   end record;
 
-  -- functions for wombat
+  -----------------------------------------------
+  -- register type functions: wombat
+  -----------------------------------------------
   function fun_slv_to_wombat (slv : std_logic_vector(32-1 downto 0)) return t_reg_wombat_out;
   function fun_wombat_to_data (reg : t_reg_wombat_in) return std_logic_vector;
-  function fun_logic_to_decr ( reg_info : t_reg_info ; regs : t_registers_marsupials_in ; i,j : integer ) return std_logic_vector;
-  function fun_logic_to_incr ( reg_info : t_reg_info ; regs : t_registers_marsupials_in ; i,j : integer ) return std_logic_vector;
-  function fun_logic_to_we ( reg_info : t_reg_info ; regs : t_registers_marsupials_in ; i,j : integer ) return std_logic_vector;
+  function fun_wombat_to_decr (reg : t_reg_wombat_in) return std_logic_vector;
+  function fun_wombat_to_incr (reg : t_reg_wombat_in) return std_logic_vector;
+  function fun_wombat_to_we   (reg : t_reg_wombat_in) return std_logic_vector;
 
-  -- functions for koala
+  -----------------------------------------------
+  -- register type functions: koala
+  -----------------------------------------------
   function fun_slv_to_koala (slv : std_logic_vector(32-1 downto 0)) return t_reg_koala_out;
   function fun_koala_to_data (reg : t_reg_koala_in) return std_logic_vector;
   function fun_koala_to_decr (reg : t_reg_koala_in) return std_logic_vector;
@@ -179,6 +188,10 @@ package pkg_reg_marsupials is
 end package pkg_reg_marsupials;
 
 package body pkg_reg_marsupials is
+
+  -----------------------------------------------
+  -- register type: wombat
+  -----------------------------------------------
   -- unpack
   function fun_slv_to_wombat (slv : std_logic_vector(32-1 downto 0)) return t_reg_wombat_out is
     variable v_tmp : t_reg_wombat_out;
@@ -201,52 +214,39 @@ package body pkg_reg_marsupials is
     return v_tmp;
   end function;
 
-  function fun_logic_to_decr ( reg_info : t_reg_info ; regs : t_registers_marsupials_in ; i,j : integer ) return std_logic_vector is
+  function fun_wombat_to_decr (reg : t_reg_wombat_in) return std_logic_vector is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
-    case reg_info.regtype is
-      when WOMBAT =>
-        v_tmp(0) := regs.wombat(i,j).foo.decr ; -- FIXME?
-        v_tmp(1) := regs.wombat(i,j).bar.decr ; -- FIXME?
-        v_tmp(2) := regs.wombat(i,j).baz.decr ; -- FIXME?
-      when others =>
-        v_tmp := (others => '0');
-    end case;
+    v_tmp(0) := reg.foo.decr ; -- FIXME?
+    v_tmp(1) := reg.bar.decr ; -- FIXME?
+    v_tmp(2) := reg.baz.decr ; -- FIXME?
 
     return v_tmp;
   end function;
 
-  function fun_logic_to_incr ( reg_info : t_reg_info ; regs : t_registers_marsupials_in ; i,j : integer ) return std_logic_vector is
+  function fun_wombat_to_incr (reg : t_reg_wombat_in) return std_logic_vector is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
-    case reg_info.regtype is
-      when WOMBAT =>
-        v_tmp(0) := regs.wombat(i,j).foo.incr when C_WOMBAT_INFO(0).hw_we else '0'; -- FIXME
-        v_tmp(1) := regs.wombat(i,j).bar.incr when C_WOMBAT_INFO(1).hw_we else '0'; -- FIXME
-        v_tmp(2) := regs.wombat(i,j).baz.incr when C_WOMBAT_INFO(2).hw_we else '0'; -- FIXME
-      when others =>
-        v_tmp := (others => '0');
-    end case;
+    v_tmp(0) := reg.foo.incr when C_WOMBAT_INFO(0).hw_we else '0'; -- FIXME
+    v_tmp(1) := reg.bar.incr when C_WOMBAT_INFO(1).hw_we else '0'; -- FIXME
+    v_tmp(2) := reg.baz.incr when C_WOMBAT_INFO(2).hw_we else '0'; -- FIXME
 
     return v_tmp;
   end function;
 
-  function fun_logic_to_we ( reg_info : t_reg_info ; regs : t_registers_marsupials_in ; i,j : integer ) return std_logic_vector is
+  function fun_wombat_to_we (reg : t_reg_wombat_in) return std_logic_vector is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
-    case reg_info.regtype is
-      when WOMBAT =>
-        v_tmp(0) := regs.wombat(i,j).foo.we when C_WOMBAT_INFO(0).hw_we else '0'; -- FIXME?
-        v_tmp(1) := regs.wombat(i,j).bar.we when C_WOMBAT_INFO(1).hw_we else '0'; -- FIXME?
-        v_tmp(2) := regs.wombat(i,j).baz.we when C_WOMBAT_INFO(2).hw_we else '0'; -- FIXME?
-      when others =>
-        v_tmp := (others => '0');
-    end case;
+    v_tmp(0) := reg.foo.we when C_WOMBAT_INFO(0).hw_we else '0'; -- FIXME?
+    v_tmp(1) := reg.bar.we when C_WOMBAT_INFO(1).hw_we else '0'; -- FIXME?
+    v_tmp(2) := reg.baz.we when C_WOMBAT_INFO(2).hw_we else '0'; -- FIXME?
 
     return v_tmp;
   end function;
 
-  -- for koala
+  -----------------------------------------------
+  -- register type: koala
+  -----------------------------------------------
   -- unpack
   function fun_slv_to_koala (slv : std_logic_vector(32-1 downto 0)) return t_reg_koala_out is
     variable v_tmp : t_reg_koala_out;

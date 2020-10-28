@@ -100,13 +100,15 @@ begin
         signal l_reg_data_out : std_logic_vector(32-1 downto 0);
       begin
 
-        l_reg_decr    <= fun_logic_to_decr(l_reg_info, pi_logic_regs, i, j);
-        l_reg_incr    <= fun_logic_to_incr(l_reg_info, pi_logic_regs, i, j);
-        l_reg_we      <= fun_logic_to_we(l_reg_info, pi_logic_regs, i, j);
+        -- START dynamic part
+        l_reg_decr    <= fun_wombat_to_decr(pi_logic_regs.wombat(i,j));
+        l_reg_incr    <= fun_wombat_to_incr(pi_logic_regs.wombat(i,j));
+        l_reg_we      <= fun_wombat_to_we(  pi_logic_regs.wombat(i,j));
         l_reg_data_in <= fun_wombat_to_data(pi_logic_regs.wombat(i,j));
 
-        -- logic_regs.<regname>
+        -- logic_regs.<regname>(i,j) <= fun_slv_to_<regname>(l_reg_data_out);
         po_logic_regs.wombat(i,j) <= fun_slv_to_wombat(l_reg_data_out);
+        -- END dynamic part
 
         ins_reg: entity work.generic_register
         generic map (
@@ -153,7 +155,7 @@ begin
         -- START dynamic part
         l_reg_decr    <= fun_koala_to_decr(pi_logic_regs.koala(i,j));
         l_reg_incr    <= fun_koala_to_incr(pi_logic_regs.koala(i,j));
-        l_reg_we      <= fun_koala_to_we(pi_logic_regs.koala(i,j));
+        l_reg_we      <= fun_koala_to_we(  pi_logic_regs.koala(i,j));
         l_reg_data_in <= fun_koala_to_data(pi_logic_regs.koala(i,j));
 
         -- logic_regs.<regname>(i,j) <= fun_slv_to_<regname>(l_reg_data_out);
