@@ -82,6 +82,26 @@ architecture arch of adapter_axi4 is
 
 begin
 
+  proc_state_read: process (clk)
+  begin
+    if rising_edge(clk) then
+      if reset = '1' then
+        state_read <= sReadIdle;
+      else
+        case state_read is
+          when sReadIdle =>
+            if S_AXI_ARVALID = '1' then
+              state_read <= sReadValid;
+            end if;
+          when sReadValid =>
+            if S_AXI_RREADY = '1' then
+              state_read <= sReadIdle;
+            end if;
+        end case;
+      end if;
+    end if;
+  end process;
+
   raddr_word <= to_integer(unsigned(S_AXI_ARADDR(G_ADDR_W-1 downto 2)));
 
 
@@ -95,7 +115,7 @@ begin
       for i in C_REGISTER_INFO'range loop
         for j in 0 to C_REGISTER_INFO(i).N-1 loop
           for k in 0 to C_REGISTER_INFO(i).M-1 loop
-            if raddr_word = C_REGISTER_INFO(i).addr+j*C_REGISTER_INFO(i).M+k then
+            if raddr_word = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then
               rdata_reg <= pi_regs(i+j*C_REGISTER_INFO(i).M+k);
             end if;
           end loop;
@@ -201,14 +221,19 @@ begin
         for i in C_REGISTER_INFO'range loop
           for j in 0 to C_REGISTER_INFO(i).N-1 loop
             for k in 0 to C_REGISTER_INFO(i).M-1 loop
-              if waddr_word = C_REGISTER_INFO(i).addr+j*C_REGISTER_INFO(i).M+k then
+              if waddr_word = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then
+                report "Writing address " & integer'image(C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k) severity note;
                 po_stb(i+j*C_REGISTER_INFO(i).M+k) <= '1';
-                po_data <= wdata_reg;
               end if;
             end loop;
           end loop;
         end loop;
+        po_we <= '1';
+      else
+        po_stb <= (others => '0');
+        po_we <= '0';
       end if;
+      po_data <= wdata_reg;
     end if;
   end process;
 
