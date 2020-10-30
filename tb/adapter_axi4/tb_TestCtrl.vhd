@@ -50,9 +50,18 @@ begin
     wait until nReset = '1' ;  
     ClearAlerts ;
 
+    MasterReadCheck(AxiSuperTransRec, X"0010", X"FFFF_FFFF"); -- should be default values before any writes
     MasterWrite(    AxiSuperTransRec, X"0010", X"FEED_BEEF");
     WaitForClock(   AxiSuperTransRec, 2);
     MasterReadCheck(AxiSuperTransRec, X"0010", X"FEED_FFEF");
+
+    -- wombat(0,1)
+    WaitForClock(   AxiSuperTransRec, 2);
+    MasterReadCheck(AxiSuperTransRec, X"0014", X"FFFF_a5FF");
+
+    -- koala(0,0)
+    WaitForClock(   AxiSuperTransRec, 2);
+    MasterReadCheck(AxiSuperTransRec, X"0020", X"FFFF_3456");
 
     -- Wait for test to finish
     WaitForBarrier(TestDone, 35 ms) ;

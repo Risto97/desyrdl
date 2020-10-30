@@ -148,14 +148,19 @@ begin
            );
 
   regs_in.wombat(0,0).foo.we <= '0';
-  regs_in.wombat(0,0).bar.we <= '0';
+  regs_in.wombat(0,0).bar.we <= '1';
   regs_in.wombat(0,0).baz.we <= '0';
   regs_in.wombat(0,0).foo.data <= (others => '0');
-  regs_in.wombat(0,0).bar.data <= (others => '0');
+  regs_in.wombat(0,0).bar.data <= X"a5";
   regs_in.wombat(0,0).baz.data <= (others => '0');
+
+  regs_in.wombat(0,1).bar.we <= '1';
+  regs_in.wombat(0,1).bar.data <= X"a5";
 
   regs_in.koala(0,0).hp.data <= x"9876";
   regs_in.koala(0,0).hp.we <= '0';
+  regs_in.koala(0,0).mana.data <= x"3456";
+  regs_in.koala(0,0).mana.we <= '1';
 
   Axi4Super_1 : Axi4LiteMaster
   port map (
