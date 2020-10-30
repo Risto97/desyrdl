@@ -44,6 +44,7 @@ entity generic_register is
          pi_logic_incr : in std_logic_vector(32-1 downto 0);
          pi_logic_we   : in std_logic_vector(32-1 downto 0);
          pi_logic_data : in std_logic_vector(32-1 downto 0);
+         -- TODO add swmod/swacc signals
          po_logic_data : out std_logic_vector(32-1 downto 0)
        );
 end entity generic_register;
@@ -73,7 +74,7 @@ begin
                  pi_sw_we   => pi_adapter_we,
                  pi_sw_data => pi_adapter_data(field.upper downto field.lower),
                  po_sw_data => po_adapter_data(field.upper downto field.lower),
-                 pi_hw_we   => pi_logic_we(f), -- TODO wrong?
+                 pi_hw_we   => pi_logic_we(f),
                  pi_hw_data => pi_logic_data(field.upper downto field.lower),
                  po_hw_data => po_logic_data(field.upper downto field.lower)
                );

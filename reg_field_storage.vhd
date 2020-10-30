@@ -61,6 +61,7 @@ begin
         else
           -- software write has precedence FIXME
           if pi_sw_stb = '1' and pi_sw_we = '1' and (g_info.sw_access = C_W or g_info.sw_access = C_RW) then
+            -- TODO handle software access side effects (rcl/rset, woclr/woset, swacc/swmod)
             field_reg <= pi_sw_data;
           -- hardware write might get lost FIXME
           elsif pi_hw_we = '1' and (g_info.hw_access = C_W or g_info.hw_access = C_RW) then
@@ -73,13 +74,14 @@ begin
     end process;
   end generate;
 
-  -- write from logic continuously if there is no write enable
+  -- write from logic continuously if there is no write enable and hW has write
+  -- access. Software cannot write in this case.
   gen_hw_no_we : if not g_info.hw_we and g_info.hw_access(0) = '1' generate
     prs_write : process(pi_clock)
     begin
       if rising_edge(pi_clock) then
         if pi_reset = '1' then
-          -- doesn't make so much sense here
+          -- doesn't make so much sense here, does it?
           field_reg <= g_info.def_val(g_info.len-1 downto 0);
         else
           -- hardware writes all the time and software can only read

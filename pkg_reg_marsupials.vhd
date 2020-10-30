@@ -4,7 +4,6 @@ use ieee.numeric_std.all;
 
 library work;
 use work.pkg_types.all;
-use work.pkg_reg.all;
 
 package pkg_reg_marsupials is
 
@@ -42,10 +41,9 @@ package pkg_reg_marsupials is
   end record;
 
   type t_field_signals_out is record
-    data : std_logic_vector; -- VHDL-2008
-    we : std_logic;
-    incr : std_logic;
-    decr : std_logic;
+    data : std_logic_vector; -- VHDL-2008 - and if ISE can work with this
+    swacc : std_logic;
+    swmod : std_logic;
   end record;
 
   -----------------------------------------------
@@ -154,15 +152,11 @@ package pkg_reg_marsupials is
   -- module I/O types: marsupials
   -----------------------------------------------
   type t_registers_marsupials_in is record
-    --wawah : t_reg_wawah_in;
-    --uaohh : t_reg_uaohh_in;
     wombat : t_reg_wombat_3d_in(0 to C_REGISTER_INFO(0).N-1, 0 to C_REGISTER_INFO(0).M-1);
     koala  : t_reg_koala_3d_in(0 to C_REGISTER_INFO(1).N-1, 0 to C_REGISTER_INFO(1).M-1);
   end record;
 
   type t_registers_marsupials_out is record
-    --wawah : t_reg_wawah_out;
-    --uaohh : t_reg_uaohh_out;
     wombat : t_reg_wombat_3d_out(0 to C_REGISTER_INFO(0).N-1, 0 to C_REGISTER_INFO(0).M-1);
     koala  : t_reg_koala_3d_out(0 to C_REGISTER_INFO(1).N-1, 0 to C_REGISTER_INFO(1).M-1);
   end record;
@@ -196,6 +190,8 @@ package body pkg_reg_marsupials is
   function fun_slv_to_wombat (slv : std_logic_vector(32-1 downto 0)) return t_reg_wombat_out is
     variable v_tmp : t_reg_wombat_out;
   begin
+    -- repeat for each field
+    -- v_tmp.<fieldname>.data := slv(C_<REGTYPE>_INFO(<i>).upper downto C_<REGTYPE>_INFO(<i>).lower);
     v_tmp.foo.data := slv(C_WOMBAT_INFO(0).upper downto C_WOMBAT_INFO(0).lower);
     v_tmp.bar.data := slv(C_WOMBAT_INFO(1).upper downto C_WOMBAT_INFO(1).lower);
     v_tmp.baz.data := slv(C_WOMBAT_INFO(2).upper downto C_WOMBAT_INFO(2).lower);
@@ -237,9 +233,9 @@ package body pkg_reg_marsupials is
   function fun_wombat_to_we (reg : t_reg_wombat_in) return std_logic_vector is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
-    v_tmp(0) := reg.foo.we when C_WOMBAT_INFO(0).hw_we else '0'; -- FIXME?
-    v_tmp(1) := reg.bar.we when C_WOMBAT_INFO(1).hw_we else '0'; -- FIXME?
-    v_tmp(2) := reg.baz.we when C_WOMBAT_INFO(2).hw_we else '0'; -- FIXME?
+    v_tmp(0) := reg.foo.we when C_WOMBAT_INFO(0).hw_we else '0';
+    v_tmp(1) := reg.bar.we when C_WOMBAT_INFO(1).hw_we else '0';
+    v_tmp(2) := reg.baz.we when C_WOMBAT_INFO(2).hw_we else '0';
 
     return v_tmp;
   end function;
@@ -248,9 +244,12 @@ package body pkg_reg_marsupials is
   -- register type: koala
   -----------------------------------------------
   -- unpack
+  -- TODO add swmod/swacc signals
   function fun_slv_to_koala (slv : std_logic_vector(32-1 downto 0)) return t_reg_koala_out is
     variable v_tmp : t_reg_koala_out;
   begin
+    -- repeat for each field
+    -- v_tmp.<fieldname>.data := slv(C_<REGTYPE>_INFO(<i>).upper downto C_<REGTYPE>_INFO(<i>).lower);
     v_tmp.hp.data := slv(C_KOALA_INFO(0).upper downto C_KOALA_INFO(0).lower);
     v_tmp.mana.data := slv(C_KOALA_INFO(1).upper downto C_KOALA_INFO(1).lower);
 
@@ -288,8 +287,8 @@ package body pkg_reg_marsupials is
   function fun_koala_to_we (reg : t_reg_koala_in) return std_logic_vector is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
-    v_tmp(0) := reg.hp.we;
-    v_tmp(1) := reg.mana.we;
+    v_tmp(0) := reg.hp.we when C_KOALA_INFO(0).hw_we else '0';
+    v_tmp(1) := reg.mana.we when C_KOALA_INFO(1).hw_we else '0';
 
     return v_tmp;
   end function;

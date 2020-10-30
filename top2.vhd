@@ -47,7 +47,7 @@ architecture arch of top is
   signal adapter_we  : std_logic;
   signal adapter_err : std_logic;
   signal adapter_wdata : std_logic_vector(32-1 downto 0);
-  signal adapter_rdata : t_32BitArray(C_REGISTERS-1 downto 0);
+  signal adapter_rdata : t_32BitArray(0 to C_REGISTERS-1);
 
 begin
   ins_adapter: entity work.adapter_axi4
@@ -120,11 +120,11 @@ begin
                    pi_reset => pi_reset,
 
                    -- to/from adapter
-                   pi_adapter_stb  => adapter_stb(l_r+i*l_reg_info.N+j),
+                   pi_adapter_stb  => adapter_stb(l_r+i*l_reg_info.M+j),
                    pi_adapter_we   => adapter_we,
                    po_adapter_err  => adapter_err,
                    pi_adapter_data => adapter_wdata,
-                   po_adapter_data => adapter_rdata(l_r+i*l_reg_info.N+j),
+                   po_adapter_data => adapter_rdata(l_r+i*l_reg_info.M+j),
 
                    -- to/from our IP
                    pi_logic_incr => l_reg_incr,
@@ -137,7 +137,7 @@ begin
     end generate;
   end block;
 
-  -- index 1 regname koala
+  -- index 1: regname koala, regtype koala
   blk_1_koala : block
     constant l_r : integer := 1;
     constant l_reg_info : t_reg_info := C_REGISTER_INFO(l_r);
@@ -158,7 +158,7 @@ begin
         l_reg_we      <= fun_koala_to_we(  pi_logic_regs.koala(i,j));
         l_reg_data_in <= fun_koala_to_data(pi_logic_regs.koala(i,j));
 
-        -- logic_regs.<regname>(i,j) <= fun_slv_to_<regname>(l_reg_data_out);
+        -- logic_regs.<regname>(i,j) <= fun_slv_to_<regtype>(l_reg_data_out);
         po_logic_regs.koala(i,j) <= fun_slv_to_koala(l_reg_data_out);
         -- END dynamic part
 
@@ -172,11 +172,11 @@ begin
                    pi_reset => pi_reset,
 
                    -- to/from adapter
-                   pi_adapter_stb  => adapter_stb(l_r+i*l_reg_info.N+j),
+                   pi_adapter_stb  => adapter_stb(l_r+i*l_reg_info.M+j),
                    pi_adapter_we   => adapter_we,
                    po_adapter_err  => adapter_err,
                    pi_adapter_data => adapter_wdata,
-                   po_adapter_data => adapter_rdata(l_r+i*l_reg_info.N+j),
+                   po_adapter_data => adapter_rdata(l_r+i*l_reg_info.M+j),
 
                    -- to/from our IP
                    pi_logic_incr => l_reg_incr,
@@ -189,5 +189,6 @@ begin
     end generate;
   end block;
 
+  -- TODO instantiate a DPM controller and an interconnect master -> dpm+regs
 end architecture;
 
