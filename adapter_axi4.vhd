@@ -116,7 +116,7 @@ begin
         for j in 0 to C_REGISTER_INFO(i).N-1 loop
           for k in 0 to C_REGISTER_INFO(i).M-1 loop
             if raddr_word = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then
-              rdata_reg <= pi_regs(i+j*C_REGISTER_INFO(i).M+k);
+              rdata_reg <= pi_regs(C_REGISTER_INFO(i).base+j*C_REGISTER_INFO(i).M+k);
             end if;
           end loop;
         end loop;
@@ -223,7 +223,7 @@ begin
             for k in 0 to C_REGISTER_INFO(i).M-1 loop
               if waddr_word = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then
                 report "Writing address " & integer'image(C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k) severity note;
-                po_stb(i+j*C_REGISTER_INFO(i).M+k) <= '1';
+                po_stb(C_REGISTER_INFO(i).base+j*C_REGISTER_INFO(i).M+k) <= '1';
               end if;
             end loop;
           end loop;

@@ -154,8 +154,12 @@ begin
   regs_in.wombat(0,0).bar.data <= X"a5";
   regs_in.wombat(0,0).baz.data <= (others => '0');
 
+  regs_in.wombat(0,1).foo.we <= '1'; -- no HW write access!
   regs_in.wombat(0,1).bar.we <= '1';
-  regs_in.wombat(0,1).bar.data <= X"a5";
+  regs_in.wombat(0,1).baz.we <= '1';
+  regs_in.wombat(0,1).foo.data <= (others => '0'); -- no HW write access!
+  regs_in.wombat(0,1).bar.data <= X"5a";
+  regs_in.wombat(0,1).baz.data <= (others => '0');
 
   regs_in.koala(0,0).hp.data <= x"9876";
   regs_in.koala(0,0).hp.we <= '0';

@@ -47,7 +47,7 @@ architecture arch of top is
   signal adapter_we  : std_logic;
   signal adapter_err : std_logic;
   signal adapter_wdata : std_logic_vector(32-1 downto 0);
-  signal adapter_rdata : t_32BitArray(0 to C_REGISTERS-1);
+  signal adapter_rdata : t_32BitArray(C_REGISTERS-1 downto 0);
 
 begin
   ins_adapter: entity work.adapter_axi4
@@ -120,11 +120,11 @@ begin
                    pi_reset => pi_reset,
 
                    -- to/from adapter
-                   pi_adapter_stb  => adapter_stb(l_r+i*l_reg_info.M+j),
+                   pi_adapter_stb  => adapter_stb(l_reg_info.base+i*l_reg_info.M+j),
                    pi_adapter_we   => adapter_we,
                    po_adapter_err  => adapter_err,
                    pi_adapter_data => adapter_wdata,
-                   po_adapter_data => adapter_rdata(l_r+i*l_reg_info.M+j),
+                   po_adapter_data => adapter_rdata(l_reg_info.base+i*l_reg_info.M+j),
 
                    -- to/from our IP
                    pi_logic_incr => l_reg_incr,
@@ -172,11 +172,11 @@ begin
                    pi_reset => pi_reset,
 
                    -- to/from adapter
-                   pi_adapter_stb  => adapter_stb(l_r+i*l_reg_info.M+j),
+                   pi_adapter_stb  => adapter_stb(l_reg_info.base+i*l_reg_info.M+j),
                    pi_adapter_we   => adapter_we,
                    po_adapter_err  => adapter_err,
                    pi_adapter_data => adapter_wdata,
-                   po_adapter_data => adapter_rdata(l_r+i*l_reg_info.M+j),
+                   po_adapter_data => adapter_rdata(l_reg_info.base+i*l_reg_info.M+j),
 
                    -- to/from our IP
                    pi_logic_incr => l_reg_incr,

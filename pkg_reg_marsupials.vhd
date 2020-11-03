@@ -79,6 +79,7 @@ package pkg_reg_marsupials is
 
   type t_reg_info is record
     addr    : integer;
+    base    : integer;
     regtype : t_regtype;
     fields  : t_field_info_arr;
     N       : positive;
@@ -102,8 +103,8 @@ package pkg_reg_marsupials is
   );
 
   constant C_REGISTER_INFO : t_reg_info_array := (
-    0 => (addr => 16, regtype => WOMBAT, fields => C_WOMBAT_INFO, N => 1, M => 2),
-    1 => (addr => 32, regtype => KOALA, fields => C_KOALA_INFO, N => 1, M => 1)
+    0 => (addr => 16, base => 0, regtype => WOMBAT, fields => C_WOMBAT_INFO, N => 1, M => 2),
+    1 => (addr => 32, base => 2, regtype => KOALA, fields => C_KOALA_INFO, N => 1, M => 1)
   );
 
   -----------------------------------------------

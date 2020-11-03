@@ -50,14 +50,14 @@ begin
     wait until nReset = '1' ;  
     ClearAlerts ;
 
-    MasterReadCheck(AxiSuperTransRec, X"0010", X"FFFF_FFFF"); -- should be default values before any writes
-    MasterWrite(    AxiSuperTransRec, X"0010", X"FEED_BEEF");
+    MasterReadCheck(AxiSuperTransRec, X"0010", X"FFFF_A5FF"); -- should be default values before any writes
+    MasterWrite(    AxiSuperTransRec, X"0010", X"5555_BEEF"); -- bits 15-8 can't be written by software
     WaitForClock(   AxiSuperTransRec, 2);
-    MasterReadCheck(AxiSuperTransRec, X"0010", X"FEED_FFEF");
+    MasterReadCheck(AxiSuperTransRec, X"0010", X"5555_A5EF");
 
     -- wombat(0,1)
     WaitForClock(   AxiSuperTransRec, 2);
-    MasterReadCheck(AxiSuperTransRec, X"0014", X"FFFF_a5FF");
+    MasterReadCheck(AxiSuperTransRec, X"0014", X"FFFF_5A00"); -- HW shouldn't have changed bits 31:16
 
     -- koala(0,0)
     WaitForClock(   AxiSuperTransRec, 2);
