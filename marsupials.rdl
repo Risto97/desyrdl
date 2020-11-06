@@ -1,0 +1,17 @@
+addrmap marsupials {
+  reg wombat {
+    field {sw=rw; hw=r;}      foo[31:16];
+    field {sw=r;  hw=rw; we;} bar[15:8];
+    field {sw=rw; hw=rw; we;} baz[7:0];
+  };
+
+  reg koala {
+    field {sw=rw; hw=r;}      hp[31:16];
+    field {sw=r;  hw=rw; we;} mana[15:0];
+  } ;
+
+  wombat wbts[2][3];
+  koala  kls;
+};
+
+
