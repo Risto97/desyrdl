@@ -72,6 +72,11 @@ package pkg_reg_marsupials is
   -- must be calculated by register tool
   constant C_REGNAMES  : integer := 2;
   constant C_REGISTERS : integer := 3;
+  constant C_MEMORIES : integer := 2;
+  constant C_MEM_INTERNAL : T_IntegerArray(C_MEMORIES-1 downto 0) := (1, 1);
+  constant C_MEM_AW : T_IntegerArray(C_MEMORIES-1 downto 0) := (4, 6); -- wrt 32 bit addr
+  -- The two numbers below must both be a multiple of 4 (for 32 bit addresses)
+  constant C_MEM_START : T_IntegerArray(C_MEMORIES-1 downto 0) := (128, 1024); -- 0x80, 0x400
 
   -- register types
 

@@ -63,6 +63,13 @@ begin
     WaitForClock(   AxiSuperTransRec, 2);
     MasterReadCheck(AxiSuperTransRec, X"0020", X"FFFF_3456");
 
+    -- read from memory 1 and 2
+    MasterReadCheck(AxiSuperTransRec, X"0080", X"0000_0000");
+    WaitForClock(   AxiSuperTransRec, 2);
+    MasterReadCheck(AxiSuperTransRec, X"04ff", X"0000_0000");
+    WaitForClock(   AxiSuperTransRec, 2);
+    MasterReadCheck(AxiSuperTransRec, X"03ff", X"0000_0000");
+
     -- Wait for test to finish
     WaitForBarrier(TestDone, 35 ms) ;
     AlertIf(now >= 35 ms, "Test finished due to timeout") ;

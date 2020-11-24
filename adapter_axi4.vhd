@@ -57,11 +57,16 @@ end entity adapter_axi4;
 architecture arch of adapter_axi4 is
 
   -- read
-  type t_state_read is (sReadIdle, sReadValid);
+  type t_state_read is (sReadIdle, sReadSelect, sReadValid);
   signal state_read : t_state_read;
 
   signal rdata_reg : std_logic_vector(31 downto 0);
+  signal rdata_reg_q : std_logic_vector(31 downto 0);
+  signal rdata_mem : t_32BitArray(C_MEMORIES-1 downto 0);
+  signal raddr_mem : unsigned(G_ADDR_W-2-1 downto 0);
   signal raddr_word : integer;
+
+  signal raddr_is_reg : std_logic;
 
   signal arready_wire : std_logic;
   signal rvalid_wire : std_logic;
@@ -73,6 +78,7 @@ architecture arch of adapter_axi4 is
 
   signal waddr_reg : std_logic_vector(G_ADDR_W-1 downto 0);
   signal wdata_reg : std_logic_vector(31 downto 0);
+  signal wdata_mem : std_logic_vector(31 downto 0);
 
   signal waddr_word : integer;
 
@@ -80,7 +86,18 @@ architecture arch of adapter_axi4 is
   signal wready_wire : std_logic;
   signal bvalid_wire : std_logic;
 
+  -- memories
+  signal mem_ren : std_logic_vector(C_MEMORIES-1 downto 0);
+  signal mem_sel : integer := 0;
+  signal mem_waddr : integer := 0;
+
 begin
+
+  -- ### read logic
+
+  -- 0. sReadIdle
+  -- 1. -> ARVALID signals a new address to be read --> sReadValid
+  -- 2. -> RREADY  signals that the master is ready to receive data --> sReadIdle
 
   proc_state_read: process (clk)
   begin
@@ -91,8 +108,10 @@ begin
         case state_read is
           when sReadIdle =>
             if S_AXI_ARVALID = '1' then
-              state_read <= sReadValid;
+              state_read <= sReadSelect;
             end if;
+          when sReadSelect =>
+            state_read <= sReadValid;
           when sReadValid =>
             if S_AXI_RREADY = '1' then
               state_read <= sReadIdle;
@@ -103,10 +122,9 @@ begin
   end process;
 
   raddr_word <= to_integer(unsigned(S_AXI_ARADDR(G_ADDR_W-1 downto 2)));
+  raddr_mem <= unsigned(S_AXI_ARADDR(G_ADDR_W-1 downto 2));
 
-
-  -- ### read logic
-
+  -- registers
   proc_rdata_reg: process (clk)
   begin
     if rising_edge(clk) then
@@ -122,22 +140,41 @@ begin
         end loop;
       end loop;
 
+    end if;
+  end process;
 
-      -- TODO have proper address decoding so a range of addresses reaches
-      -- the appropriate memory. The lower bits will be used for the DPM
-      -- address input.
+  -- memories
 
-      -- TODO multiplex the read data accordingly
+  -- select register or memory
+  proc_rdata_sel: process (clk)
+    variable v_mem_idx : integer;
+  begin
+    if rising_edge(clk) then
+      if reset = '1' then
+        raddr_is_reg <= '1';
+        mem_ren <= (others => '0');
+        mem_sel <= 0;
+      else
+        -- default: read from a register. Override when the address belongs
+        -- to a memory region.
+        raddr_is_reg <= '1';
+        mem_sel <= 0;
 
-      -- TODO enter a state machine to read. Data is available only one clock
-      -- after setting the address.
---      for base,width in C_DPM_ARRAY loop
---        if raddr_word(32-1 downto width) = base(32-1 downto width) then
---          po_dpm(idx).ena  <= '1';
---          po_dpm(idx).wr   <= '0';
---          po_dpm(idx).addr <= raddr_word(width-1 downto 0);
---        end if;
---      end loop;
+        for i in C_MEMORIES-1 downto 0 loop
+          -- TODO optimize. Also see:
+          -- https://zipcpu.com/blog/2019/07/17/crossbar.html#examining-the-arbitration-code
+          if raddr_word-C_MEM_START(i)/4 >= 0 and raddr_word-(C_MEM_START(i)/4+2**C_MEM_AW(i)) < 0 then
+            raddr_is_reg <= '0';
+            mem_ren(i) <= '1';
+            mem_sel <= i;
+          else
+            mem_ren(i) <= '0';
+          end if;
+        end loop;
+
+        rdata_reg_q <= rdata_reg;
+      end if;
+
     end if;
   end process;
 
@@ -158,11 +195,40 @@ begin
 
   S_AXI_ARREADY <= arready_wire;
   S_AXI_RVALID <= rvalid_wire;
-  S_AXI_RDATA <= rdata_reg;
+  S_AXI_RDATA <= rdata_reg_q when raddr_is_reg = '1' else rdata_mem(mem_sel);
   S_AXI_RRESP <= "00";
 
+  -- Dual-port memories
+  gen_memories : for i in C_MEMORIES-1 downto 0 generate
+    gen_internal : if C_MEM_INTERNAL(i) = 1 generate
+      signal l_mem_addr : unsigned(C_MEM_AW(i)-1 downto 0);
+    begin
+      -- TODO handle write address
+      l_mem_addr <= raddr_mem(C_MEM_AW(i)-1 downto 0);
+      ins_memory : entity work.dual_port_memory
+      generic map (
+        G_DATA_WIDTH => 32,
+        G_ADDR_WIDTH => C_MEM_AW(i)
+      )
+      port map (
+        pi_clk_a  => clk,
+        pi_ena_a  => mem_ren(i),
+        pi_wr_a   => '0',
+        pi_addr_a => std_logic_vector(l_mem_addr),
+        pi_data_a => wdata_mem,
+        po_data_a => rdata_mem(i),
 
-  -- this is all write logic
+        pi_clk_b  => clk,
+        pi_ena_b  => '1',
+        pi_wr_b   => '0',
+        pi_addr_b => (others => '0'),
+        pi_data_b => (others => '0'),
+        po_data_b => open
+      );
+    end generate;
+  end generate;
+
+  -- ### write logic
   proc_state_write_prev: process (clk) begin
     if rising_edge(clk) then
       state_write_prev <= state_write;
@@ -197,6 +263,7 @@ begin
               state_write <= sWriteResp;
               waddr_reg <= S_AXI_AWADDR;
             end if;
+          -- new select state
           when sWriteResp =>
             if S_AXI_BREADY = '1' then
               state_write <= sWriteIdle;
@@ -212,17 +279,11 @@ begin
   proc_write: process (clk) begin
     if rising_edge(clk) then
 
-    -- default (pulse)
-    -- TODO
-
-    -- default (swmod)
-
       if state_write = sWriteResp and state_write_prev /= sWriteResp then
         for i in C_REGISTER_INFO'range loop
           for j in 0 to C_REGISTER_INFO(i).N-1 loop
             for k in 0 to C_REGISTER_INFO(i).M-1 loop
               if waddr_word = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then
-                report "Writing address " & integer'image(C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k) severity note;
                 po_stb(C_REGISTER_INFO(i).base+j*C_REGISTER_INFO(i).M+k) <= '1';
               end if;
             end loop;
