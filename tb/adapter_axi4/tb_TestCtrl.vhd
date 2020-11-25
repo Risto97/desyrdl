@@ -68,7 +68,16 @@ begin
     WaitForClock(   AxiSuperTransRec, 2);
     MasterReadCheck(AxiSuperTransRec, X"04ff", X"0000_0000");
     WaitForClock(   AxiSuperTransRec, 2);
-    MasterReadCheck(AxiSuperTransRec, X"03ff", X"0000_0000");
+
+    -- write to memory 2
+    MasterWrite(    AxiSuperTransRec, X"0400", X"A5A5_F0F0");
+    WaitForClock(   AxiSuperTransRec, 2);
+
+    -- Read and write simultaneously. Expected: read, then write.
+    -- WARNING: this doesn't actually cause simultaneous requests on the
+    -- read and write channels.
+    MasterWrite(    AxiSuperTransRec, X"0400", X"5A5A_0F0F");
+    MasterReadCheck(AxiSuperTransRec, X"0400", X"5A5A_0F0F"); -- would fail but doesn't
 
     -- Wait for test to finish
     WaitForBarrier(TestDone, 35 ms) ;
