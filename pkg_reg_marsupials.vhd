@@ -46,34 +46,29 @@ package pkg_reg_marsupials is
     swmod : std_logic;
   end record;
 
+  constant C_ADDR_W : integer := 16;
+
+  type t_mem_in is record
+    ena  : std_logic;
+    wr   : std_logic;
+    addr : std_logic_vector(C_ADDR_W-2-1 downto 0);
+    data : std_logic_vector(32-1 downto 0);
+  end record t_mem_in;
+  type t_mem_in_arr is array (natural range <>) of t_mem_in;
+
+  subtype t_mem_out is std_logic_vector(32-1 downto 0);
+  type t_mem_out_arr is array (natural range <>) of t_mem_out;
+
   -----------------------------------------------
   -- below: per regfile / module !
   -----------------------------------------------
-
-  constant C_ADDR_W : integer := 8;
-
---  type t_dpm_list is record
---    base_array : t_IntegerArray(0 to C_MEMORIES-1);
---    width_array : t_IntegerArray(0 to C_MEMORIES-1);
---  end record t_dpm_list;
---
---  constant C_DPM_ARRAY : t_dpm_list := (
---    (C_ADDR_AREA_SIN, C_ADDR_AREA_COS),
---    (C_WIDTH_AREA_SIN, C_WIDTH_AREA_COS)
---  );
---
---  type t_dpm_array_i is record
---    ena  : std_logic;
---    wr   : std_logic;
---    addr : std_logic_vector(C_ADDR_W-1 downto 0);
---    data : std_logic_vector(32-1 downto 0);
---  end record t_dpm_array;
 
   -- must be calculated by register tool
   constant C_REGNAMES  : integer := 2;
   constant C_REGISTERS : integer := 3;
   constant C_MEMORIES : integer := 2;
   constant C_MEM_INTERNAL : T_IntegerArray(C_MEMORIES-1 downto 0) := (1, 1);
+  -- memory address width must be less than or equal to C_ADDR_W-2
   constant C_MEM_AW : T_IntegerArray(C_MEMORIES-1 downto 0) := (4, 6); -- wrt 32 bit addr
   -- The two numbers below must both be a multiple of 4 (for 32 bit addresses)
   constant C_MEM_START : T_IntegerArray(C_MEMORIES-1 downto 0) := (128, 1024); -- 0x80, 0x400
@@ -160,11 +155,15 @@ package pkg_reg_marsupials is
   type t_registers_marsupials_in is record
     wombat : t_reg_wombat_3d_in(0 to C_REGISTER_INFO(0).N-1, 0 to C_REGISTER_INFO(0).M-1);
     koala  : t_reg_koala_3d_in(0 to C_REGISTER_INFO(1).N-1, 0 to C_REGISTER_INFO(1).M-1);
+    kanga  : t_mem_in;
+    roo    : t_mem_in;
   end record;
 
   type t_registers_marsupials_out is record
     wombat : t_reg_wombat_3d_out(0 to C_REGISTER_INFO(0).N-1, 0 to C_REGISTER_INFO(0).M-1);
     koala  : t_reg_koala_3d_out(0 to C_REGISTER_INFO(1).N-1, 0 to C_REGISTER_INFO(1).M-1);
+    kanga  : t_mem_out;
+    roo    : t_mem_out;
   end record;
 
   -----------------------------------------------

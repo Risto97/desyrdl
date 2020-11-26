@@ -1,6 +1,5 @@
 onerror {resume}
 quietly WaveActivateNextPane {} 0
-add wave -noupdate /tb_top/ins_top/G_ADDR_W
 add wave -noupdate /tb_top/ins_top/pi_clk
 add wave -noupdate /tb_top/ins_top/pi_reset
 add wave -noupdate /tb_top/ins_top/S_AXI_AWADDR

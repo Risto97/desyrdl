@@ -7,16 +7,12 @@ use work.pkg_types.all;
 use work.pkg_reg_marsupials.all; -- maybe rename to sth like pkg_axi4_<foocomponent>
 
 entity top is
-  generic(
-    --g_adapter_id : integer; -- something like C_ADAPTER_LLRF_FD;
-    G_ADDR_W : integer := 8
-  );
   port (
     pi_clk           : in std_logic;
     pi_reset         : in std_logic;
 
     -- AXI4
-    S_AXI_AWADDR  : in std_logic_vector(G_ADDR_W-1 downto 0);
+    S_AXI_AWADDR  : in std_logic_vector(C_ADDR_W-1 downto 0);
     S_AXI_AWPROT  : in std_logic_vector(2 downto 0);
     S_AXI_AWVALID : in std_logic;
     S_AXI_AWREADY : out std_logic;
@@ -27,7 +23,7 @@ entity top is
     S_AXI_BRESP   : out std_logic_vector(1 downto 0);
     S_AXI_BVALID  : out std_logic;
     S_AXI_BREADY  : in std_logic;
-    S_AXI_ARADDR  : in std_logic_vector(G_ADDR_W-1 downto 0);
+    S_AXI_ARADDR  : in std_logic_vector(C_ADDR_W-1 downto 0);
     S_AXI_ARPROT  : in std_logic_vector(2 downto 0);
     S_AXI_ARVALID : in std_logic;
     S_AXI_ARREADY : out std_logic;
@@ -49,10 +45,13 @@ architecture arch of top is
   signal adapter_wdata : std_logic_vector(32-1 downto 0);
   signal adapter_rdata : t_32BitArray(C_REGISTERS-1 downto 0);
 
+  signal adapter_mem_out : t_mem_out_arr(C_MEMORIES-1 downto 0);
+  signal adapter_mem_in : t_mem_in_arr(C_MEMORIES-1 downto 0);
+
 begin
   ins_adapter: entity work.adapter_axi4
   generic map (
-                G_ADDR_W    => G_ADDR_W,
+                G_ADDR_W    => C_ADDR_W,
                 G_REGISTERS => C_REGISTERS
               )
   port map (
@@ -63,6 +62,10 @@ begin
              po_data       => adapter_wdata,
              clk           => pi_clk,
              reset         => pi_reset,
+
+             po_mem        => adapter_mem_in,
+             pi_mem        => adapter_mem_out,
+
              S_AXI_AWADDR  => S_AXI_AWADDR,
              S_AXI_AWPROT  => S_AXI_AWPROT,
              S_AXI_AWVALID => S_AXI_AWVALID,
@@ -85,6 +88,59 @@ begin
            );
 
   -- duplicated blocks below
+
+  -- memory instances
+
+  blk_mem0_kanga : block
+    constant l_idx : integer := 0;
+  begin
+    ins_memory : entity work.dual_port_memory
+    generic map (
+      G_DATA_WIDTH => 32,
+      G_ADDR_WIDTH => C_MEM_AW(l_idx)
+    )
+    port map (
+      pi_clk_a  => pi_clk,
+      pi_ena_a  => adapter_mem_in(l_idx).ena,
+      pi_wr_a   => adapter_mem_in(l_idx).wr,
+      pi_addr_a => adapter_mem_in(l_idx).addr(C_MEM_AW(l_idx)-1 downto 0),
+      pi_data_a => adapter_mem_in(l_idx).data,
+      po_data_a => adapter_mem_out(l_idx),
+
+      pi_clk_b  => pi_clk,
+      pi_ena_b  => pi_logic_regs.kanga.ena,
+      pi_wr_b   => pi_logic_regs.kanga.wr,
+      pi_addr_b => pi_logic_regs.kanga.addr(C_MEM_AW(l_idx)-1 downto 0),
+      pi_data_b => pi_logic_regs.kanga.data,
+      po_data_b => po_logic_regs.kanga
+    );
+  end block;
+
+  blk_mem1_roo : block
+    constant l_idx : integer := 1;
+  begin
+    ins_memory : entity work.dual_port_memory
+    generic map (
+      G_DATA_WIDTH => 32,
+      G_ADDR_WIDTH => C_MEM_AW(l_idx)
+    )
+    port map (
+      pi_clk_a  => pi_clk,
+      pi_ena_a  => adapter_mem_in(l_idx).ena,
+      pi_wr_a   => adapter_mem_in(l_idx).wr,
+      pi_addr_a => adapter_mem_in(l_idx).addr(C_MEM_AW(l_idx)-1 downto 0),
+      pi_data_a => adapter_mem_in(l_idx).data,
+      po_data_a => adapter_mem_out(l_idx),
+
+      pi_clk_b  => pi_clk,
+      pi_ena_b  => pi_logic_regs.roo.ena,
+      pi_wr_b   => pi_logic_regs.roo.wr,
+      pi_addr_b => pi_logic_regs.roo.addr(C_MEM_AW(l_idx)-1 downto 0),
+      pi_data_b => pi_logic_regs.roo.data,
+      po_data_b => po_logic_regs.roo
+    );
+  end block;
+
   -- index 0 regname wombat
   blk_0_wombat : block
     constant l_r : integer := 0;

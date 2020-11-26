@@ -26,8 +26,8 @@ entity adapter_axi4 is
     po_we   : out std_logic;
     po_data : out std_logic_vector(32-1 downto 0);
 
-    --pi_dpm : in t_dpm_array_i(G_MEMORIES-1 downto 0);
-    --po_dpm : in t_dpm_array_o(G_MEMORIES-1 downto 0);
+    pi_mem : in t_mem_out_arr(C_MEMORIES-1 downto 0);
+    po_mem : out t_mem_in_arr(C_MEMORIES-1 downto 0);
 
     clk           : in std_logic;
     reset         : in std_logic;
@@ -136,6 +136,7 @@ begin
             end if;
         end case;
 
+        -- for selecting the read data during sReadValid
         raddr_is_reg_q <= raddr_is_reg;
         mem_rsel_q <= mem_rsel;
         mem_rack_q <= mem_rack;
@@ -195,19 +196,13 @@ begin
 
   -- Data from either register or memory only becomes available for sReadValid
   -- and must therefore be multiplexed combinatorically at the output.
-  proc_read_sel_out: process(state_read, rdata_reg, rdata_mem, raddr_is_reg_q, mem_rack_q, mem_rsel_q)
+  proc_read_sel_out: process(rdata_reg, rdata_mem, raddr_is_reg_q, mem_rack_q, mem_rsel_q)
   begin
-    -- TODO drop case statement, not needed?
-    case state_read is
-      when sReadValid =>
-        if raddr_is_reg_q = '1' then
-          rdata_out <= rdata_reg;
-        elsif mem_rack_q(mem_rsel_q) = '1' then
-          rdata_out <= rdata_mem(mem_rsel_q);
-        end if;
-      when others =>
-        null;
-    end case;
+    if raddr_is_reg_q = '1' then
+      rdata_out <= rdata_reg;
+    elsif mem_rack_q(mem_rsel_q) = '1' then
+      rdata_out <= rdata_mem(mem_rsel_q);
+    end if;
   end process;
 
   proc_read_output: process (state_read)
@@ -278,27 +273,12 @@ begin
         end case;
       end process;
 
-      -- TODO handle write address
-      ins_memory : entity work.dual_port_memory
-      generic map (
-        G_DATA_WIDTH => 32,
-        G_ADDR_WIDTH => C_MEM_AW(i)
-      )
-      port map (
-        pi_clk_a  => clk,
-        pi_ena_a  => l_ena,
-        pi_wr_a   => l_wr,
-        pi_addr_a => std_logic_vector(l_mem_addr),
-        pi_data_a => wdata_q,
-        po_data_a => rdata_mem(i),
+      po_mem(i).ena <= l_ena;
+      po_mem(i).wr <= l_wr;
+      po_mem(i).addr <= std_logic_vector(waddr_mem);
+      po_mem(i).data <= wdata_q;
+      rdata_mem(i) <= pi_mem(i);
 
-        pi_clk_b  => clk,
-        pi_ena_b  => '1',
-        pi_wr_b   => '0',
-        pi_addr_b => (others => '0'),
-        pi_data_b => (others => '0'),
-        po_data_b => open
-      );
     end generate;
   end generate;
 
