@@ -46,40 +46,43 @@ package pkg_reg_<modname> is
     swmod : std_logic;
   end record;
 
+  constant C_ADDR_W : integer := 16;
+
+  type t_mem_in is record
+    ena  : std_logic;
+    wr   : std_logic;
+    addr : std_logic_vector(C_ADDR_W-2-1 downto 0);
+    data : std_logic_vector(32-1 downto 0);
+  end record t_mem_in;
+  type t_mem_in_arr is array (natural range <>) of t_mem_in;
+
+  subtype t_mem_out is std_logic_vector(32-1 downto 0);
+  type t_mem_out_arr is array (natural range <>) of t_mem_out;
+
   -----------------------------------------------
   -- below: per regfile / module !
   -----------------------------------------------
 
-  constant C_ADDR_W : integer := 8;
-
---  type t_dpm_list is record
---    base_array : t_IntegerArray(0 to C_MEMORIES-1);
---    width_array : t_IntegerArray(0 to C_MEMORIES-1);
---  end record t_dpm_list;
---
---  constant C_DPM_ARRAY : t_dpm_list := (
---    (C_ADDR_AREA_SIN, C_ADDR_AREA_COS),
---    (C_WIDTH_AREA_SIN, C_WIDTH_AREA_COS)
---  );
---
---  type t_dpm_array_i is record
---    ena  : std_logic;
---    wr   : std_logic;
---    addr : std_logic_vector(C_ADDR_W-1 downto 0);
---    data : std_logic_vector(32-1 downto 0);
---  end record t_dpm_array;
-
   -- must be calculated by register tool
   constant C_REGNAMES  : integer := <regname_count>;
   constant C_REGISTERS : integer := <reg_count>;
+  constant C_MEMORIES : integer := <mem_count>;
+  constant C_MEM_INTERNAL : T_IntegerArray(C_MEMORIES-1 downto 0) := (1, 1);
+  -- memory address width must be less than or equal to C_ADDR_W-2
+  constant C_MEM_AW : T_IntegerArray(C_MEMORIES-1 downto 0) := (
+    -- BEGIN duplicate for each mem
+    <mem_aw>
+    -- END duplicate for each mem
+  );
+  -- The two numbers below must both be a multiple of 4 (for 32 bit addresses)
+  constant C_MEM_START : T_IntegerArray(C_MEMORIES-1 downto 0) := (128, 1024); -- 0x80, 0x400
 
   -- register types
 
   type t_regtype is (
     -- BEGIN duplicate for each regtype
-    <regtype>,
+    <regtype>
     -- END duplicate for each regtype
-    DUMMY -- just for having no comma at the end here..
   );
 
   type t_reg_info is record
@@ -134,13 +137,20 @@ package pkg_reg_<modname> is
   -----------------------------------------------
   -- module I/O types: <modname>
   -----------------------------------------------
+  -- TODO generate external interface if that attribute is set
   type t_registers_<modname>_in is record
+    -- BEGIN duplicate for each mem
+    <mem>     : t_mem_in;
+    -- END duplicate for each mem
     -- BEGIN duplicate for each regname
     <regname> : t_reg_<regtype>_3d_in(0 to C_REGISTER_INFO(<i>).N-1, 0 to C_REGISTER_INFO(<i>).M-1);
     -- END duplicate for each regname
   end record;
 
   type t_registers_<modname>_out is record
+    -- BEGIN duplicate for each mem
+    <mem>     : t_mem_out;
+    -- END duplicate for each mem
     -- BEGIN duplicate for each regname
     <regname> : t_reg_<regtype>_3d_out(0 to C_REGISTER_INFO(<i>).N-1, 0 to C_REGISTER_INFO(<i>).M-1);
     -- END duplicate for each regname
