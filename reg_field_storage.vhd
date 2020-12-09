@@ -92,7 +92,15 @@ begin
   end generate;
 
   -- check for read access properties when assigning data outputs
-  po_hw_data <= field_reg when g_info.hw_access(1) = '1' else (others => '0');
-  po_sw_data <= field_reg when g_info.sw_access(1) = '1' else (others => '0');
+  with g_info.hw_access select po_hw_data <=
+    field_reg       when C_R,
+    field_reg       when C_RW,
+    field_reg       when C_RW1,
+    (others => '0') when others;
+  with g_info.sw_access select po_sw_data <=
+    field_reg       when C_R,
+    field_reg       when C_RW,
+    field_reg       when C_RW1,
+    (others => '0') when others;
 
 end architecture;

@@ -13,6 +13,13 @@ package pkg_reg_marsupials is
 
   --type t_field_access is (R, W, RW, NA);
   subtype t_field_access is std_logic_vector(1 downto 0);
+  constant C_RW  : integer := 2;
+  constant C_RW1 : integer := 5;
+  constant C_R   : integer := 3;
+  constant C_W   : integer := 4;
+  constant C_W1  : integer := 6;
+  constant C_NA  : integer := 1;
+
   constant C_RW : std_logic_vector(1 downto 0) := "11";
   constant C_R  : std_logic_vector(1 downto 0) := "10";
   constant C_W  : std_logic_vector(1 downto 0) := "01";
