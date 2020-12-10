@@ -1,0 +1,8 @@
+// top level RDL file, either a higher-order IP inside a hierarchy or the board top
+addrmap top {
+	name = "Address map of the higher-level component, maybe LLRF Field Detection";
+
+	iq_slide iq;
+	marsupials mars;
+};
+
