@@ -5,18 +5,20 @@ use ieee.numeric_std.all;
 library work;
 use work.pkg_types.all;
 
-package pkg_reg_<modname> is
+package pkg_reg_{modname} is
 
   -----------------------------------------------
   -- below: common declarations
   -----------------------------------------------
 
   --type t_field_access is (R, W, RW, NA);
-  subtype t_field_access is std_logic_vector(1 downto 0);
-  constant C_RW : std_logic_vector(1 downto 0) := "11";
-  constant C_R  : std_logic_vector(1 downto 0) := "10";
-  constant C_W  : std_logic_vector(1 downto 0) := "01";
-  constant C_NA : std_logic_vector(1 downto 0) := "00";
+  subtype t_field_access is integer;
+  constant C_RW  : integer := 2;
+  constant C_RW1 : integer := 5;
+  constant C_R   : integer := 3;
+  constant C_W   : integer := 4;
+  constant C_W1  : integer := 6;
+  constant C_NA  : integer := 1;
 
   type t_field_type is (STORAGE, WIRE, COUNTER, INTERRUPT);
 
@@ -64,15 +66,15 @@ package pkg_reg_<modname> is
   -----------------------------------------------
 
   -- must be calculated by register tool
-  constant C_REGNAMES  : integer := <regname_count>;
-  constant C_REGISTERS : integer := <reg_count>;
-  constant C_MEMORIES : integer := <mem_count>;
+  constant C_REGTYPES  : integer := {n_regtypes};
+  constant C_REGISTERS : integer := {n_regnames};
+  constant C_MEMORIES : integer := {n_memnames};
   constant C_MEM_INTERNAL : T_IntegerArray(C_MEMORIES-1 downto 0) := (1, 1);
   -- memory address width must be less than or equal to C_ADDR_W-2
   constant C_MEM_AW : T_IntegerArray(C_MEMORIES-1 downto 0) := (
-    -- BEGIN duplicate for each mem
-    <mem_aw>
-    -- END duplicate for each mem
+    --{memtypes:repeat:memtypes:
+    {{memtype.size}}, --}
+    0 -- dummy
   );
   -- The two numbers below must both be a multiple of 4 (for 32 bit addresses)
   constant C_MEM_START : T_IntegerArray(C_MEMORIES-1 downto 0) := (128, 1024); -- 0x80, 0x400
@@ -80,9 +82,9 @@ package pkg_reg_<modname> is
   -- register types
 
   type t_regtype is (
-    -- BEGIN duplicate for each regtype
-    <regtype>
-    -- END duplicate for each regtype
+    --{regtypes:repeat:regtypes:
+    {{regtype.type_name}} --}
+    NONE -- dummy
   );
 
   type t_reg_info is record
@@ -95,137 +97,129 @@ package pkg_reg_<modname> is
   end record;
   -- Maybe better to constrain t_reg_info_array. Vivado shows weird indices when unconstrained.
   -- Must be the number of distinct register names, not one for each 2D/3D array element!
-  type t_reg_info_array is array (0 to C_REGNAMES-1) of t_reg_info;
+  type t_reg_info_array is array (0 to C_REGTYPES-1) of t_reg_info;
 
-  -- BEGIN duplicate for each regtype
-  constant C_<REGTYPE>_INFO : t_field_info_arr := (
-    -- BEGIN duplicate for each field of <regtype>
-    <i> => (ftype => <ftype>, len => <len>, upper => <upper>, lower => <lower>, hw_we => <hw_we>, sw_access => <sw_access>, hw_access => <hw_access>,  def_val => <def_val>), -- <field>
-    -- END duplicate for each field
+  --{regtypes:repeat:regtypes:
+  constant C_{{regtype.type_name}}_INFO : t_field_info_arr := (
+    --{{regtype:repeat:fields:
+    {{{{i}}}} => (ftype => {{{{field:ftype}}}}, len => {{{{field.width}}}}, upper => {{{{field.high}}}}, lower => {{{{field.low}}}}, hw_we => {{{{hw_we}}}}, sw_access => {{{{sw_access}}}}, hw_access => {{{{hw_access}}}},  def_val => {{{{reset}}}}), -- {{{{field.inst_name}}}} --}}
     others => C_FIELD_NONE
   );
-  -- END duplicate for each regtype
+
+  --}
 
   constant C_REGISTER_INFO : t_reg_info_array := (
-    -- BEGIN duplicate for each regname
-    <i> => (addr => <addr>, base => <base>, regtype => <REGTYPE>, fields => C_<REGTYPE>_INFO, N => <N>, M => <M>),
-    -- END duplicate for each regname
+    --{regnames:repeat:regnames:
+    {{i}} => (addr => {{reg.address_offset}}, base => {{i}}, regtype => {{reg.type_name}}, fields => C_{{reg.type_name}}_INFO, N => {{N}}, M => {{M}}), --}
+    -- TODO place dummy
   );
 
-  -- BEGIN duplicate for each regtype
+  --{regtypes:repeat:regtypes:
   -----------------------------------------------
-  -- register type: <regtype>
+  -- register type: {{regtype.type_name}}
   -----------------------------------------------
   -- contains up to 32 data bits plus the other signals (we, incr, ..)
-  type t_reg_<regtype>_in is record
+  type t_reg_{{regtype.type_name}}_in is record
     -- fields
-    -- BEGIN duplicate for each field of <regtype>
-    <field> : t_field_signals_in(data(C_<REGTYPE>_INFO(<i>).len-1 downto 0));
-    -- END duplicate for each field
+    --{{regtype:repeat:fields:
+    {{{{field.type_name}}}} : t_field_signals_in(data(C_{{{{field.parent.type_name}}}}_INFO({{{{i}}}}).len-1 downto 0)); --}}
   end record;
-  type t_reg_<regtype>_3d_in is array (integer range <>, integer range <>) of t_reg_<regtype>_in;
+  type t_reg_{{regtype.type_name}}_3d_in is array (integer range <>, integer range <>) of t_reg_{{regtype.type_name}}_in;
 
-  type t_reg_<regtype>_out is record
+  type t_reg_{{regtype.type_name}}_out is record
     -- fields
-    -- BEGIN duplicate for each field of <regtype>
-    <field> : t_field_signals_out(data(C_<REGTYPE>_INFO(<i>).len-1 downto 0));
-    -- END duplicate for each field
+    --{{regtype:repeat:fields:
+    {{{{field.type_name}}}} : t_field_signals_out(data(C_{{{{field.parent.type_name}}}}_INFO({{{{i}}}}).len-1 downto 0)); --}}
   end record;
-  type t_reg_<regtype>_3d_out is array (integer range <>, integer range <>) of t_reg_<regtype>_out;
-  -- END duplicate for each regtype
+  type t_reg_{{regtype.type_name}}_3d_out is array (integer range <>, integer range <>) of t_reg_{{regtype.type_name}}_out;
+
+  --}
 
   -----------------------------------------------
-  -- module I/O types: <modname>
+  -- module I/O types: {modname}
   -----------------------------------------------
   -- TODO generate external interface if that attribute is set
-  type t_registers_<modname>_in is record
-    -- BEGIN duplicate for each mem
-    <mem>     : t_mem_in;
-    -- END duplicate for each mem
-    -- BEGIN duplicate for each regname
-    <regname> : t_reg_<regtype>_3d_in(0 to C_REGISTER_INFO(<i>).N-1, 0 to C_REGISTER_INFO(<i>).M-1);
-    -- END duplicate for each regname
+  type t_registers_{modname}_in is record
+    --{memnames:repeat:memnames:
+    {{mem.inst_name}}     : t_mem_in; --}
+    --{regnames:repeat:regnames:
+    {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_in(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
   end record;
 
-  type t_registers_<modname>_out is record
-    -- BEGIN duplicate for each mem
-    <mem>     : t_mem_out;
-    -- END duplicate for each mem
-    -- BEGIN duplicate for each regname
-    <regname> : t_reg_<regtype>_3d_out(0 to C_REGISTER_INFO(<i>).N-1, 0 to C_REGISTER_INFO(<i>).M-1);
-    -- END duplicate for each regname
+  type t_registers_{modname}_out is record
+    --{memnames:repeat:memnames:
+    {{mem.inst_name}}     : t_mem_out; --}
+    --{regnames:repeat:regnames:
+    {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_out(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
   end record;
 
-  -- BEGIN duplicate for each regtype
+  --{regtypes:repeat:regtypes:
   -----------------------------------------------
-  -- register type functions: <regtype>
+  -- register type functions: {{regtype.type_name}}
   -----------------------------------------------
-  function fun_slv_to_<regtype> (slv : std_logic_vector(32-1 downto 0)) return t_reg_<regtype>_out;
-  function fun_<regtype>_to_data (reg : t_reg_<regtype>_in) return std_logic_vector;
-  function fun_<regtype>_to_decr (reg : t_reg_<regtype>_in) return std_logic_vector;
-  function fun_<regtype>_to_incr (reg : t_reg_<regtype>_in) return std_logic_vector;
-  function fun_<regtype>_to_we   (reg : t_reg_<regtype>_in) return std_logic_vector;
-  -- END duplicate for each regtype
+  function fun_slv_to_{{regtype.type_name}} (slv : std_logic_vector(32-1 downto 0)) return t_reg_{{regtype.type_name}}_out;
+  function fun_{{regtype.type_name}}_to_data (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector;
+  function fun_{{regtype.type_name}}_to_decr (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector;
+  function fun_{{regtype.type_name}}_to_incr (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector;
+  function fun_{{regtype.type_name}}_to_we   (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector;
+  --}
 
-end package pkg_reg_<modname>;
+end package pkg_reg_{modname};
 
-package body pkg_reg_<modname> is
+package body pkg_reg_{modname} is
 
-  -- BEGIN duplicate for each regtype
+  --{regtypes:repeat:regtypes:
   -----------------------------------------------
-  -- register type: <regtype>
+  -- register type: {{regtype.type_name}}
   -----------------------------------------------
   -- unpack
-  function fun_slv_to_<regtype> (slv : std_logic_vector(32-1 downto 0)) return t_reg_<regtype>_out is
-    variable v_tmp : t_reg_<regtype>_out;
+  function fun_slv_to_{{regtype.type_name}} (slv : std_logic_vector(32-1 downto 0)) return t_reg_{{regtype.type_name}}_out is
+    variable v_tmp : t_reg_{{regtype.type_name}}_out;
   begin
-    -- BEGIN duplicate for each field of <regtype>
-    v_tmp.<field>.data := slv(C_<REGTYPE>_INFO(<i>).upper downto C_<REGTYPE>_INFO(<i>).lower);
-    -- END duplicate for each field
+    --{{regtype:repeat:fields:
+    v_tmp.{{{{field.type_name}}}}.data := slv(C_{{{{field.parent.type_name}}}}_INFO({{{{i}}}}).upper downto C_{{{{field.parent.type_name}}}}_INFO({{{{i}}}}).lower); --}}
 
     return v_tmp;
   end function;
 
   -- pack
-  function fun_<regtype>_to_data (reg : t_reg_<regtype>_in) return std_logic_vector is
+  function fun_{{regtype.type_name}}_to_data (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
-    -- BEGIN duplicate for each field of <regtype>
-    v_tmp(C_<REGTYPE>_INFO(<i>).upper downto C_<REGTYPE>_INFO(<i>).lower) := reg.<field>.data;
-    -- END duplicate for each field
+    --{{regtype:repeat:fields:
+    v_tmp(C_{{{{field.parent.type_name}}}}_INFO({{{{i}}}}).upper downto C_{{{{field.parent.type_name}}}}_INFO({{{{i}}}}).lower) := reg.{{{{field.type_name}}}}.data; --}}
 
     return v_tmp;
   end function;
 
-  function fun_<regtype>_to_decr (reg : t_reg_<regtype>_in) return std_logic_vector is
+  function fun_{{regtype.type_name}}_to_decr (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
-    -- BEGIN duplicate for each field of <regtype>
-    v_tmp(<i>) := reg.<field>.decr ; -- FIXME?
-    -- END duplicate for each field
+    --{{regtype:repeat:fields:
+    v_tmp({{{{i}}}}) := reg.{{{{field.type_name}}}}.decr ; -- FIXME? --}}
 
     return v_tmp;
   end function;
 
-  function fun_<regtype>_to_incr (reg : t_reg_<regtype>_in) return std_logic_vector is
+  function fun_{{regtype.type_name}}_to_incr (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
-    -- BEGIN duplicate for each field of <regtype>
-    v_tmp(<i>) := reg.<field>.incr when C_<REGTYPE>_INFO(<i>).hw_we else '0'; -- FIXME
-    -- END duplicate for each field
+    --{{regtype:repeat:fields:
+    v_tmp({{{{i}}}}) := reg.{{{{field.type_name}}}}.incr when C_{{{{field.parent.type_name}}}}_INFO({{{{i}}}}).hw_we else '0'; -- FIXME --}}
 
     return v_tmp;
   end function;
 
-  function fun_<regtype>_to_we (reg : t_reg_<regtype>_in) return std_logic_vector is
+  function fun_{{regtype.type_name}}_to_we (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
-    -- BEGIN duplicate for each field of <regtype>
-    v_tmp(<i>) := reg.<field>.we when C_<REGTYPE>_INFO(<i>).hw_we else '0';
-    -- END duplicate for each field
+    --{{regtype:repeat:fields:
+    v_tmp({{{{i}}}}) := reg.{{{{field.type_name}}}}.we when C_{{{{field.parent.type_name}}}}_INFO({{{{i}}}}).hw_we else '0'; --}}
 
     return v_tmp;
   end function;
+
+  --}
   -- END duplicate for each regtype
 
 end package body;

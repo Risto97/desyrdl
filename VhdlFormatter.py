@@ -5,7 +5,7 @@ from pathlib import Path # get filenames
 
 from systemrdl import RDLCompileError, RDLCompiler, RDLWalker
 from systemrdl import RDLListener
-from systemrdl.node import RegNode, FieldNode, AddressableNode, AddrmapNode
+from systemrdl.node import RegNode, FieldNode, AddressableNode, AddrmapNode, MemNode, RootNode
 
 
 class VhdlFormatter(string.Formatter):
@@ -30,6 +30,13 @@ class VhdlFormatter(string.Formatter):
                 print("error: can't make out the type of field for {}".format(value.get_path()))
                 return "WIRE"
 
+        if spec == "comma":
+            # value signals if it's the last repetition of a {:repeat:}
+            # TODO not actually implemented in the format() calls
+            if value:
+                return ""
+            else:
+                return ","
 
         if spec.startswith("repeat"):
             # Expects different types for value depending on what to repeat
@@ -45,6 +52,12 @@ class VhdlFormatter(string.Formatter):
                     regtype=regtype,
                     name=regtype.type_name)
                     for regtype in value])
+            if what == "memtypes":
+                return ''.join([self.format(
+                    template,
+                    memtype=memtype,
+                    name=memtype.type_name)
+                    for memtype in value])
             elif what == "fields":
 
                 return ''.join([self.format(
@@ -57,6 +70,27 @@ class VhdlFormatter(string.Formatter):
                     reset=field.get_property("reset"),
                     name=field.type_name)
                     for i,field in enumerate(value.fields())])
+            elif what == "regnames":
+                #print("repeating regnames with RegNodes in ", value, " and template ", template)
+                # value is a list of tuples (i, RegNode)
+                return ''.join([self.format(
+                    template,
+                    i=r[0],
+                    reg=r[1],
+                    # please don't look at the next two lines. On refactoring I will put it in a dict, promise.
+                    N= r[1].array_dimensions[0] if (r[1].is_array and len(r[1].array_dimensions)==2) else 1,
+                    M= r[1].array_dimensions[1] if (r[1].is_array and len(r[1].array_dimensions)==2) else r[1].array_dimensions[0] if (r[1].is_array and len(r[1].array_dimensions)==1) else 1)
+                    for r in value])
+            elif what == "memnames":
+                # for..in..if filters the list comprehension
+                #memnames = [(i,child) for i,child in enumerate(value.descendants()) if isinstance(child, MemNode)]
+                # TODO: use the current node in here instead of filling memnames once for the top node.
+                return ''.join([self.format(
+                    template,
+                    i=m[0],
+                    mem=m[1])
+                    for m in value])
+
             else:
                 return "-- VOID" # this shouldn't happen
         else:
@@ -65,7 +99,7 @@ class VhdlFormatter(string.Formatter):
 
 # create a dictionary of regtypes:
 # - traverse the model
-# - check for tyoe RegNode
+# - check for type RegNode
 # - check type, add to dict if not present
 class RegtypeListener(RDLListener):
 
@@ -74,9 +108,42 @@ class RegtypeListener(RDLListener):
 
     def enter_Component(self, node):
         if isinstance(node, RegNode):
-            #print("Entering RegNode of type {}".format(node.type_name))
             if node.type_name not in self.regtypes:
                 self.regtypes[node.type_name] = node
+
+
+class MemtypeListener(RDLListener):
+
+    def __init__(self, memtypes):
+        self.memtypes = memtypes
+
+    def enter_Component(self, node):
+        if isinstance(node, MemNode):
+            if node.type_name not in self.memtypes:
+                self.memtypes[node.type_name] = node
+
+
+class VhdlListener(RDLListener):
+
+    def __init__(self, memtypes, memnames, regtypes, regnames):
+        self.memtypes = memtypes
+        self.memnames = memnames
+        self.mem_cnt  = 0
+        self.regtypes = regtypes
+        self.regnames = regnames
+        self.reg_cnt  = 0
+
+    def enter_Component(self, node):
+        if isinstance(node, MemNode):
+            if node.type_name not in self.memtypes:
+                self.memtypes[node.type_name] = node
+            self.memnames.append((self.mem_cnt, node))
+            self.mem_cnt += 1
+        if isinstance(node, RegNode):
+            if node.type_name not in self.regtypes:
+                self.regtypes[node.type_name] = node
+            self.regnames.append((self.reg_cnt, node))
+            self.reg_cnt += 1
 
 
 def main():
@@ -92,10 +159,13 @@ def main():
     except RDLCompileError:
         # A compilation error occurred. Exit with error code
         sys.exit(1)
-    top_node = next(root.children())
+    if isinstance(root, RootNode):
+        top_node = root.top
+    else:
+        top_node = root
 
     # no need to unroll arrays since non-homogenous arrays are not supported anyways
-    walker = RDLWalker(unroll=False)
+    walker = RDLWalker(unroll=True)
 
     # currently we're collecting register types for each of the AddrmapNodes,
     # not globally
@@ -110,12 +180,25 @@ def main():
 
     # component type name, either definitive or anonymous: systemrdl.component.Component.type_name
     # The instantiated element is Component.inst_name, right?!
+    regnames = [(i, child) for i,child in enumerate(top_node.descendants()) if isinstance(child, RegNode)]
+    print([regname[1].inst_name for regname in regnames])
+    memnames = [(i, child) for i,child in enumerate(top_node.descendants()) if isinstance(child, MemNode)]
+    print([memname[1].inst_name for memname in memnames])
 
     for node in root.descendants():
         if isinstance(node, AddrmapNode):
             # obtain a dictionary of register types
             regtypes = dict()
-            walker.walk(node, RegtypeListener(regtypes=regtypes))
+            regnames = []
+            memtypes = dict()
+            memnames = []
+            walker.walk(node, VhdlListener(memtypes=memtypes, memnames=memnames, regtypes=regtypes, regnames=regnames))
+
+            # Only get the immediate children. Otherwise a higher-level AddrmapNode would
+            # "see" the arrays of registers/memories below without knowing their addresses.
+            regnames = [(i, child) for i,child in enumerate(node.children(unroll=True)) if isinstance(child, RegNode)]
+            memnames = [(i, child) for i,child in enumerate(node.children(unroll=True)) if isinstance(child, MemNode)]
+
             for tpl in Path('./templates').glob('*.vhd.in'):
                 with tpl.open('r') as f_in:
                     s_in = f_in.read()
@@ -123,7 +206,25 @@ def main():
                 # modname should be unique wthin the top addrmap so the pkg name is unique, too
                 ip_folder_path = ''.join(["modules/", node.type_name, "/hdl"]) # where the user logic lies
                 print("ip_folder_path =", ip_folder_path)
-                hdl = vf.format(s_in, modname=node.get_path_segment(), regtypes=regtypes.values())
+                # what needs to be passed?
+                # modname: name of each IP module
+                # regtypes: list of RegNodes -> type_name only
+                # regnames: longer list of RegNodes -> both type_name, inst_name
+                # memtypes: list of MemNodes -> type_name only
+                # memnames: longer list of MemNodes -> both type_name, inst_name
+
+                # TODO either pass the top_node or a complete dict() similar to Jinja context
+                hdl = vf.format(s_in,
+                        node=node,
+                        modname=node.get_path_segment(),
+                        regtypes=regtypes.values(),
+                        memtypes=memtypes.values(),
+                        regnames=regnames,
+                        memnames=memnames,
+                        n_regtypes=len(regtypes), # sigh..
+                        n_regnames=len(regnames),
+                        n_memtypes=len(memtypes),
+                        n_memnames=len(memnames))
 
                 suffix = "".join(tpl.suffixes) # get the ".vhd.in"
                 out_file = "".join([str(tpl.name).replace(suffix, ""), "_", node.inst_name, ".vhd"])

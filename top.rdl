@@ -2,6 +2,7 @@
 addrmap top {
 	name = "Address map of the higher-level component, maybe LLRF Field Detection";
 
+	llrf_fd_top fd;
 	iq_slide iq;
 	marsupials mars;
 };
