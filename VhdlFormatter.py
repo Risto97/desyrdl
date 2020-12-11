@@ -38,6 +38,12 @@ class VhdlFormatter(string.Formatter):
             else:
                 return ","
 
+        if spec == "upper":
+            return value.upper()
+
+        if spec == "lower":
+            return value.lower()
+
         if spec.startswith("repeat"):
             # Expects different types for value depending on what to repeat
             # alternatives:

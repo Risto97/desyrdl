@@ -102,7 +102,7 @@ package pkg_reg_{modname} is
   constant C_REG_NONE : t_field_info := (0, 0, NONE, (others => C_FIELD_NONE), 1, 1);
 
   --{regtypes:repeat:regtypes:
-  constant C_{{regtype.type_name}}_INFO : t_field_info_arr := (
+  constant C_{{regtype.type_name:upper}}_INFO : t_field_info_arr := (
     --{{regtype:repeat:fields:
     {{{{i}}}} => (ftype => {{{{field:ftype}}}}, len => {{{{field.width}}}}, upper => {{{{field.high}}}}, lower => {{{{field.low}}}}, hw_we => {{{{hw_we}}}}, sw_access => {{{{sw_access}}}}, hw_access => {{{{hw_access}}}},  def_val => {{{{reset}}}}), -- {{{{field.inst_name}}}} --}}
     others => C_FIELD_NONE
@@ -112,7 +112,7 @@ package pkg_reg_{modname} is
 
   constant C_REGISTER_INFO : t_reg_info_array := (
     --{regnames:repeat:regnames:
-    {{i}} => (addr => {{reg.address_offset}}, base => {{i}}, regtype => {{reg.type_name}}, fields => C_{{reg.type_name}}_INFO, N => {{N}}, M => {{M}}), --}
+    {{i}} => (addr => {{reg.address_offset}}, base => {{i}}, regtype => {{reg.type_name}}, fields => C_{{reg.type_name:upper}}_INFO, N => {{N}}, M => {{M}}), --}
     others => C_REG_NONE
   );
 
@@ -124,14 +124,14 @@ package pkg_reg_{modname} is
   type t_reg_{{regtype.type_name}}_in is record
     -- fields
     --{{regtype:repeat:fields:
-    {{{{field.type_name}}}} : t_field_signals_in(data(C_{{{{field.parent.type_name}}}}_INFO({{{{i}}}}).len-1 downto 0)); --}}
+    {{{{field.type_name}}}} : t_field_signals_in(data(C_{{{{field.parent.type_name:upper}}}}_INFO({{{{i}}}}).len-1 downto 0)); --}}
   end record;
   type t_reg_{{regtype.type_name}}_3d_in is array (integer range <>, integer range <>) of t_reg_{{regtype.type_name}}_in;
 
   type t_reg_{{regtype.type_name}}_out is record
     -- fields
     --{{regtype:repeat:fields:
-    {{{{field.type_name}}}} : t_field_signals_out(data(C_{{{{field.parent.type_name}}}}_INFO({{{{i}}}}).len-1 downto 0)); --}}
+    {{{{field.type_name}}}} : t_field_signals_out(data(C_{{{{field.parent.type_name:upper}}}}_INFO({{{{i}}}}).len-1 downto 0)); --}}
   end record;
   type t_reg_{{regtype.type_name}}_3d_out is array (integer range <>, integer range <>) of t_reg_{{regtype.type_name}}_out;
 
@@ -179,7 +179,7 @@ package body pkg_reg_{modname} is
     variable v_tmp : t_reg_{{regtype.type_name}}_out;
   begin
     --{{regtype:repeat:fields:
-    v_tmp.{{{{field.type_name}}}}.data := slv(C_{{{{field.parent.type_name}}}}_INFO({{{{i}}}}).upper downto C_{{{{field.parent.type_name}}}}_INFO({{{{i}}}}).lower); --}}
+    v_tmp.{{{{field.type_name}}}}.data := slv(C_{{{{field.parent.type_name:upper}}}}_INFO({{{{i}}}}).upper downto C_{{{{field.parent.type_name:upper}}}}_INFO({{{{i}}}}).lower); --}}
 
     return v_tmp;
   end function;
@@ -189,7 +189,7 @@ package body pkg_reg_{modname} is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
     --{{regtype:repeat:fields:
-    v_tmp(C_{{{{field.parent.type_name}}}}_INFO({{{{i}}}}).upper downto C_{{{{field.parent.type_name}}}}_INFO({{{{i}}}}).lower) := reg.{{{{field.type_name}}}}.data; --}}
+    v_tmp(C_{{{{field.parent.type_name:upper}}}}_INFO({{{{i}}}}).upper downto C_{{{{field.parent.type_name:upper}}}}_INFO({{{{i}}}}).lower) := reg.{{{{field.type_name}}}}.data; --}}
 
     return v_tmp;
   end function;
@@ -207,7 +207,7 @@ package body pkg_reg_{modname} is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
     --{{regtype:repeat:fields:
-    v_tmp({{{{i}}}}) := reg.{{{{field.type_name}}}}.incr when C_{{{{field.parent.type_name}}}}_INFO({{{{i}}}}).hw_we else '0'; -- FIXME --}}
+    v_tmp({{{{i}}}}) := reg.{{{{field.type_name}}}}.incr when C_{{{{field.parent.type_name:upper}}}}_INFO({{{{i}}}}).hw_we else '0'; -- FIXME --}}
 
     return v_tmp;
   end function;
@@ -216,7 +216,7 @@ package body pkg_reg_{modname} is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
     --{{regtype:repeat:fields:
-    v_tmp({{{{i}}}}) := reg.{{{{field.type_name}}}}.we when C_{{{{field.parent.type_name}}}}_INFO({{{{i}}}}).hw_we else '0'; --}}
+    v_tmp({{{{i}}}}) := reg.{{{{field.type_name}}}}.we when C_{{{{field.parent.type_name:upper}}}}_INFO({{{{i}}}}).hw_we else '0'; --}}
 
     return v_tmp;
   end function;
