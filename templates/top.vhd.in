@@ -36,9 +36,9 @@ entity top_reg_{modname} is
     pi_logic_regs : in t_registers_{modname}_in;
     po_logic_regs : out t_registers_{modname}_out
   );
-end entity top;
+end entity top_reg_{modname};
 
-architecture arch of top is
+architecture arch of top_reg_{modname} is
   signal adapter_stb : std_logic_vector(C_REGISTERS-1 downto 0);
   signal adapter_we  : std_logic;
   signal adapter_err : std_logic;
