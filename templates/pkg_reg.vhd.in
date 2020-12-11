@@ -66,9 +66,10 @@ package pkg_reg_{modname} is
   -----------------------------------------------
 
   -- must be calculated by register tool
-  constant C_REGTYPES  : integer := {n_regtypes};
-  constant C_REGISTERS : integer := {n_regnames};
-  constant C_MEMORIES : integer := {n_memnames};
+  -- always add +1 for the dummy
+  constant C_REGTYPES  : integer := {n_regtypes}+1;
+  constant C_REGISTERS : integer := {n_regnames}+1;
+  constant C_MEMORIES : integer := {n_memnames}+1;
   constant C_MEM_INTERNAL : T_IntegerArray(C_MEMORIES-1 downto 0) := (1, 1);
   -- memory address width must be less than or equal to C_ADDR_W-2
   constant C_MEM_AW : T_IntegerArray(C_MEMORIES-1 downto 0) := (
@@ -83,7 +84,7 @@ package pkg_reg_{modname} is
 
   type t_regtype is (
     --{regtypes:repeat:regtypes:
-    {{regtype.type_name}} --}
+    {{regtype.type_name}}, --}
     NONE -- dummy
   );
 
@@ -98,6 +99,7 @@ package pkg_reg_{modname} is
   -- Maybe better to constrain t_reg_info_array. Vivado shows weird indices when unconstrained.
   -- Must be the number of distinct register names, not one for each 2D/3D array element!
   type t_reg_info_array is array (0 to C_REGTYPES-1) of t_reg_info;
+  constant C_REG_NONE : t_field_info := (0, 0, NONE, (others => C_FIELD_NONE), 1, 1);
 
   --{regtypes:repeat:regtypes:
   constant C_{{regtype.type_name}}_INFO : t_field_info_arr := (
@@ -111,7 +113,7 @@ package pkg_reg_{modname} is
   constant C_REGISTER_INFO : t_reg_info_array := (
     --{regnames:repeat:regnames:
     {{i}} => (addr => {{reg.address_offset}}, base => {{i}}, regtype => {{reg.type_name}}, fields => C_{{reg.type_name}}_INFO, N => {{N}}, M => {{M}}), --}
-    -- TODO place dummy
+    others => C_REG_NONE
   );
 
   --{regtypes:repeat:regtypes:

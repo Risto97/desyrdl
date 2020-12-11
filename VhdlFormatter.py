@@ -125,26 +125,34 @@ class MemtypeListener(RDLListener):
 
 class VhdlListener(RDLListener):
 
-    def __init__(self, memtypes, memnames, regtypes, regnames):
+    def __init__(self, memtypes, regtypes):
         self.memtypes = memtypes
-        self.memnames = memnames
         self.mem_cnt  = 0
         self.regtypes = regtypes
-        self.regnames = regnames
         self.reg_cnt  = 0
 
     def enter_Component(self, node):
         if isinstance(node, MemNode):
             if node.type_name not in self.memtypes:
                 self.memtypes[node.type_name] = node
-            self.memnames.append((self.mem_cnt, node))
-            self.mem_cnt += 1
+
         if isinstance(node, RegNode):
             if node.type_name not in self.regtypes:
                 self.regtypes[node.type_name] = node
-            self.regnames.append((self.reg_cnt, node))
-            self.reg_cnt += 1
 
+
+# yields a tuple (i, node) for each child of node that matches type
+def gen_node_names(node, type):
+    i = 0
+    for child in node.children(unroll=True):
+        if isinstance(child, type):
+            # if the child is an array, only take
+            # the first element, otherwise return
+            if child.is_array:
+                if any(i!=0 for i in child.current_idx):
+                    continue
+            yield (i, child)
+            i += 1
 
 def main():
     rdlfiles = sys.argv[1:]
@@ -180,24 +188,20 @@ def main():
 
     # component type name, either definitive or anonymous: systemrdl.component.Component.type_name
     # The instantiated element is Component.inst_name, right?!
-    regnames = [(i, child) for i,child in enumerate(top_node.descendants()) if isinstance(child, RegNode)]
-    print([regname[1].inst_name for regname in regnames])
-    memnames = [(i, child) for i,child in enumerate(top_node.descendants()) if isinstance(child, MemNode)]
-    print([memname[1].inst_name for memname in memnames])
 
     for node in root.descendants():
         if isinstance(node, AddrmapNode):
-            # obtain a dictionary of register types
+            # obtain a dictionary of register and memory types
             regtypes = dict()
-            regnames = []
             memtypes = dict()
-            memnames = []
-            walker.walk(node, VhdlListener(memtypes=memtypes, memnames=memnames, regtypes=regtypes, regnames=regnames))
+            walker.walk(node, VhdlListener(memtypes=memtypes, regtypes=regtypes))
 
             # Only get the immediate children. Otherwise a higher-level AddrmapNode would
-            # "see" the arrays of registers/memories below without knowing their addresses.
-            regnames = [(i, child) for i,child in enumerate(node.children(unroll=True)) if isinstance(child, RegNode)]
-            memnames = [(i, child) for i,child in enumerate(node.children(unroll=True)) if isinstance(child, MemNode)]
+            # "see" the arrays of registers/memories below.
+            regnames = [x for x in gen_node_names(node, RegNode)]
+            print([regname[1].inst_name for regname in regnames])
+            memnames = [x for x in gen_node_names(node, MemNode)]
+            print([memname[1].inst_name for memname in memnames])
 
             for tpl in Path('./templates').glob('*.vhd.in'):
                 with tpl.open('r') as f_in:
