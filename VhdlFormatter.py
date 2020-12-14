@@ -14,6 +14,14 @@ class VhdlFormatter(string.Formatter):
 #        super(VhdlFormatter, self).__init__()
 #        top_node = top_node
 
+    # the 'reset' property of a field can be 'None'
+    def parse_reset(self, reset, width):
+        if reset == None:
+            #return ''.join(['"', '0'*width, '"'])
+            return "(32-1 downto 0 => '0')"
+        else:
+            return "std_logic_vector(to_signed({reset}, {width}))".format(reset=reset, width=32)
+
     def format_field(self, value, spec):
         if spec == "ftype" and isinstance(value, FieldNode):
             # Expects FieldNode type as value
@@ -55,15 +63,17 @@ class VhdlFormatter(string.Formatter):
             if what == "regtypes":
                 return ''.join([self.format(
                     template,
+                    i=i,
                     regtype=regtype,
                     name=regtype.type_name)
-                    for regtype in value])
+                    for i,regtype in enumerate(value)])
             if what == "memtypes":
                 return ''.join([self.format(
                     template,
+                    i=i,
                     memtype=memtype,
                     name=memtype.type_name)
-                    for memtype in value])
+                    for i,memtype in enumerate(value)])
             elif what == "fields":
 
                 return ''.join([self.format(
@@ -73,7 +83,7 @@ class VhdlFormatter(string.Formatter):
                     hw_we=field.get_property("we"),
                     sw_access=field.get_property("sw").name,
                     hw_access=field.get_property("hw").name,
-                    reset=field.get_property("reset"),
+                    reset=self.parse_reset(field.get_property("reset"), field.width),
                     name=field.type_name)
                     for i,field in enumerate(value.fields())])
             elif what == "regnames":
@@ -155,10 +165,27 @@ def gen_node_names(node, type):
             # if the child is an array, only take
             # the first element, otherwise return
             if child.is_array:
-                if any(i!=0 for i in child.current_idx):
+                if any(k!=0 for k in child.current_idx):
                     continue
             yield (i, child)
             i += 1
+
+def get_regcount(node, type):
+    i = 0
+    for child in node.children(unroll=True):
+        # TODO exclude external registers
+        if isinstance(child, type):
+            # if the child is an array, get its dimensions from the
+            # first element
+            if child.is_array:
+                if all(k==0 for k in child.current_idx):
+                    p = 1
+                    for dim in child.array_dimensions:
+                        p *= dim
+                    i += p
+            else:
+                i += 1
+    return i
 
 def main():
     rdlfiles = sys.argv[1:]
@@ -208,6 +235,8 @@ def main():
             print([regname[1].inst_name for regname in regnames])
             memnames = [x for x in gen_node_names(node, MemNode)]
             print([memname[1].inst_name for memname in memnames])
+            regcount = get_regcount(node, RegNode)
+            print("regcount = {}".format(regcount))
 
             for tpl in Path('./templates').glob('*.vhd.in'):
                 with tpl.open('r') as f_in:
@@ -220,6 +249,7 @@ def main():
                 # modname: name of each IP module
                 # regtypes: list of RegNodes -> type_name only
                 # regnames: longer list of RegNodes -> both type_name, inst_name
+                # registers: count of individual registers including those in arrays
                 # memtypes: list of MemNodes -> type_name only
                 # memnames: longer list of MemNodes -> both type_name, inst_name
 
@@ -233,6 +263,7 @@ def main():
                         memnames=memnames,
                         n_regtypes=len(regtypes), # sigh..
                         n_regnames=len(regnames),
+                        n_regcount=regcount,
                         n_memtypes=len(memtypes),
                         n_memnames=len(memnames))
 

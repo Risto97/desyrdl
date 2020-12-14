@@ -51,7 +51,7 @@ begin
 
   -- check if the hardware side (logic) has a write enable signal
   -- or has no write access to the register
-  gen_hw_we : if g_info.hw_we or g_info.hw_access(0) = '0' generate
+  gen_hw_we : if g_info.hw_we or g_info.hw_access = C_R or g_info.hw_access = C_NA generate
     prs_write : process(pi_clock)
     begin
       if rising_edge(pi_clock) then
@@ -75,7 +75,8 @@ begin
 
   -- write from logic continuously if there is no write enable and hW has write
   -- access. Software cannot write in this case.
-  gen_hw_no_we : if not g_info.hw_we and g_info.hw_access(0) = '1' generate
+  -- TODO handle C_W1 and C_RW1
+  gen_hw_no_we : if not g_info.hw_we and (g_info.hw_access = C_W or g_info.hw_access = C_RW) generate
     prs_write : process(pi_clock)
     begin
       if rising_edge(pi_clock) then

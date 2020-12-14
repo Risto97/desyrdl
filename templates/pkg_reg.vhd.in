@@ -68,17 +68,22 @@ package pkg_reg_{modname} is
   -- must be calculated by register tool
   -- always add +1 for the dummy
   constant C_REGTYPES  : integer := {n_regtypes}+1;
-  constant C_REGISTERS : integer := {n_regnames}+1;
-  constant C_MEMORIES : integer := {n_memnames}+1;
-  constant C_MEM_INTERNAL : T_IntegerArray(C_MEMORIES-1 downto 0) := (1, 1);
+  constant C_REGNAMES : integer := {n_regnames}+1;
+  constant C_REGCOUNT : integer := {n_regcount};
+  constant C_MEMNAMES : integer := {n_memnames}+1;
+  constant C_MEM_INTERNAL : T_IntegerArray(C_MEMNAMES-1 downto 0) := (others => 1); -- TODO
   -- memory address width must be less than or equal to C_ADDR_W-2
-  constant C_MEM_AW : T_IntegerArray(C_MEMORIES-1 downto 0) := (
-    --{memtypes:repeat:memtypes:
-    {{memtype.size}}, --}
-    0 -- dummy
+  constant C_MEM_AW : T_IntegerArray(C_MEMNAMES-1 downto 0) := (
+    --{memnames:repeat:memnames:
+    {{i}} => {{mem.size}}, --}
+    C_MEMNAMES-1 => 0 -- dummy
   );
   -- The two numbers below must both be a multiple of 4 (for 32 bit addresses)
-  constant C_MEM_START : T_IntegerArray(C_MEMORIES-1 downto 0) := (128, 1024); -- 0x80, 0x400
+  constant C_MEM_START : T_IntegerArray(C_MEMNAMES-1 downto 0) := (
+    --{memnames:repeat:memnames:
+    {{i}} => {{mem.address_offset}}, -- {{mem.inst_name}}}
+    C_MEMNAMES-1 => 0 -- dummy
+  );
 
   -- register types
 
@@ -98,13 +103,13 @@ package pkg_reg_{modname} is
   end record;
   -- Maybe better to constrain t_reg_info_array. Vivado shows weird indices when unconstrained.
   -- Must be the number of distinct register names, not one for each 2D/3D array element!
-  type t_reg_info_array is array (0 to C_REGTYPES-1) of t_reg_info;
-  constant C_REG_NONE : t_field_info := (0, 0, NONE, (others => C_FIELD_NONE), 1, 1);
+  type t_reg_info_array is array (0 to C_REGNAMES-1) of t_reg_info;
+  constant C_REG_NONE : t_reg_info := (0, 0, NONE, (others => C_FIELD_NONE), 1, 1);
 
   --{regtypes:repeat:regtypes:
   constant C_{{regtype.type_name:upper}}_INFO : t_field_info_arr := (
     --{{regtype:repeat:fields:
-    {{{{i}}}} => (ftype => {{{{field:ftype}}}}, len => {{{{field.width}}}}, upper => {{{{field.high}}}}, lower => {{{{field.low}}}}, hw_we => {{{{hw_we}}}}, sw_access => {{{{sw_access}}}}, hw_access => {{{{hw_access}}}},  def_val => {{{{reset}}}}), -- {{{{field.inst_name}}}} --}}
+    {{{{i}}}} => (ftype => {{{{field:ftype}}}}, len => {{{{field.width}}}}, upper => {{{{field.high}}}}, lower => {{{{field.low}}}}, hw_we => {{{{hw_we}}}}, sw_access => C_{{{{sw_access:upper}}}}, hw_access => C_{{{{hw_access:upper}}}},  def_val => {{{{reset}}}}), -- {{{{field.inst_name}}}} --}}
     others => C_FIELD_NONE
   );
 
@@ -207,7 +212,7 @@ package body pkg_reg_{modname} is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
     --{{regtype:repeat:fields:
-    v_tmp({{{{i}}}}) := reg.{{{{field.type_name}}}}.incr when C_{{{{field.parent.type_name:upper}}}}_INFO({{{{i}}}}).hw_we else '0'; -- FIXME --}}
+    v_tmp({{{{i}}}}) := reg.{{{{field.type_name}}}}.incr when C_{{{{field.parent.type_name:upper}}}}_INFO({{{{i}}}}).hw_we else '0'; -- FIXME VHDL-2008 --}}
 
     return v_tmp;
   end function;

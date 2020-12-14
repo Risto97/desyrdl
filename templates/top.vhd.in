@@ -39,20 +39,20 @@ entity top_reg_{modname} is
 end entity top_reg_{modname};
 
 architecture arch of top_reg_{modname} is
-  signal adapter_stb : std_logic_vector(C_REGISTERS-1 downto 0);
+  signal adapter_stb : std_logic_vector(C_REGCOUNT-1 downto 0);
   signal adapter_we  : std_logic;
   signal adapter_err : std_logic;
   signal adapter_wdata : std_logic_vector(32-1 downto 0);
-  signal adapter_rdata : t_32BitArray(C_REGISTERS-1 downto 0);
+  signal adapter_rdata : t_32BitArray(C_REGCOUNT-1 downto 0);
 
-  signal adapter_mem_out : t_mem_out_arr(C_MEMORIES-1 downto 0);
-  signal adapter_mem_in : t_mem_in_arr(C_MEMORIES-1 downto 0);
+  signal adapter_mem_out : t_mem_out_arr(C_MEMNAMES-1 downto 0);
+  signal adapter_mem_in : t_mem_in_arr(C_MEMNAMES-1 downto 0);
 
 begin
   ins_adapter: entity work.adapter_axi4
   generic map (
                 G_ADDR_W    => C_ADDR_W,
-                G_REGISTERS => C_REGISTERS
+                G_REGCOUNT => C_REGCOUNT
               )
   port map (
              pi_regs       => adapter_rdata,

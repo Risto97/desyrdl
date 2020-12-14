@@ -15,19 +15,19 @@ use work.pkg_reg_{modname}.all; -- maybe rename to sth like pkg_axi4_foocomponen
 entity adapter_axi4 is
   generic (
     G_ADDR_W : integer := 8;
-    G_REGISTERS : natural := 0
+    G_REGCOUNT : natural := 0
   );
   port (
     -- one element for each register, so N elements for a 2D register with length N
-    pi_regs : in t_32BitArray(G_REGISTERS-1 downto 0);
+    pi_regs : in t_32BitArray(G_REGCOUNT-1 downto 0);
     pi_err  : in  std_logic;
 
-    po_stb  : out std_logic_vector(G_REGISTERS-1 downto 0);
+    po_stb  : out std_logic_vector(G_REGCOUNT-1 downto 0);
     po_we   : out std_logic;
     po_data : out std_logic_vector(32-1 downto 0);
 
-    pi_mem : in t_mem_out_arr(C_MEMORIES-1 downto 0);
-    po_mem : out t_mem_in_arr(C_MEMORIES-1 downto 0);
+    pi_mem : in t_mem_out_arr(C_MEMNAMES-1 downto 0);
+    po_mem : out t_mem_in_arr(C_MEMNAMES-1 downto 0);
 
     clk           : in std_logic;
     reset         : in std_logic;
@@ -61,7 +61,7 @@ architecture arch of adapter_axi4 is
   signal state_read : t_state_read;
 
   signal rdata_reg : std_logic_vector(31 downto 0);
-  signal rdata_mem : t_32BitArray(C_MEMORIES-1 downto 0);
+  signal rdata_mem : t_32BitArray(C_MEMNAMES-1 downto 0);
   signal rdata_out : std_logic_vector(31 downto 0);
   signal raddr_reg : std_logic_vector(G_ADDR_W-1 downto 0);
   signal raddr_mem : unsigned(G_ADDR_W-2-1 downto 0);
@@ -90,14 +90,14 @@ architecture arch of adapter_axi4 is
   signal bvalid_wire : std_logic;
 
   -- memories
-  signal mem_ren : std_logic_vector(C_MEMORIES-1 downto 0) := (others => '0');
+  signal mem_ren : std_logic_vector(C_MEMNAMES-1 downto 0) := (others => '0');
   signal mem_rsel : integer := 0;
   signal mem_rsel_q : integer := 0;
-  signal mem_rack : std_logic_vector(C_MEMORIES-1 downto 0) := (others => '0');
-  signal mem_rack_q : std_logic_vector(C_MEMORIES-1 downto 0) := (others => '0');
-  signal mem_wen : std_logic_vector(C_MEMORIES-1 downto 0) := (others => '0');
+  signal mem_rack : std_logic_vector(C_MEMNAMES-1 downto 0) := (others => '0');
+  signal mem_rack_q : std_logic_vector(C_MEMNAMES-1 downto 0) := (others => '0');
+  signal mem_wen : std_logic_vector(C_MEMNAMES-1 downto 0) := (others => '0');
   signal mem_wsel : integer := 0;
-  signal mem_wack : std_logic_vector(C_MEMORIES-1 downto 0) := (others => '0');
+  signal mem_wack : std_logic_vector(C_MEMNAMES-1 downto 0) := (others => '0');
 
 begin
 
@@ -150,7 +150,7 @@ begin
     if rising_edge(clk) then
       rdata_reg <= (others => '0');
 
-      for i in C_REGISTER_INFO'range loop
+      for i in 0 to C_REGISTER_INFO'length-1-1 loop
         for j in 0 to C_REGISTER_INFO(i).N-1 loop
           for k in 0 to C_REGISTER_INFO(i).M-1 loop
             if raddr_word = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then
@@ -168,7 +168,7 @@ begin
   -- select register or memory
   proc_read_sel: process (state_read, raddr_word)
   begin
-    for i in C_MEMORIES-1 downto 0 loop
+    for i in C_MEMNAMES-1 downto 0 loop
       -- TODO optimize. Also see:
       -- https://zipcpu.com/blog/2019/07/17/crossbar.html#examining-the-arbitration-code
       case state_read is
@@ -222,7 +222,7 @@ begin
   S_AXI_RRESP <= "00";
 
   -- Dual-port memories
-  gen_memories : for i in C_MEMORIES-1 downto 0 generate
+  gen_memories : for i in C_MEMNAMES-1 downto 0 generate
     gen_internal : if C_MEM_INTERNAL(i) = 1 generate
       signal l_rwsel : std_logic_vector(1 downto 0) := (others => '0');
       signal l_mem_addr : unsigned(C_MEM_AW(i)-1 downto 0) := (others => '0');
@@ -358,7 +358,7 @@ begin
 
   proc_wdata_sel : process(state_write, waddr_word)
   begin
-    for i in C_MEMORIES-1 downto 0 loop
+    for i in C_MEMNAMES-1 downto 0 loop
       case state_write is
         when sWriteSelect =>
           if waddr_word-C_MEM_START(i)/4 >= 0 and waddr_word-(C_MEM_START(i)/4+2**C_MEM_AW(i)) < 0 then
