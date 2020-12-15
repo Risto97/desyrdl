@@ -89,9 +89,20 @@ class VhdlFormatter(string.Formatter):
             elif what == "regnames":
                 #print("repeating regnames with RegNodes in ", value, " and template ", template)
                 # value is a list of tuples (i, RegNode)
+
+                # For indexing of flattened arrays in VHDL port definitions.
+                # Move to a dict() or improve VHDL code.
+                base = [0]
+                for i,r in enumerate(value):
+                    N = r[1].array_dimensions[0] if (r[1].is_array and len(r[1].array_dimensions)==2) else 1
+                    M = r[1].array_dimensions[1] if (r[1].is_array and len(r[1].array_dimensions)==2) else r[1].array_dimensions[0] if (r[1].is_array and len(r[1].array_dimensions)==1) else 1
+                    base.append(base[i]+N*M)
+
+                # format the template
                 return ''.join([self.format(
                     template,
                     i=r[0],
+                    base=base[r[0]],
                     reg=r[1],
                     # please don't look at the next two lines. On refactoring I will put it in a dict, promise.
                     N= r[1].array_dimensions[0] if (r[1].is_array and len(r[1].array_dimensions)==2) else 1,

@@ -4,6 +4,7 @@ use ieee.numeric_std.all;
 
 library work;
 use work.pkg_types.all;
+use work.math_basic.all;
 
 package pkg_reg_{modname} is
 
@@ -67,22 +68,25 @@ package pkg_reg_{modname} is
 
   -- must be calculated by register tool
   -- always add +1 for the dummy
-  constant C_REGTYPES  : integer := {n_regtypes}+1;
-  constant C_REGNAMES : integer := {n_regnames}+1;
+  constant C_REGTYPES  : integer := {n_regtypes};
+  constant C_REGNAMES : integer := {n_regnames};
   constant C_REGCOUNT : integer := {n_regcount};
-  constant C_MEMNAMES : integer := {n_memnames}+1;
-  constant C_MEM_INTERNAL : T_IntegerArray(C_MEMNAMES-1 downto 0) := (others => 1); -- TODO
+  constant C_MEMNAMES : integer := {n_memnames};
+  -- TODO C_MEMCOUNT
+  constant C_MEM_INTERNAL : T_IntegerArray(C_MEMNAMES downto 0) := (others => 1); -- TODO
   -- memory address width must be less than or equal to C_ADDR_W-2
-  constant C_MEM_AW : T_IntegerArray(C_MEMNAMES-1 downto 0) := (
+  -- TODO C_MEMCOUNT
+  constant C_MEM_AW : T_IntegerArray(C_MEMNAMES downto 0) := (
+    -- divide by four for addressing 32-bit elements
     --{memnames:repeat:memnames:
-    {{i}} => {{mem.size}}, --}
-    C_MEMNAMES-1 => 0 -- dummy
+    {{i}} => ceil_log2({{mem.size}}/4), -- {{mem.inst_name}}}
+    C_MEMNAMES => 0 -- dummy
   );
   -- The two numbers below must both be a multiple of 4 (for 32 bit addresses)
-  constant C_MEM_START : T_IntegerArray(C_MEMNAMES-1 downto 0) := (
+  constant C_MEM_START : T_IntegerArray(C_MEMNAMES downto 0) := (
     --{memnames:repeat:memnames:
     {{i}} => {{mem.address_offset}}, -- {{mem.inst_name}}}
-    C_MEMNAMES-1 => 0 -- dummy
+    C_MEMNAMES => 0 -- dummy
   );
 
   -- register types
@@ -103,7 +107,7 @@ package pkg_reg_{modname} is
   end record;
   -- Maybe better to constrain t_reg_info_array. Vivado shows weird indices when unconstrained.
   -- Must be the number of distinct register names, not one for each 2D/3D array element!
-  type t_reg_info_array is array (0 to C_REGNAMES-1) of t_reg_info;
+  type t_reg_info_array is array (0 to C_REGNAMES) of t_reg_info;
   constant C_REG_NONE : t_reg_info := (0, 0, NONE, (others => C_FIELD_NONE), 1, 1);
 
   --{regtypes:repeat:regtypes:
@@ -117,7 +121,7 @@ package pkg_reg_{modname} is
 
   constant C_REGISTER_INFO : t_reg_info_array := (
     --{regnames:repeat:regnames:
-    {{i}} => (addr => {{reg.address_offset}}, base => {{i}}, regtype => {{reg.type_name}}, fields => C_{{reg.type_name:upper}}_INFO, N => {{N}}, M => {{M}}), --}
+    {{i}} => (addr => {{reg.address_offset}}, base => {{base}}, regtype => {{reg.type_name}}, fields => C_{{reg.type_name:upper}}_INFO, N => {{N}}, M => {{M}}), --}
     others => C_REG_NONE
   );
 

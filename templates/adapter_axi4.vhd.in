@@ -150,7 +150,7 @@ begin
     if rising_edge(clk) then
       rdata_reg <= (others => '0');
 
-      for i in 0 to C_REGISTER_INFO'length-1-1 loop
+      for i in 0 to C_REGNAMES-1 loop
         for j in 0 to C_REGISTER_INFO(i).N-1 loop
           for k in 0 to C_REGISTER_INFO(i).M-1 loop
             if raddr_word = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then

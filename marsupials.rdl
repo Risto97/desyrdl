@@ -1,3 +1,8 @@
+mem mtable {
+  mementries = 4096; // REGAE 250 MHz
+  memwidth = 32;
+};
+
 addrmap marsupials {
   reg wombat {
     field {sw=rw; hw=r;}      foo[31:16];
@@ -12,5 +17,8 @@ addrmap marsupials {
 
   wombat wbts[2][3];
   koala  kls;
+
+  external mtable MTABLES;
+  external mtable MOREMTABLES;
 };
 
