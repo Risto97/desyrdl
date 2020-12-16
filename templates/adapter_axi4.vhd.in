@@ -168,6 +168,7 @@ begin
   -- select register or memory
   proc_read_sel: process (state_read, raddr_word)
   begin
+    -- TODO must be C_MEMCOUNT
     for i in C_MEMNAMES-1 downto 0 loop
       -- TODO optimize. Also see:
       -- https://zipcpu.com/blog/2019/07/17/crossbar.html#examining-the-arbitration-code

@@ -84,6 +84,8 @@ class VhdlFormatter(string.Formatter):
                     sw_access=field.get_property("sw").name,
                     hw_access=field.get_property("hw").name,
                     reset=self.parse_reset(field.get_property("reset"), field.width),
+                    decrwidth=field.get_property("decrwidth") if field.get_property("counter") else 0,
+                    incrwidth=field.get_property("incrwidth") if field.get_property("counter") else 0,
                     name=field.type_name)
                     for i,field in enumerate(value.fields())])
             elif what == "regnames":
@@ -169,13 +171,13 @@ class VhdlListener(RDLListener):
 
 
 # yields a tuple (i, node) for each child of node that matches type
-def gen_node_names(node, type):
+def gen_node_names(node, type, first_only=True):
     i = 0
     for child in node.children(unroll=True):
         if isinstance(child, type):
             # if the child is an array, only take
             # the first element, otherwise return
-            if child.is_array:
+            if child.is_array and first_only==True:
                 if any(k!=0 for k in child.current_idx):
                     continue
             yield (i, child)
@@ -244,7 +246,7 @@ def main():
             # "see" the arrays of registers/memories below.
             regnames = [x for x in gen_node_names(node, RegNode)]
             print([regname[1].inst_name for regname in regnames])
-            memnames = [x for x in gen_node_names(node, MemNode)]
+            memnames = [x for x in gen_node_names(node, MemNode, first_only=False)]
             print([memname[1].inst_name for memname in memnames])
             regcount = get_regcount(node, RegNode)
             print("regcount = {}".format(regcount))

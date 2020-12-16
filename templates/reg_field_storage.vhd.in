@@ -39,9 +39,10 @@ entity reg_field_storage is
          pi_sw_data : in std_logic_vector(g_info.len-1 downto 0);
          po_sw_data : out std_logic_vector(g_info.len-1 downto 0);
          -- to/from hardware logic
-         pi_hw_we : in std_logic;
-         pi_hw_data : in std_logic_vector(g_info.len-1 downto 0);
-         po_hw_data : out std_logic_vector(g_info.len-1 downto 0)
+         pi_hw_we    : in std_logic;
+         pi_hw_data  : in std_logic_vector(g_info.len-1 downto 0);
+         po_hw_data  : out std_logic_vector(g_info.len-1 downto 0);
+         po_hw_swmod : out std_logic
        );
 end entity reg_field_storage;
 
@@ -62,11 +63,18 @@ begin
           if pi_sw_stb = '1' and pi_sw_we = '1' and (g_info.sw_access = C_W or g_info.sw_access = C_RW) then
             -- TODO handle software access side effects (rcl/rset, woclr/woset, swacc/swmod)
             field_reg <= pi_sw_data;
+            -- software access side effects
+            po_hw_swmod <= '1';
+            --po_hw_swmod <= '1' when g_info.swmod = True else '0';
           -- hardware write might get lost FIXME
           elsif pi_hw_we = '1' and (g_info.hw_access = C_W or g_info.hw_access = C_RW) then
             field_reg <= pi_hw_data;
+            -- software access side effects
+            po_hw_swmod <= '0';
           else
             field_reg <= field_reg;
+            -- software access side effects
+            po_hw_swmod <= '0';
           end if;
         end if;
       end if;

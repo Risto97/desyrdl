@@ -128,19 +128,24 @@ begin
     gen_N : for i in 0 to l_reg_info.N-1 generate  -- outer dim, for 3D arrays
     begin
       gen_M: for j in 0 to l_reg_info.M-1 generate -- inner dim, for 2D arrays
-        signal l_reg_decr     : std_logic_vector(32-1 downto 0);
         signal l_reg_incr     : std_logic_vector(32-1 downto 0);
+        signal l_reg_decr     : std_logic_vector(32-1 downto 0);
         signal l_reg_we       : std_logic_vector(32-1 downto 0);
         signal l_reg_data_in  : std_logic_vector(32-1 downto 0);
         signal l_reg_data_out : std_logic_vector(32-1 downto 0);
+        signal l_reg_swmod    : std_logic_vector(32-1 downto 0);
+        signal l_reg_swacc    : std_logic_vector(32-1 downto 0);
       begin
 
         -- signal assignments have to be done with generated functions
-        l_reg_decr    <= fun_{{reg.type_name}}_to_decr(pi_logic_regs.{{reg.inst_name}}(i,j));
         l_reg_incr    <= fun_{{reg.type_name}}_to_incr(pi_logic_regs.{{reg.inst_name}}(i,j));
+        l_reg_decr    <= fun_{{reg.type_name}}_to_decr(pi_logic_regs.{{reg.inst_name}}(i,j));
         l_reg_we      <= fun_{{reg.type_name}}_to_we(  pi_logic_regs.{{reg.inst_name}}(i,j));
         l_reg_data_in <= fun_{{reg.type_name}}_to_data(pi_logic_regs.{{reg.inst_name}}(i,j));
-        po_logic_regs.{{reg.inst_name}}(i,j) <= fun_slv_to_{{reg.type_name}}(l_reg_data_out);
+        po_logic_regs.{{reg.inst_name}}(i,j) <= fun_slv_to_{{reg.type_name}}(l_reg_data_out, l_reg_swmod, l_reg_swacc);
+
+        -- TODO implement swacc
+        l_reg_swacc <= (others => '0');
 
         ins_reg: entity work.register32
         generic map (
@@ -160,9 +165,11 @@ begin
 
                    -- to/from our IP
                    pi_logic_incr => l_reg_incr,
+                   pi_logic_decr => l_reg_decr,
                    pi_logic_we   => l_reg_we,
                    pi_logic_data => l_reg_data_in,
-                   po_logic_data => l_reg_data_out
+                   po_logic_data => l_reg_data_out,
+                   po_logic_swmod => l_reg_swmod
                  );
 
       end generate;
