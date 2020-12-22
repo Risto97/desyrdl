@@ -84,8 +84,8 @@ class VhdlFormatter(string.Formatter):
                     sw_access=field.get_property("sw").name,
                     hw_access=field.get_property("hw").name,
                     reset=self.parse_reset(field.get_property("reset"), field.width),
-                    decrwidth=field.get_property("decrwidth") if field.get_property("counter") else 0,
-                    incrwidth=field.get_property("incrwidth") if field.get_property("counter") else 0,
+                    decrwidth=field.get_property("decrwidth") if (field.get_property("decrwidth") != None) else 1,
+                    incrwidth=field.get_property("incrwidth") if (field.get_property("incrwidth") != None) else 1,
                     name=field.type_name)
                     for i,field in enumerate(value.fields())])
             elif what == "regnames":
