@@ -8,7 +8,7 @@ use work.pkg_reg_{modname}.all;
 
 entity top_reg_{modname} is
   port (
-    pi_clk           : in std_logic;
+    pi_clock           : in std_logic;
     pi_reset         : in std_logic;
 
     -- AXI4
@@ -60,7 +60,7 @@ begin
              po_we         => adapter_we,
              pi_err        => adapter_err,
              po_data       => adapter_wdata,
-             clk           => pi_clk,
+             clk           => pi_clock,
              reset         => pi_reset,
 
              po_mem        => adapter_mem_in,
@@ -100,14 +100,14 @@ begin
       G_ADDR_WIDTH => C_MEM_AW(l_idx)
     )
     port map (
-      pi_clk_a  => pi_clk,
+      pi_clk_a  => pi_clock,
       pi_ena_a  => adapter_mem_in(l_idx).ena,
       pi_wr_a   => adapter_mem_in(l_idx).wr,
       pi_addr_a => adapter_mem_in(l_idx).addr(C_MEM_AW(l_idx)-1 downto 0),
       pi_data_a => adapter_mem_in(l_idx).data,
       po_data_a => adapter_mem_out(l_idx),
 
-      pi_clk_b  => pi_clk,
+      pi_clk_b  => pi_clock,
       pi_ena_b  => pi_logic_regs.{{mem.inst_name}}.ena,
       pi_wr_b   => pi_logic_regs.{{mem.inst_name}}.wr,
       pi_addr_b => pi_logic_regs.{{mem.inst_name}}.addr(C_MEM_AW(l_idx)-1 downto 0),
@@ -153,7 +153,7 @@ begin
                       g_fields => l_reg_info.fields
                     )
         port map (
-                   pi_clock => pi_clk,
+                   pi_clock => pi_clock,
                    pi_reset => pi_reset,
 
                    -- to/from adapter
