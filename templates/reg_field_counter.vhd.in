@@ -59,6 +59,8 @@ begin
 
   overflow <= '0'; -- TODO
   underflow <= '0'; -- TODO
+  po_hw_overflow <= overflow;
+  po_hw_underflow <= underflow;
   instruction <= overflow & underflow & pi_hw_incr & pi_hw_decr;
 
   prs_counter : process(pi_clock)

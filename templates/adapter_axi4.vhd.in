@@ -168,6 +168,7 @@ begin
   -- select register or memory
   proc_read_sel: process (state_read, raddr_word)
   begin
+    raddr_is_reg <= '1'; -- default
     -- TODO must be C_MEMCOUNT
     for i in C_MEMNAMES-1 downto 0 loop
       -- TODO optimize. Also see:
@@ -359,6 +360,7 @@ begin
 
   proc_wdata_sel : process(state_write, waddr_word)
   begin
+    waddr_is_reg <= '1'; -- default
     for i in C_MEMNAMES-1 downto 0 loop
       case state_write is
         when sWriteSelect =>

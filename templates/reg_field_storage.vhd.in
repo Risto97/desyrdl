@@ -58,6 +58,7 @@ begin
       if rising_edge(pi_clock) then
         if pi_reset = '1' then
           field_reg <= g_info.def_val(g_info.len-1 downto 0);
+          po_hw_swmod <= '0';
         else
           -- software write has precedence FIXME
           if pi_sw_stb = '1' and pi_sw_we = '1' and (g_info.sw_access = C_W or g_info.sw_access = C_RW) then
