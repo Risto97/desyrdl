@@ -35,6 +35,7 @@ entity adapter_axi4 is
     S_AXI_AWPROT  : in std_logic_vector(2 downto 0);
     S_AXI_AWVALID : in std_logic;
     S_AXI_AWREADY : out std_logic;
+    S_AXI_AWID    : in std_logic_vector(16-1 downto 0);
     S_AXI_WDATA   : in std_logic_vector(32-1 downto 0);
     S_AXI_WSTRB   : in std_logic_vector(32/8-1 downto 0);
     S_AXI_WVALID  : in std_logic;
@@ -42,15 +43,17 @@ entity adapter_axi4 is
     S_AXI_BRESP   : out std_logic_vector(1 downto 0);
     S_AXI_BVALID  : out std_logic;
     S_AXI_BREADY  : in std_logic;
+    S_AXI_BID     : out std_logic_vector(16-1 downto 0);
     S_AXI_ARADDR  : in std_logic_vector(G_ADDR_W-1 downto 0);
     S_AXI_ARPROT  : in std_logic_vector(2 downto 0);
     S_AXI_ARVALID : in std_logic;
     S_AXI_ARREADY : out std_logic;
+    S_AXI_ARID    : in std_logic_vector(16-1 downto 0);
     S_AXI_RDATA   : out std_logic_vector(32-1 downto 0);
     S_AXI_RRESP   : out std_logic_vector(1 downto 0);
     S_AXI_RVALID  : out std_logic;
-    S_AXI_RREADY  : in std_logic
-
+    S_AXI_RREADY  : in std_logic;
+    S_AXI_RID     : out std_logic_vector(16-1 downto 0)
 );
 end entity adapter_axi4;
 
@@ -125,6 +128,7 @@ begin
             elsif mem_rack(mem_rsel) = '1' then
               state_read <= sReadValid;
             end if;
+            S_AXI_RID <= S_AXI_ARID;
 
           when sReadValid =>
             if S_AXI_RREADY = '1' then
@@ -324,6 +328,7 @@ begin
             else
               state_write <= state_write;
             end if;
+            S_AXI_BID <= S_AXI_AWID;
           when sWriteResp =>
             if S_AXI_BREADY = '1' then
               state_write <= sWriteIdle;
