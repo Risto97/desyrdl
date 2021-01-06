@@ -90,14 +90,14 @@ architecture arch of adapter_axi4 is
   signal bvalid_wire : std_logic;
 
   -- memories
-  signal mem_ren : std_logic_vector(C_MEMNAMES-1 downto 0) := (others => '0');
+  signal mem_ren : std_logic_vector(C_MEMNAMES downto 0) := (others => '0');
   signal mem_rsel : integer := 0;
   signal mem_rsel_q : integer := 0;
-  signal mem_rack : std_logic_vector(C_MEMNAMES-1 downto 0) := (others => '0');
-  signal mem_rack_q : std_logic_vector(C_MEMNAMES-1 downto 0) := (others => '0');
-  signal mem_wen : std_logic_vector(C_MEMNAMES-1 downto 0) := (others => '0');
+  signal mem_rack : std_logic_vector(C_MEMNAMES downto 0) := (others => '0');
+  signal mem_rack_q : std_logic_vector(C_MEMNAMES downto 0) := (others => '0');
+  signal mem_wen : std_logic_vector(C_MEMNAMES downto 0) := (others => '0');
   signal mem_wsel : integer := 0;
-  signal mem_wack : std_logic_vector(C_MEMNAMES-1 downto 0) := (others => '0');
+  signal mem_wack : std_logic_vector(C_MEMNAMES downto 0) := (others => '0');
 
 begin
 
