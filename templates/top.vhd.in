@@ -4,6 +4,7 @@ use ieee.numeric_std.all;
 
 library work;
 use work.pkg_types.all;
+use work.pkg_axi.all;
 use work.pkg_reg_{modname}.all;
 
 entity top_reg_{modname} is
@@ -12,29 +13,8 @@ entity top_reg_{modname} is
     pi_reset         : in std_logic;
 
     -- AXI4
-    S_AXI_AWADDR  : in std_logic_vector(C_ADDR_W-1 downto 0);
-    S_AXI_AWPROT  : in std_logic_vector(2 downto 0);
-    S_AXI_AWVALID : in std_logic;
-    S_AXI_AWREADY : out std_logic;
-    S_AXI_AWID    : in std_logic_vector(16-1 downto 0);
-    S_AXI_WDATA   : in std_logic_vector(32-1 downto 0);
-    S_AXI_WSTRB   : in std_logic_vector(32/8-1 downto 0);
-    S_AXI_WVALID  : in std_logic;
-    S_AXI_WREADY  : out std_logic;
-    S_AXI_BRESP   : out std_logic_vector(1 downto 0);
-    S_AXI_BVALID  : out std_logic;
-    S_AXI_BREADY  : in std_logic;
-    S_AXI_BID     : out std_logic_vector(16-1 downto 0);
-    S_AXI_ARADDR  : in std_logic_vector(C_ADDR_W-1 downto 0);
-    S_AXI_ARPROT  : in std_logic_vector(2 downto 0);
-    S_AXI_ARVALID : in std_logic;
-    S_AXI_ARREADY : out std_logic;
-    S_AXI_ARID    : in std_logic_vector(16-1 downto 0);
-    S_AXI_RDATA   : out std_logic_vector(32-1 downto 0);
-    S_AXI_RRESP   : out std_logic_vector(1 downto 0);
-    S_AXI_RVALID  : out std_logic;
-    S_AXI_RREADY  : in std_logic;
-    S_AXI_RID     : out std_logic_vector(16-1 downto 0);
+    pi_s_axi4 : in  t_axi4_m2s;
+    po_s_axi4 : out t_axi4_s2m;
 
     -- logic
     pi_logic_regs : in t_registers_{modname}_in;
@@ -70,30 +50,37 @@ begin
              po_mem        => adapter_mem_in,
              pi_mem        => adapter_mem_out,
 
-             S_AXI_AWADDR  => S_AXI_AWADDR,
-             S_AXI_AWPROT  => S_AXI_AWPROT,
-             S_AXI_AWVALID => S_AXI_AWVALID,
-             S_AXI_AWREADY => S_AXI_AWREADY,
-             S_AXI_AWID    => S_AXI_AWID,
-             S_AXI_WDATA   => S_AXI_WDATA,
-             S_AXI_WSTRB   => S_AXI_WSTRB,
-             S_AXI_WVALID  => S_AXI_WVALID,
-             S_AXI_WREADY  => S_AXI_WREADY,
-             S_AXI_BRESP   => S_AXI_BRESP,
-             S_AXI_BVALID  => S_AXI_BVALID,
-             S_AXI_BREADY  => S_AXI_BREADY,
-             S_AXI_BID     => S_AXI_BID,
-             S_AXI_ARADDR  => S_AXI_ARADDR,
-             S_AXI_ARPROT  => S_AXI_ARPROT,
-             S_AXI_ARVALID => S_AXI_ARVALID,
-             S_AXI_ARREADY => S_AXI_ARREADY,
-             S_AXI_ARID    => S_AXI_ARID,
-             S_AXI_RDATA   => S_AXI_RDATA,
-             S_AXI_RRESP   => S_AXI_RRESP,
-             S_AXI_RVALID  => S_AXI_RVALID,
-             S_AXI_RREADY  => S_AXI_RREADY,
-             S_AXI_RID     => S_AXI_RID
+             S_AXI_AWADDR  => pi_s_axi4.awaddr(C_ADDR_W-1 downto 0),
+             S_AXI_AWPROT  => (others => '0'),
+             S_AXI_AWVALID => pi_s_axi4.awvalid,
+             S_AXI_AWREADY => po_s_axi4.awready,
+             S_AXI_AWID    => pi_s_axi4.awid,
+             S_AXI_WDATA   => pi_s_axi4.wdata(32-1 downto 0),
+             S_AXI_WSTRB   => pi_s_axi4.wstrb(4-1 downto 0),
+             S_AXI_WVALID  => pi_s_axi4.wvalid,
+             S_AXI_WREADY  => po_s_axi4.wready,
+             S_AXI_BRESP   => po_s_axi4.bresp,
+             S_AXI_BVALID  => po_s_axi4.bvalid,
+             S_AXI_BREADY  => pi_s_axi4.bready,
+             S_AXI_BID     => po_s_axi4.bid,
+             S_AXI_ARADDR  => pi_s_axi4.araddr(C_ADDR_W-1 downto 0),
+             S_AXI_ARPROT  => (others => '0'),
+             S_AXI_ARVALID => pi_s_axi4.arvalid,
+             S_AXI_ARREADY => po_s_axi4.arready,
+             S_AXI_ARID    => pi_s_axi4.arid,
+             S_AXI_RDATA   => po_s_axi4.rdata(32-1 downto 0),
+             S_AXI_RRESP   => po_s_axi4.rresp,
+             S_AXI_RVALID  => po_s_axi4.rvalid,
+             S_AXI_RREADY  => pi_s_axi4.rready,
+             S_AXI_RID     => po_s_axi4.rid
            );
+
+  po_s_axi4.aclk <= pi_clock;
+  -- needed?
+  po_s_axi4.rdata(po_s_axi4.rdata'left downto 32) <= (others => '0');
+  po_s_axi4.bid <= (others => '0');
+  po_s_axi4.rid <= (others => '0');
+  po_s_axi4.rlast <= '0';
 
   -- memory instances
 

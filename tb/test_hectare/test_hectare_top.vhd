@@ -57,29 +57,10 @@ begin
   port map (
     pi_clock      => pi_clock,
     pi_reset      => pi_reset,
-    S_AXI_AWADDR  => pi_s_axi4.awaddr(C_ADDR_W-1 downto 0),
-    S_AXI_AWPROT  => (others => '0'),
-    S_AXI_AWVALID => pi_s_axi4.awvalid,
-    S_AXI_AWREADY => po_s_axi4.awready,
-    S_AXI_AWID    => pi_s_axi4.awid,
-    S_AXI_WDATA   => pi_s_axi4.wdata(32-1 downto 0),
-    S_AXI_WSTRB   => pi_s_axi4.wstrb(4-1 downto 0),
-    S_AXI_WVALID  => pi_s_axi4.wvalid,
-    S_AXI_WREADY  => po_s_axi4.wready,
-    S_AXI_BRESP   => po_s_axi4.bresp,
-    S_AXI_BVALID  => po_s_axi4.bvalid,
-    S_AXI_BREADY  => pi_s_axi4.bready,
-    S_AXI_BID     => po_s_axi4.bid,
-    S_AXI_ARADDR  => pi_s_axi4.araddr(C_ADDR_W-1 downto 0),
-    S_AXI_ARPROT  => (others => '0'),
-    S_AXI_ARVALID => pi_s_axi4.arvalid,
-    S_AXI_ARREADY => po_s_axi4.arready,
-    S_AXI_ARID    => pi_s_axi4.arid,
-    S_AXI_RDATA   => po_s_axi4.rdata(32-1 downto 0),
-    S_AXI_RRESP   => po_s_axi4.rresp,
-    S_AXI_RVALID  => po_s_axi4.rvalid,
-    S_AXI_RREADY  => pi_s_axi4.rready,
-    S_AXI_RID     => po_s_axi4.rid,
+
+    pi_s_axi4     => pi_s_axi4,
+    po_s_axi4     => po_s_axi4,
+
     pi_logic_regs => regs_in,
     po_logic_regs => regs_out
   );
