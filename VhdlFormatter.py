@@ -114,6 +114,7 @@ class VhdlFormatter(string.Formatter):
                 # for..in..if filters the list comprehension
                 #memnames = [(i,child) for i,child in enumerate(value.descendants()) if isinstance(child, MemNode)]
                 # TODO: use the current node in here instead of filling memnames once for the top node.
+                # TODO: use properties of m[0] of type MemNode (available?): memwidth, mementries
                 return ''.join([self.format(
                     template,
                     i=m[0],

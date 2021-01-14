@@ -168,7 +168,7 @@ begin
   -- <= s2m_axi4_hectare.aclk;
   -- <= s2m_axi4_hectare.areset_n;
 
-  ins_top : entity work.test_hectare_top
+  ins_dut : entity work.test_hectare_top
   port map (
     pi_clock => Clk,
     pi_reset => not nReset,

@@ -76,6 +76,20 @@ begin
     WaitForClock(   AxiSuperTransRec, 2);
     MasterReadCheck(AxiSuperTransRec, std_logic_vector(to_unsigned(C_REGISTER_INFO(2).addr, AXI_ADDR_WIDTH)), X"1BEE_F4A1");
 
+    -- memory
+    WaitForClock(   AxiSuperTransRec, 2);
+    -- let the module put something at offset 12 and try reading that from AXI4
+    ModuleMemoriesIn.coolmem.ena <= '1';
+    ModuleMemoriesIn.coolmem.wr  <= '1';
+    ModuleMemoriesIn.coolmem.addr(C_MEM_AW(0)-1 downto 0) <= std_logic_vector(to_unsigned(12, C_MEM_AW(0)));
+    ModuleMemoriesIn.coolmem.data(7 downto 0) <= x"AA";
+    WaitForClock(   AxiSuperTransRec, 1);
+    ModuleMemoriesIn.coolmem.ena <= '0';
+    ModuleMemoriesIn.coolmem.wr  <= '0';
+    WaitForClock(   AxiSuperTransRec, 1);
+    MasterReadCheck(AxiSuperTransRec, std_logic_vector(to_unsigned(C_MEM_START(0)+3*4, AXI_ADDR_WIDTH)), X"AA");
+
+
     -- Wait for test to finish
     WaitForBarrier(TestDone, 35 ms) ;
     AlertIf(now >= 35 ms, "Test finished due to timeout") ;
