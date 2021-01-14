@@ -41,7 +41,10 @@ entity test_hectare_top is
     po_s_axi4 : out t_axi4_s2m;
     -- external ports
     pi_regs : in t_registers_test_hectare_in;
-    po_regs : out t_registers_test_hectare_out
+    po_regs : out t_registers_test_hectare_out;
+
+    pi_mem : in t_memories_test_hectare_in;
+    po_mem : out t_memories_test_hectare_out
   );
 end test_hectare_top;
 
@@ -51,6 +54,11 @@ architecture arch of test_hectare_top is
 
   signal regs_in : t_registers_test_hectare_in;
   signal regs_out : t_registers_test_hectare_out;
+
+  signal mem_a_in : t_memories_test_hectare_in;
+  signal mem_a_out : t_memories_test_hectare_out;
+  signal mem_b_in : t_memories_test_hectare_in;
+  signal mem_b_out : t_memories_test_hectare_out;
 begin
 
   ins_top_reg_test_hectare : entity work.top_reg_test_hectare
@@ -62,7 +70,10 @@ begin
     po_s_axi4     => po_s_axi4,
 
     pi_logic_regs => regs_in,
-    po_logic_regs => regs_out
+    po_logic_regs => regs_out,
+
+    pi_mem => mem_a_out,
+    po_mem => mem_a_in
   );
 
   -- TODO add to top.vhd.in ?
@@ -76,5 +87,30 @@ begin
   -- user logic here
   po_regs <= regs_out;
   regs_in <= pi_regs;
+
+  po_mem.coolmem <= mem_b_out.coolmem;
+  mem_b_in.coolmem <= pi_mem.coolmem;
+
+
+  ins_memory : entity work.dual_port_memory
+  generic map (
+    G_DATA_WIDTH => 32,
+    G_ADDR_WIDTH => 10 -- TODO add entry to record
+  )
+  port map (
+    pi_clk_a  => pi_clock,
+    pi_ena_a  => mem_a_in.coolmem.ena,
+    pi_wr_a   => mem_a_in.coolmem.wr,
+    pi_addr_a => mem_a_in.coolmem.addr(10-1 downto 0),
+    pi_data_a => mem_a_in.coolmem.data,
+    po_data_a => mem_a_out.coolmem,
+
+    pi_clk_b  => pi_clock,
+    pi_ena_b  => mem_b_in.coolmem.ena,
+    pi_wr_b   => mem_b_in.coolmem.wr,
+    pi_addr_b => mem_b_in.coolmem.addr(10-1 downto 0),
+    pi_data_b => mem_b_in.coolmem.data,
+    po_data_b => mem_b_out.coolmem
+  );
 
 end architecture;

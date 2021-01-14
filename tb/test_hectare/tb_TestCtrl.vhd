@@ -24,7 +24,9 @@ entity TestCtrl is
 
     -- Register interface
     ModuleRegistersIn : out t_registers_test_hectare_in;
-    ModuleRegistersOut : in t_registers_test_hectare_out
+    ModuleRegistersOut : in t_registers_test_hectare_out;
+    ModuleMemoriesIn : out t_memories_test_hectare_in;
+    ModuleMemoriesOut : in t_memories_test_hectare_out
 
   ) ;
     constant AXI_ADDR_WIDTH : integer := AxiSuperTransRec.Address'length ; 

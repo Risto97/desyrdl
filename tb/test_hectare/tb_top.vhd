@@ -95,7 +95,9 @@ architecture sim of tb_top is
 
       -- Register interface
       ModuleRegistersIn : out t_registers_test_hectare_in;
-      ModuleRegistersOut : in t_registers_test_hectare_out
+      ModuleRegistersOut : in t_registers_test_hectare_out;
+      ModuleMemoriesIn : out t_memories_test_hectare_in;
+      ModuleMemoriesOut : in t_memories_test_hectare_out
     ) ;
   end component TestCtrl ;
 
@@ -104,6 +106,8 @@ architecture sim of tb_top is
   signal s2m_axi4_hectare : t_axi4_s2m;
   signal regs_in  : t_registers_test_hectare_in;
   signal regs_out : t_registers_test_hectare_out;
+  signal mem_in   : t_memories_test_hectare_in;
+  signal mem_out  : t_memories_test_hectare_out;
 
 begin
 
@@ -173,7 +177,10 @@ begin
     po_s_axi4 => s2m_axi4_hectare,
 
     pi_regs => regs_in,
-    po_regs => regs_out
+    po_regs => regs_out,
+
+    pi_mem => mem_in,
+    po_mem => mem_out
   );
 
   Axi4Super_1 : Axi4LiteMaster
@@ -213,7 +220,10 @@ begin
 
     -- Register interface
     ModuleRegistersIn => regs_in,
-    ModuleRegistersOut => regs_out
+    ModuleRegistersOut => regs_out,
+
+    ModuleMemoriesIn => mem_in,
+    ModuleMemoriesOut => mem_out
   ) ;
 
 end architecture sim;

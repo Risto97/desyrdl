@@ -18,7 +18,10 @@ entity top_reg_{modname} is
 
     -- logic
     pi_logic_regs : in t_registers_{modname}_in;
-    po_logic_regs : out t_registers_{modname}_out
+    po_logic_regs : out t_registers_{modname}_out;
+
+    pi_mem : in t_memories_{modname}_out;
+    po_mem : out t_memories_{modname}_in
   );
 end entity top_reg_{modname};
 
@@ -29,8 +32,8 @@ architecture arch of top_reg_{modname} is
   signal adapter_wdata : std_logic_vector(32-1 downto 0);
   signal adapter_rdata : t_32BitArray(C_REGCOUNT-1 downto 0);
 
-  signal adapter_mem_out : t_mem_out_arr(C_MEMNAMES-1 downto 0);
-  signal adapter_mem_in : t_mem_in_arr(C_MEMNAMES-1 downto 0);
+  signal adapter_from_dpm : t_mem_out_arr(C_MEMNAMES-1 downto 0);
+  signal adapter_to_dpm : t_mem_in_arr(C_MEMNAMES-1 downto 0);
 
 begin
   ins_adapter: entity work.adapter_axi4
@@ -47,8 +50,8 @@ begin
              clk           => pi_clock,
              reset         => pi_reset,
 
-             po_mem        => adapter_mem_in,
-             pi_mem        => adapter_mem_out,
+             po_mem        => adapter_to_dpm,
+             pi_mem        => adapter_from_dpm,
 
              S_AXI_AWADDR  => pi_s_axi4.awaddr(C_ADDR_W-1 downto 0),
              S_AXI_AWPROT  => (others => '0'),
@@ -83,36 +86,17 @@ begin
   po_s_axi4.rlast <= '0';
 
   -- memory instances
-
   --{memnames:repeat:memnames:
+
   blk_mem{{i}}_{{mem.inst_name}} : block
     constant l_idx : integer := {{i}};
   begin
     -- TODO implement arrays
-    ins_memory : entity work.dual_port_memory
-    generic map (
-      G_DATA_WIDTH => 32,
-      G_ADDR_WIDTH => C_MEM_AW(l_idx)
-    )
-    port map (
-      pi_clk_a  => pi_clock,
-      pi_ena_a  => adapter_mem_in(l_idx).ena,
-      pi_wr_a   => adapter_mem_in(l_idx).wr,
-      pi_addr_a => adapter_mem_in(l_idx).addr(C_MEM_AW(l_idx)-1 downto 0),
-      pi_data_a => adapter_mem_in(l_idx).data,
-      po_data_a => adapter_mem_out(l_idx),
+    po_mem.{{mem.inst_name}} <= adapter_to_dpm(l_idx);
+    adapter_from_dpm(l_idx) <= pi_mem.{{mem.inst_name}};
 
-      pi_clk_b  => pi_clock,
-      pi_ena_b  => pi_logic_regs.{{mem.inst_name}}.ena,
-      pi_wr_b   => pi_logic_regs.{{mem.inst_name}}.wr,
-      pi_addr_b => pi_logic_regs.{{mem.inst_name}}.addr(C_MEM_AW(l_idx)-1 downto 0),
-      pi_data_b => pi_logic_regs.{{mem.inst_name}}.data,
-      po_data_b => po_logic_regs.{{mem.inst_name}}
-    );
   end block;
-
   --}
-
 
   --{regnames:repeat:regnames:
   -- regname {{reg.inst_name}} regtype {{reg.type_name}}
