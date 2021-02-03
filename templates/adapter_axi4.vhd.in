@@ -59,173 +59,206 @@ end entity adapter_axi4;
 
 architecture arch of adapter_axi4 is
 
+  type t_target is (REG, MEM, EXT);
+  signal rtarget, wtarget : t_target;
+  signal rtarget_q, wtarget_q : t_target;
   -- read
-  type t_state_read is (sReadIdle, sReadSelect, sReadValid);
+  type t_state_read is (
+    ST_READ_IDLE, ST_READ_SELECT, ST_READ_VALID,
+    ST_READ_REG_BUSY,
+    ST_READ_MEM_BUSY,
+    ST_READ_EXT_BUSY
+  );
   signal state_read : t_state_read;
 
   signal rdata_reg : std_logic_vector(31 downto 0);
   signal rdata_mem : t_32BitArray(C_MEMNAMES-1 downto 0);
-  signal rdata_out : std_logic_vector(31 downto 0);
-  signal raddr_reg : std_logic_vector(G_ADDR_W-1 downto 0);
-  signal raddr_mem : unsigned(G_ADDR_W-2-1 downto 0);
-  signal raddr_word : integer;
-
-  signal raddr_is_reg : std_logic;
-  signal raddr_is_reg_q : std_logic;
+  signal raddr_q : std_logic_vector(G_ADDR_W-1 downto 0);
+  signal raddr_q_32 : unsigned(G_ADDR_W-2-1 downto 0);
+  signal raddr_q_32_int : integer;
 
   signal arready_wire : std_logic;
-  signal rvalid_wire : std_logic;
+  signal rdata   : std_logic_vector(31 downto 0);
 
   -- write
-  type t_state_write is (sWriteIdle, sWriteWaitData, sWriteWaitAddr, sWriteSelect, sWriteResp);
+  type t_state_write is (
+    ST_WriteIdle, ST_WriteWaitData, ST_WriteWaitAddr, ST_WriteSelect, ST_WriteResp,
+    ST_WriteRegBusy,
+    ST_WriteMemBusy,
+    ST_WriteExtBusy
+  );
   signal state_write : t_state_write;
   signal state_write_prev : t_state_write;
 
   signal wdata_q : std_logic_vector(31 downto 0);
   signal waddr_q : std_logic_vector(G_ADDR_W-1 downto 0);
-  signal waddr_mem : unsigned(G_ADDR_W-2-1 downto 0);
-  signal waddr_word : integer;
+  signal waddr_q_32 : unsigned(G_ADDR_W-2-1 downto 0);
+  signal waddr_q_32_int : integer;
 
-  signal waddr_is_reg : std_logic;
-
-  signal awready_wire : std_logic;
-  signal wready_wire : std_logic;
-  signal bvalid_wire : std_logic;
+  -- select read
+  signal reg_rsel : integer := 0;
+  signal mem_rsel : integer := 0;
+  signal ext_rsel : integer := 0;
+  signal reg_rsel_q : integer := 0;
+  signal mem_rsel_q : integer := 0;
+  signal ext_rsel_q : integer := 0;
+  -- select write
+  signal reg_wsel : integer := 0;
+  signal mem_wsel : integer := 0;
+  signal ext_wsel : integer := 0;
+  signal reg_wsel_q : integer := 0;
+  signal mem_wsel_q : integer := 0;
+  signal ext_wsel_q : integer := 0;
 
   -- memories
   signal mem_ren : std_logic_vector(C_MEMNAMES downto 0) := (others => '0');
-  signal mem_rsel : integer := 0;
-  signal mem_rsel_q : integer := 0;
   signal mem_rack : std_logic_vector(C_MEMNAMES downto 0) := (others => '0');
-  signal mem_rack_q : std_logic_vector(C_MEMNAMES downto 0) := (others => '0');
   signal mem_wen : std_logic_vector(C_MEMNAMES downto 0) := (others => '0');
-  signal mem_wsel : integer := 0;
   signal mem_wack : std_logic_vector(C_MEMNAMES downto 0) := (others => '0');
+
+  -- downstream interfaces
+  signal ext_ren : std_logic_vector(C_EXTNAMES downto 0) := (others => '0');
+  signal ext_rack : std_logic_vector(C_EXTNAMES downto 0) := (others => '0');
+  signal ext_wen : std_logic_vector(C_EXTNAMES downto 0) := (others => '0');
+  signal ext_wack : std_logic_vector(C_EXTNAMES downto 0) := (others => '0');
 
 begin
 
   -- ### read logic
 
-  proc_state_read: process (clk)
+  -- state transitions, assignment of extended state variables and assignment
+  -- of output signals in one process
+  prs_state_read: process (clk)
   begin
     if rising_edge(clk) then
       if reset = '1' then
-        state_read <= sReadIdle;
+        state_read <= ST_READ_IDLE;
       else
+        state_read <= state_read;
+
         case state_read is
-          when sReadIdle =>
+          when ST_READ_IDLE =>
             if S_AXI_ARVALID = '1' then
-              state_read <= sReadSelect;
-              raddr_reg <= S_AXI_ARADDR(G_ADDR_W-1 downto 0);
+              state_read <= ST_READ_SELECT;
+              raddr_q <= S_AXI_ARADDR(G_ADDR_W-1 downto 0);
+              S_AXI_RRESP <= "00";
+              S_AXI_RID <= S_AXI_ARID;
             end if;
 
-          when sReadSelect =>
+          when ST_READ_SELECT =>
             state_read <= state_read;
-            -- reading from a register is always done in 1 clock
-            if raddr_is_reg = '1' then
-              state_read <= sReadValid;
-            -- wait for an ack from memory logic
-            elsif mem_rack(mem_rsel) = '1' then
-              state_read <= sReadValid;
+            rtarget_q <= rtarget;
+            if rtarget = REG then
+              state_read <= ST_READ_REG_BUSY;
+              reg_rsel_q <= reg_rsel;
+            elsif rtarget = MEM then
+              state_read <= ST_READ_MEM_BUSY;
+              mem_rsel_q <= mem_rsel;
+              mem_ren <= (mem_rsel => '1', others => '0');
+            elsif rtarget = EXT then
+              state_read <= ST_READ_EXT_BUSY;
+              ext_rsel_q <= ext_rsel;
             end if;
-            S_AXI_RID <= S_AXI_ARID;
 
-          when sReadValid =>
+          when ST_READ_REG_BUSY =>
+            state_read <= ST_READ_VALID;
+            rdata_reg <= pi_regs(reg_rsel_q);
+
+          when ST_READ_MEM_BUSY =>
+            if mem_rack(mem_rsel_q) = '1' then
+              state_read <= ST_READ_VALID;
+              mem_ren <= (others => '0');
+            end if;
+
+          when ST_READ_VALID =>
             if S_AXI_RREADY = '1' then
-              state_read <= sReadIdle;
+              state_read <= ST_READ_IDLE;
+              S_AXI_RDATA <= rdata;
             end if;
         end case;
-
-        -- for selecting the read data during sReadValid
-        raddr_is_reg_q <= raddr_is_reg;
-        mem_rsel_q <= mem_rsel;
-        mem_rack_q <= mem_rack;
 
       end if;
     end if;
   end process;
 
-  raddr_word <= to_integer(unsigned(raddr_reg(G_ADDR_W-1 downto 2)));
-  raddr_mem <= unsigned(raddr_reg(G_ADDR_W-1 downto 2));
-
-  -- registers
-  proc_rdata_reg: process (clk)
-  begin
-    if rising_edge(clk) then
-      rdata_reg <= (others => '0');
-
-      for i in 0 to C_REGNAMES-1 loop
-        for j in 0 to C_REGISTER_INFO(i).N-1 loop
-          for k in 0 to C_REGISTER_INFO(i).M-1 loop
-            if raddr_word = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then
-              rdata_reg <= pi_regs(C_REGISTER_INFO(i).base+j*C_REGISTER_INFO(i).M+k);
-            end if;
-          end loop;
-        end loop;
-      end loop;
-
-    end if;
-  end process;
-
-  -- memories
-
-  -- select register or memory
-  proc_read_sel: process (state_read, raddr_word)
-  begin
-    raddr_is_reg <= '1'; -- default
-    -- TODO must be C_MEMCOUNT
-    for i in C_MEMNAMES-1 downto 0 loop
-      -- TODO optimize. Also see:
-      -- https://zipcpu.com/blog/2019/07/17/crossbar.html#examining-the-arbitration-code
-      case state_read is
-
-        when sReadSelect =>
-          if raddr_word-C_MEM_START(i)/4 >= 0 and raddr_word-(C_MEM_START(i)/4+2**C_MEM_AW(i)) < 0 then
-            raddr_is_reg <= '0';
-            mem_ren(i) <= '1';
-            mem_rsel <= i;
-          else
-            mem_ren(i) <= '0';
-          end if;
-
-        when others =>
-          raddr_is_reg <= '1';
-          mem_ren(i) <= '0';
-
-      end case;
-    end loop;
-  end process;
-
-  -- Data from either register or memory only becomes available for sReadValid
-  -- and must therefore be multiplexed combinatorically at the output.
-  proc_read_sel_out: process(rdata_reg, rdata_mem, raddr_is_reg_q, mem_rack_q, mem_rsel_q)
-  begin
-    if raddr_is_reg_q = '1' then
-      rdata_out <= rdata_reg;
-    elsif mem_rack_q(mem_rsel_q) = '1' then
-      rdata_out <= rdata_mem(mem_rsel_q);
-    end if;
-  end process;
-
-  proc_read_output: process (state_read)
+  -- have separate processes for improved overview and less errors during
+  -- development
+  prs_axi_rvalid: process (state_read)
   begin
     case state_read is
-      when sReadIdle =>
-        arready_wire <= '1';
-        rvalid_wire <= '0';
-      when sReadValid =>
-        arready_wire <= '0';
-        rvalid_wire <= '1';
+      when ST_READ_VALID =>
+        S_AXI_RVALID <= '1';
       when others =>
-        arready_wire <= '0';
-        rvalid_wire <= '0';
+        S_AXI_RVALID <= '0';
     end case;
   end process;
 
-  S_AXI_ARREADY <= arready_wire;
-  S_AXI_RVALID <= rvalid_wire;
-  S_AXI_RDATA <= rdata_out;
-  S_AXI_RRESP <= "00";
+  prs_axi_arready: process (state_read)
+  begin
+    case state_read is
+      when ST_READ_IDLE =>
+        S_AXI_ARREADY <= '1';
+      when others =>
+        S_AXI_ARREADY <= '0';
+    end case;
+  end process;
+
+  raddr_q_32 <= unsigned(raddr_q(G_ADDR_W-1 downto 2));
+  raddr_q_32_int <= to_integer(unsigned(raddr_q(G_ADDR_W-1 downto 2)));
+
+  prs_rtarget_sel: process (raddr_q_32_int)
+  begin
+
+    -- TODO: optimize: do the comparisons during ST_READ_IDLE
+    -- and put in raddr_is_mem_x[C_MEMCOUNT]
+    -- TODO must be C_MEMCOUNT
+    -- TODO optimize. Also see:
+    -- https://zipcpu.com/blog/2019/07/17/crossbar.html#examining-the-arbitration-code
+
+    for i in 0 to C_REGNAMES-1 loop
+      for j in 0 to C_REGISTER_INFO(i).N-1 loop
+        for k in 0 to C_REGISTER_INFO(i).M-1 loop
+          if raddr_q_32_int = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then
+            rtarget <= REG;
+            reg_rsel <= C_REGISTER_INFO(i).base+j*C_REGISTER_INFO(i).M+k;
+          end if;
+        end loop;
+      end loop;
+    end loop;
+
+    for i in C_MEMNAMES-1 downto 0 loop
+      if raddr_q_32_int-C_MEM_START(i)/4 >= 0
+      and raddr_q_32_int-(C_MEM_START(i)/4+2**C_MEM_AW(i)) < 0 then
+        rtarget <= MEM;
+        mem_rsel <= i;
+      end if;
+    end loop;
+
+    for i in C_EXTCOUNT-1 downto 0 loop
+      if raddr_q_32_int-C_EXT_START(i)/4 >= 0
+      and raddr_q_32_int-(C_EXT_START(i)/4+2**C_EXT_AW(i)) < 0 then
+        rtarget <= EXT;
+        ext_rsel <= i;
+      end if;
+    end loop;
+
+  end process;
+
+  -- Multiplex read data before ST_READ_VALID
+  prs_rdata_sel: process (rtarget_q, rdata_reg, rdata_mem, mem_rsel_q,
+                         rdata_ext, ext_rsel_q)
+  begin
+    case rtarget_q is
+      when REG =>
+        rdata <= rdata_reg;
+      when MEM =>
+        rdata <= rdata_mem(mem_rsel_q);
+      when EXT =>
+        rdata <= rdata_ext(ext_rsel_q);
+      when others =>
+        null;
+    end case;
+  end process;
 
   -- Dual-port memories
   gen_memories : for i in C_MEMNAMES-1 downto 0 generate
@@ -238,7 +271,7 @@ begin
     begin
       l_rwsel <= mem_ren(i) & mem_wen(i);
 
-      prs_rwsel : process(l_rwsel, l_mem_addr, waddr_mem, raddr_mem)
+      prs_rwsel : process(l_rwsel, l_mem_addr, waddr_q_32, raddr_q_32)
       begin
         case l_rwsel is
           when "00" =>
@@ -252,14 +285,14 @@ begin
           when "01" =>
             l_ena <= '1';
             l_wr <= '1';
-            l_mem_addr <= waddr_mem(C_MEM_AW(i)-1 downto 0);
+            l_mem_addr <= waddr_q_32(C_MEM_AW(i)-1 downto 0);
 
             mem_rack(i) <= '0';
             mem_wack(i) <= '1';
           when "10" =>
             l_ena <= '1';
             l_wr <= '0';
-            l_mem_addr <= raddr_mem(C_MEM_AW(i)-1 downto 0);
+            l_mem_addr <= raddr_q_32(C_MEM_AW(i)-1 downto 0);
 
             mem_rack(i) <= '1';
             mem_wack(i) <= '0';
@@ -267,7 +300,7 @@ begin
             -- read has precedence (random designer's choice)
             l_ena <= '1';
             l_wr <= '0';
-            l_mem_addr <= raddr_mem(C_MEM_AW(i)-1 downto 0);
+            l_mem_addr <= raddr_q_32(C_MEM_AW(i)-1 downto 0);
 
             mem_rack(i) <= '1';
             mem_wack(i) <= '0';
@@ -285,70 +318,90 @@ begin
   end generate;
 
   -- ### write logic
-  proc_state_write_prev: process (clk) begin
-    if rising_edge(clk) then
-      state_write_prev <= state_write;
-    end if;
-  end process;
 
-  proc_state_write: process (clk) begin
+  prs_state_write: process (clk) begin
     if rising_edge (clk) then
       if reset = '1' then
-        state_write <= sWriteIdle;
+        state_write <= ST_WriteIdle;
       else
         case state_write is
-          when sWriteIdle =>
+          when ST_WriteIdle =>
+
             if S_AXI_AWVALID = '1' and S_AXI_WVALID = '1' then
-              state_write <= sWriteSelect;
+              state_write <= ST_WriteSelect;
               waddr_q <= S_AXI_AWADDR;
+              S_AXI_BID <= S_AXI_AWID;
               wdata_q <= S_AXI_WDATA;
             elsif S_AXI_AWVALID = '1' and S_AXI_WVALID = '0' then
-              state_write <= sWriteWaitData;
+              state_write <= ST_WriteWaitData;
               waddr_q <= S_AXI_AWADDR;
+              S_AXI_BID <= S_AXI_AWID;
             elsif S_AXI_AWVALID = '0' and S_AXI_WVALID = '1' then
-              state_write <= sWriteWaitAddr;
+              state_write <= ST_WriteWaitAddr;
               wdata_q <= S_AXI_WDATA;
             end if;
-          when sWriteWaitData =>
+
+          when ST_WriteWaitData =>
             if S_AXI_WVALID = '1' then
-              state_write <= sWriteSelect;
+              state_write <= ST_WriteSelect;
               wdata_q <= S_AXI_WDATA;
             end if;
-          when sWriteWaitAddr =>
+
+          when ST_WriteWaitAddr =>
             if S_AXI_AWVALID = '1' then
-              state_write <= sWriteSelect;
+              state_write <= ST_WriteSelect;
               waddr_q <= S_AXI_AWADDR;
+              S_AXI_BID <= S_AXI_AWID;
             end if;
-          -- new select state now, optimize later
-          when sWriteSelect =>
-            if waddr_is_reg = '1' then
-              state_write <= sWriteResp;
-            elsif waddr_is_reg = '0' and mem_wack(mem_wsel) = '1' then
-              state_write <= sWriteResp;
-            else
-              state_write <= state_write;
+
+          when ST_WriteSelect =>
+            wtarget_q <= wtarget;
+            if wtarget = REG then
+              state_write <= ST_WriteResp;
+              --reg_wsel_q <= reg_wsel; -- unnecessary?
+              po_stb <= (reg_wsel => '1', others => '0');
+            elsif wtarget = MEM then
+              state_write <= ST_WriteMemBusy;
+              mem_wsel_q <= mem_wsel;
+              mem_wen <= (mem_wsel => '1', others => '0');
+            elsif wtarget = EXT then
+              state_write <= ST_WriteExtBusy;
+              ext_wsel_q <= ext_wsel;
             end if;
-            S_AXI_BID <= S_AXI_AWID;
-          when sWriteResp =>
+
+          when ST_WriteMemBusy =>
+            if mem_wack(mem_wsel_q) = '1' then
+              state_write <= ST_WriteResp;
+              mem_wen <= (others => '0');
+            end if;
+
+          when ST_WriteExtBusy =>
+            if ext_wack(ext_wsel_q) = '1' then
+              state_write <= ST_WriteResp;
+              ext_wen <= (others => '0');
+            end if;
+
+          when ST_WriteResp =>
+            po_stb <= (others => '0');
             if S_AXI_BREADY = '1' then
-              state_write <= sWriteIdle;
+              state_write <= ST_WriteIdle;
             end if;
         end case;
       end if;
     end if;
   end process;
 
-  waddr_word <= to_integer(unsigned(waddr_q(G_ADDR_W-1 downto 2)));
-  waddr_mem <= unsigned(waddr_q(G_ADDR_W-1 downto 2));
+  waddr_q_32 <= unsigned(waddr_q(G_ADDR_W-1 downto 2));
+  waddr_q_32_int <= to_integer(unsigned(waddr_q(G_ADDR_W-1 downto 2)));
 
-  proc_write_reg : process (clk) begin
+  prs_write_reg : process (clk) begin
     if rising_edge(clk) then
 
-      if state_write = sWriteResp and state_write_prev /= sWriteResp then
+      if state_write = ST_WriteResp and state_write_prev /= ST_WriteResp then
         for i in C_REGISTER_INFO'range loop
           for j in 0 to C_REGISTER_INFO(i).N-1 loop
             for k in 0 to C_REGISTER_INFO(i).M-1 loop
-              if waddr_word = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then
+              if waddr_q_32_int = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then
                 po_stb(C_REGISTER_INFO(i).base+j*C_REGISTER_INFO(i).M+k) <= '1';
               end if;
             end loop;
@@ -363,13 +416,48 @@ begin
     end if;
   end process;
 
-  proc_wdata_sel : process(state_write, waddr_word)
+  prs_write_sel: process (waddr_q_32_int)
+  begin
+
+    -- TODO this is a copy of the read address decoder, just a few renames.
+    -- Move to a procedure or so... right?
+
+    for i in 0 to C_REGNAMES-1 loop
+      for j in 0 to C_REGISTER_INFO(i).N-1 loop
+        for k in 0 to C_REGISTER_INFO(i).M-1 loop
+          if waddr_q_32_int = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then
+            wtarget <= REG;
+            reg_wsel <= C_REGISTER_INFO(i).base+j*C_REGISTER_INFO(i).M+k;
+          end if;
+        end loop;
+      end loop;
+    end loop;
+
+    for i in C_MEMNAMES-1 downto 0 loop
+      if waddr_q_32_int-C_MEM_START(i)/4 >= 0
+      and waddr_q_32_int-(C_MEM_START(i)/4+2**C_MEM_AW(i)) < 0 then
+        wtarget <= MEM;
+        mem_wsel <= i;
+      end if;
+    end loop;
+
+    for i in C_EXTCOUNT-1 downto 0 loop
+      if waddr_q_32_int-C_EXT_START(i)/4 >= 0
+      and waddr_q_32_int-(C_EXT_START(i)/4+2**C_EXT_AW(i)) < 0 then
+        wtarget <= EXT;
+        ext_wsel <= i;
+      end if;
+    end loop;
+
+  end process;
+
+  prs_wdata_sel : process(state_write, waddr_q_32_int)
   begin
     waddr_is_reg <= '1'; -- default
     for i in C_MEMNAMES-1 downto 0 loop
       case state_write is
-        when sWriteSelect =>
-          if waddr_word-C_MEM_START(i)/4 >= 0 and waddr_word-(C_MEM_START(i)/4+2**C_MEM_AW(i)) < 0 then
+        when ST_WriteSelect =>
+          if waddr_q_32_int-C_MEM_START(i)/4 >= 0 and waddr_q_32_int-(C_MEM_START(i)/4+2**C_MEM_AW(i)) < 0 then
             waddr_is_reg <= '0';
             mem_wen(i) <= '1';
             mem_wsel <= i;
@@ -384,33 +472,37 @@ begin
     end loop;
   end process;
 
-  proc_write_output: process (state_write) begin
+  -- have separate processes for improved overview and less errors during
+  -- development
+  prs_axi_bvalid: process (state_write)
+  begin
     case state_write is
-      when sWriteIdle =>
-        awready_wire <= '1';
-        wready_wire <= '1';
-        bvalid_wire <= '0';
-      when sWriteWaitData =>
-        awready_wire <= '0';
-        wready_wire <= '1';
-        bvalid_wire <= '0';
-      when sWriteWaitAddr =>
-        awready_wire <= '1';
-        wready_wire <= '0';
-        bvalid_wire <= '0';
-      when sWriteResp =>
-        awready_wire <= '0';
-        wready_wire <= '0';
-        bvalid_wire <= '1';
+      when ST_WriteResp =>
+        S_AXI_RVALID <= '1';
       when others =>
-        awready_wire <= '0';
-        wready_wire <= '0';
-        bvalid_wire <= '0';
+        S_AXI_RVALID <= '0';
     end case;
   end process;
 
-  S_AXI_AWREADY <= awready_wire;
-  S_AXI_WREADY <= wready_wire;
+  prs_axi_awready: process (state_write)
+  begin
+    case state_write is
+      when ST_WriteIdle | ST_WriteWaitAddr =>
+        S_AXI_AWREADY <= '1';
+      when others =>
+        S_AXI_AWREADY <= '0';
+    end case;
+  end process;
+
+  prs_axi_wready: process (state_write)
+  begin
+    case state_write is
+      when ST_WriteIdle | ST_WriteWaitData =>
+        S_AXI_WREADY <= '1';
+      when others =>
+        S_AXI_WREADY <= '0';
+    end case;
+  end process;
+
   S_AXI_BRESP <= "00";
-  S_AXI_BVALID <= bvalid_wire;
 end architecture;
