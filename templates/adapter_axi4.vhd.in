@@ -277,7 +277,7 @@ begin
 
       po_mem(i).ena <= l_ena;
       po_mem(i).wr <= l_wr;
-      po_mem(i).addr <= std_logic_vector(waddr_mem);
+      po_mem(i).addr <= (C_MEM_AW(i)-1 downto 0 => std_logic_vector(l_mem_addr), others => '0');
       po_mem(i).data <= wdata_q;
       rdata_mem(i) <= pi_mem(i);
 
