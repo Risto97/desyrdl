@@ -10,6 +10,7 @@ use ieee.numeric_std.all;
 
 library work;
 use work.pkg_types.all;
+use work.pkg_axi.all;
 use work.pkg_reg_{modname}.all; -- maybe rename to sth like pkg_axi4_foocomponent
 
 entity adapter_axi4 is
@@ -26,8 +27,15 @@ entity adapter_axi4 is
     po_we   : out std_logic;
     po_data : out std_logic_vector(32-1 downto 0);
 
+    -- external interfaces (if present) {n_memnames:ifgtzero:
     pi_mem : in t_mem_out_arr(C_MEMNAMES-1 downto 0);
     po_mem : out t_mem_in_arr(C_MEMNAMES-1 downto 0);
+    --}
+
+    -- external interfaces (if present) {n_extnames:ifgtzero:
+    pi_ext : in t_axi4_s2m_array(C_EXTCOUNT-1 downto 0);
+    po_ext : out t_axi4_m2s_array(C_EXTCOUNT-1 downto 0);
+    --}
 
     clk           : in std_logic;
     reset         : in std_logic;
@@ -73,22 +81,20 @@ architecture arch of adapter_axi4 is
 
   signal rdata_reg : std_logic_vector(31 downto 0);
   signal rdata_mem : t_32BitArray(C_MEMNAMES-1 downto 0);
+  signal rdata_ext : std_logic_vector(31 downto 0);
   signal raddr_q : std_logic_vector(G_ADDR_W-1 downto 0);
   signal raddr_q_32 : unsigned(G_ADDR_W-2-1 downto 0);
   signal raddr_q_32_int : integer;
 
-  signal arready_wire : std_logic;
   signal rdata   : std_logic_vector(31 downto 0);
 
   -- write
   type t_state_write is (
     ST_WriteIdle, ST_WriteWaitData, ST_WriteWaitAddr, ST_WriteSelect, ST_WriteResp,
-    ST_WriteRegBusy,
     ST_WriteMemBusy,
     ST_WriteExtBusy
   );
   signal state_write : t_state_write;
-  signal state_write_prev : t_state_write;
 
   signal wdata_q : std_logic_vector(31 downto 0);
   signal waddr_q : std_logic_vector(G_ADDR_W-1 downto 0);
@@ -117,10 +123,10 @@ architecture arch of adapter_axi4 is
   signal mem_wack : std_logic_vector(C_MEMNAMES downto 0) := (others => '0');
 
   -- downstream interfaces
-  signal ext_ren : std_logic_vector(C_EXTNAMES downto 0) := (others => '0');
-  signal ext_rack : std_logic_vector(C_EXTNAMES downto 0) := (others => '0');
-  signal ext_wen : std_logic_vector(C_EXTNAMES downto 0) := (others => '0');
-  signal ext_wack : std_logic_vector(C_EXTNAMES downto 0) := (others => '0');
+  signal ext_ren : std_logic_vector(C_EXTCOUNT downto 0) := (others => '0');
+  signal ext_rack : std_logic_vector(C_EXTCOUNT downto 0) := (others => '0');
+  signal ext_wen : std_logic_vector(C_EXTCOUNT downto 0) := (others => '0');
+  signal ext_wack : std_logic_vector(C_EXTCOUNT downto 0) := (others => '0');
 
 begin
 
@@ -133,6 +139,7 @@ begin
     if rising_edge(clk) then
       if reset = '1' then
         state_read <= ST_READ_IDLE;
+        mem_ren <= (others => '0');
       else
         state_read <= state_read;
 
@@ -154,10 +161,15 @@ begin
             elsif rtarget = MEM then
               state_read <= ST_READ_MEM_BUSY;
               mem_rsel_q <= mem_rsel;
-              mem_ren <= (mem_rsel => '1', others => '0');
+              mem_ren(mem_rsel) <= '1';
+            -- external interfaces (if present) {n_extnames:ifgtzero:
             elsif rtarget = EXT then
               state_read <= ST_READ_EXT_BUSY;
               ext_rsel_q <= ext_rsel;
+              po_ext(ext_rsel).arvalid <= '1';
+              po_ext(ext_rsel).araddr <= raddr_q;
+              po_ext(ext_rsel).rready <= '1';
+              --}
             end if;
 
           when ST_READ_REG_BUSY =>
@@ -170,11 +182,30 @@ begin
               mem_ren <= (others => '0');
             end if;
 
+          -- external interfaces (if present) {n_extnames:ifgtzero:
+          when ST_READ_EXT_BUSY =>
+            -- This state begins with awvalid=1 and wvalid=1, so once we see a
+            -- ready signal the addr or data was accepted.
+            if pi_ext(ext_rsel_q).arready = '1' then
+              po_ext(ext_rsel_q).arvalid <= '0';
+            end if;
+
+            if pi_ext(ext_rsel_q).rvalid = '1' then
+              state_read <= ST_READ_VALID;
+              rdata_ext <= pi_ext(ext_rsel_q).rdata;
+
+              po_ext(ext_rsel_q).arvalid <= '0';
+            end if; --}
+
           when ST_READ_VALID =>
             if S_AXI_RREADY = '1' then
               state_read <= ST_READ_IDLE;
-              S_AXI_RDATA <= rdata;
             end if;
+
+          when others =>
+            state_read <= ST_READ_IDLE;
+            mem_ren <= (others => '0');
+
         end case;
 
       end if;
@@ -234,31 +265,24 @@ begin
       end if;
     end loop;
 
+    -- external interfaces (if present) {n_extnames:ifgtzero:
     for i in C_EXTCOUNT-1 downto 0 loop
       if raddr_q_32_int-C_EXT_START(i)/4 >= 0
       and raddr_q_32_int-(C_EXT_START(i)/4+2**C_EXT_AW(i)) < 0 then
         rtarget <= EXT;
         ext_rsel <= i;
       end if;
-    end loop;
+    end loop; --}
 
   end process;
 
-  -- Multiplex read data before ST_READ_VALID
-  prs_rdata_sel: process (rtarget_q, rdata_reg, rdata_mem, mem_rsel_q,
-                         rdata_ext, ext_rsel_q)
-  begin
-    case rtarget_q is
-      when REG =>
-        rdata <= rdata_reg;
-      when MEM =>
-        rdata <= rdata_mem(mem_rsel_q);
-      when EXT =>
-        rdata <= rdata_ext(ext_rsel_q);
-      when others =>
-        null;
-    end case;
-  end process;
+  S_AXI_RDATA <= rdata;
+  -- Multiplex read data
+  with rtarget_q select rdata <=
+    rdata_reg when REG,
+    rdata_mem(mem_rsel_q) when MEM,
+    rdata_ext when EXT,
+    rdata_reg when others;
 
   -- Dual-port memories
   gen_memories : for i in C_MEMNAMES-1 downto 0 generate
@@ -323,6 +347,7 @@ begin
     if rising_edge (clk) then
       if reset = '1' then
         state_write <= ST_WriteIdle;
+        mem_wen <= (others => '0');
       else
         case state_write is
           when ST_WriteIdle =>
@@ -359,14 +384,21 @@ begin
             if wtarget = REG then
               state_write <= ST_WriteResp;
               --reg_wsel_q <= reg_wsel; -- unnecessary?
-              po_stb <= (reg_wsel => '1', others => '0');
+              po_we <= '1';
+              po_stb(reg_wsel) <= '1';
             elsif wtarget = MEM then
               state_write <= ST_WriteMemBusy;
               mem_wsel_q <= mem_wsel;
-              mem_wen <= (mem_wsel => '1', others => '0');
+              mem_wen(mem_wsel) <= '1';
+            -- external interfaces (if present) {n_extnames:ifgtzero:
             elsif wtarget = EXT then
               state_write <= ST_WriteExtBusy;
               ext_wsel_q <= ext_wsel;
+              po_ext(ext_wsel).awvalid <= '1';
+              po_ext(ext_wsel).awaddr <= waddr_q;
+              po_ext(ext_wsel).wvalid <= '1';
+              po_ext(ext_wsel).wdata <= wdata_q;
+              po_ext(ext_wsel).bready <= '1'; --}
             end if;
 
           when ST_WriteMemBusy =>
@@ -375,17 +407,36 @@ begin
               mem_wen <= (others => '0');
             end if;
 
+          -- external interfaces (if present) {n_extnames:ifgtzero:
           when ST_WriteExtBusy =>
-            if ext_wack(ext_wsel_q) = '1' then
-              state_write <= ST_WriteResp;
-              ext_wen <= (others => '0');
+            -- This state begins with awvalid=1 and wvalid=1, so once we see a
+            -- ready signal the addr or data was accepted.
+            if pi_ext(ext_wsel_q).awready = '1' then
+              po_ext(ext_wsel_q).awvalid <= '0';
+            end if;
+            if pi_ext(ext_wsel_q).wready = '1' then
+              po_ext(ext_wsel_q).wvalid <= '0';
             end if;
 
+            if pi_ext(ext_wsel_q).bvalid = '1' then
+              state_write <= ST_WriteResp;
+
+              -- might not be neccesarry
+              po_ext(ext_wsel_q).awvalid <= '0';
+              po_ext(ext_wsel_q).wvalid <= '0';
+            end if; --}
+
           when ST_WriteResp =>
+            po_we <= '0';
             po_stb <= (others => '0');
             if S_AXI_BREADY = '1' then
               state_write <= ST_WriteIdle;
             end if;
+
+          when others =>
+            state_write <= ST_WriteIdle;
+            mem_wen <= (others => '0');
+
         end case;
       end if;
     end if;
@@ -394,27 +445,7 @@ begin
   waddr_q_32 <= unsigned(waddr_q(G_ADDR_W-1 downto 2));
   waddr_q_32_int <= to_integer(unsigned(waddr_q(G_ADDR_W-1 downto 2)));
 
-  prs_write_reg : process (clk) begin
-    if rising_edge(clk) then
-
-      if state_write = ST_WriteResp and state_write_prev /= ST_WriteResp then
-        for i in C_REGISTER_INFO'range loop
-          for j in 0 to C_REGISTER_INFO(i).N-1 loop
-            for k in 0 to C_REGISTER_INFO(i).M-1 loop
-              if waddr_q_32_int = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then
-                po_stb(C_REGISTER_INFO(i).base+j*C_REGISTER_INFO(i).M+k) <= '1';
-              end if;
-            end loop;
-          end loop;
-        end loop;
-        po_we <= '1';
-      else
-        po_stb <= (others => '0');
-        po_we <= '0';
-      end if;
-      po_data <= wdata_q;
-    end if;
-  end process;
+  po_data <= wdata_q; -- REG
 
   prs_write_sel: process (waddr_q_32_int)
   begin
@@ -441,35 +472,15 @@ begin
       end if;
     end loop;
 
+    -- external interfaces (if present) {n_extnames:ifgtzero:
     for i in C_EXTCOUNT-1 downto 0 loop
       if waddr_q_32_int-C_EXT_START(i)/4 >= 0
       and waddr_q_32_int-(C_EXT_START(i)/4+2**C_EXT_AW(i)) < 0 then
         wtarget <= EXT;
         ext_wsel <= i;
       end if;
-    end loop;
+    end loop; --}
 
-  end process;
-
-  prs_wdata_sel : process(state_write, waddr_q_32_int)
-  begin
-    waddr_is_reg <= '1'; -- default
-    for i in C_MEMNAMES-1 downto 0 loop
-      case state_write is
-        when ST_WriteSelect =>
-          if waddr_q_32_int-C_MEM_START(i)/4 >= 0 and waddr_q_32_int-(C_MEM_START(i)/4+2**C_MEM_AW(i)) < 0 then
-            waddr_is_reg <= '0';
-            mem_wen(i) <= '1';
-            mem_wsel <= i;
-          else
-            waddr_is_reg <= '1';
-            mem_wen(i) <= '0';
-          end if;
-        when others =>
-          waddr_is_reg <= '1';
-          mem_wen(i) <= '0';
-      end case;
-    end loop;
   end process;
 
   -- have separate processes for improved overview and less errors during
@@ -478,9 +489,9 @@ begin
   begin
     case state_write is
       when ST_WriteResp =>
-        S_AXI_RVALID <= '1';
+        S_AXI_BVALID <= '1';
       when others =>
-        S_AXI_RVALID <= '0';
+        S_AXI_BVALID <= '0';
     end case;
   end process;
 

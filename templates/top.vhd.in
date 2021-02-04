@@ -21,7 +21,11 @@ entity top_reg_{modname} is
     po_logic_regs : out t_registers_{modname}_out;
 
     pi_mem : in t_memories_{modname}_out;
-    po_mem : out t_memories_{modname}_in
+    po_mem : out t_memories_{modname}_in;
+
+    -- external interfaces (if present) {n_extnames:ifgtzero:
+    pi_ext : in t_axi4_s2m_array(C_EXTCOUNT-1 downto 0);
+    po_ext : out t_axi4_m2s_array(C_EXTCOUNT-1 downto 0) --}
   );
 end entity top_reg_{modname};
 
@@ -34,6 +38,9 @@ architecture arch of top_reg_{modname} is
 
   signal adapter_from_dpm : t_mem_out_arr(C_MEMNAMES-1 downto 0);
   signal adapter_to_dpm : t_mem_in_arr(C_MEMNAMES-1 downto 0);
+
+  signal adapter_from_ext : t_axi4_s2m_array(C_EXTCOUNT downto 0);
+  signal adapter_to_ext : t_axi4_m2s_array(C_EXTCOUNT downto 0);
 
 begin
   ins_adapter: entity work.adapter_axi4
@@ -52,6 +59,11 @@ begin
 
              po_mem        => adapter_to_dpm,
              pi_mem        => adapter_from_dpm,
+
+             -- external interfaces (if present) {n_extnames:ifgtzero:
+             po_ext        => adapter_to_ext(C_EXTCOUNT-1 downto 0),
+             pi_ext        => adapter_from_ext(C_EXTCOUNT-1 downto 0),
+             --}
 
              S_AXI_AWADDR  => pi_s_axi4.awaddr(C_ADDR_W-1 downto 0),
              S_AXI_AWPROT  => (others => '0'),
@@ -77,6 +89,12 @@ begin
              S_AXI_RREADY  => pi_s_axi4.rready,
              S_AXI_RID     => po_s_axi4.rid
            );
+
+  --adapter_from_ext(C_EXTCOUNT) <= C_AXI4_S2M_DEFAULT;
+  -- external interfaces (if present) {n_extnames:ifgtzero:
+  po_ext <= adapter_to_ext(C_EXTCOUNT-1 downto 0);
+  adapter_from_ext(C_EXTCOUNT-1 downto 0) <= pi_ext;
+  --}
 
   po_s_axi4.aclk <= pi_clock;
   -- needed?

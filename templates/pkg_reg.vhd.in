@@ -51,7 +51,7 @@ package pkg_reg_{modname} is
     swmod : std_logic;
   end record;
 
-  constant C_ADDR_W : integer := 16;
+  constant C_ADDR_W : integer := 32;
 
   type t_mem_in is record
     ena  : std_logic;
@@ -90,6 +90,21 @@ package pkg_reg_{modname} is
     --{memnames:repeat:memnames:
     {{i}} => {{mem.address_offset}}, -- {{mem.inst_name}}}
     C_MEMNAMES => 0 -- dummy
+  );
+
+  constant C_EXTNAMES : integer := {n_extnames};
+  constant C_EXTCOUNT : integer := C_EXTNAMES;
+  constant C_EXT_AW : T_IntegerArray(C_EXTNAMES downto 0) := (
+    -- divide by four for addressing 32-bit elements
+    --{extnames:repeat:extnames:
+    {{i}} => ceil_log2({{ext.size}}/4), -- {{ext.inst_name}}}
+    C_EXTNAMES => 0 -- dummy
+  );
+  -- The two numbers below must both be a multiple of 4 (for 32 bit addresses)
+  constant C_EXT_START : T_IntegerArray(C_EXTNAMES downto 0) := (
+    --{extnames:repeat:extnames:
+    {{i}} => {{ext.address_offset}}, -- {{ext.inst_name}}}
+    C_EXTNAMES => 0 -- dummy
   );
 
   -- register types
