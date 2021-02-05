@@ -97,6 +97,7 @@ architecture arch of adapter_axi4 is
   signal state_write : t_state_write;
 
   signal wdata_q : std_logic_vector(31 downto 0);
+  signal wstrb_q : std_logic_vector(3 downto 0);
   signal waddr_q : std_logic_vector(G_ADDR_W-1 downto 0);
   signal waddr_q_32 : unsigned(G_ADDR_W-2-1 downto 0);
   signal waddr_q_32_int : integer;
@@ -123,12 +124,40 @@ architecture arch of adapter_axi4 is
   signal mem_wack : std_logic_vector(C_MEMNAMES downto 0) := (others => '0');
 
   -- downstream interfaces
-  signal ext_ren : std_logic_vector(C_EXTCOUNT downto 0) := (others => '0');
-  signal ext_rack : std_logic_vector(C_EXTCOUNT downto 0) := (others => '0');
-  signal ext_wen : std_logic_vector(C_EXTCOUNT downto 0) := (others => '0');
-  signal ext_wack : std_logic_vector(C_EXTCOUNT downto 0) := (others => '0');
+
+  -- Oh you wanted to write to the same record from multiple processes?
+  -- I don't care if the individual signals are indepentent SCREW YOU go
+  -- and use separate signals for each.
+  signal arvalid : std_logic_vector (C_EXTCOUNT downto 0);
+  signal araddr : T_32BitArray (C_EXTCOUNT downto 0);
+  signal rready : std_logic_vector (C_EXTCOUNT downto 0);
+
+  signal awvalid : std_logic_vector (C_EXTCOUNT downto 0);
+  signal wvalid : std_logic_vector (C_EXTCOUNT downto 0);
+  signal bready : std_logic_vector (C_EXTCOUNT downto 0);
+  signal awaddr : T_32BitArray (C_EXTCOUNT downto 0);
+  signal wdata : T_32BitArray (C_EXTCOUNT downto 0);
+  signal wstrb : T_4BitArray (C_EXTCOUNT downto 0);
 
 begin
+
+  gen_ext_if : for i in C_EXTCOUNT-1 downto 0 generate
+    po_ext(i).arvalid <= arvalid(i);
+    po_ext(i).araddr <= (
+      C_EXT_AW(i)-1 downto 0 => araddr(i)(C_EXT_AW(i)-1 downto 0),
+      others                 => '0'
+    );
+    po_ext(i).rready <= rready(i);
+    po_ext(i).awvalid <= awvalid(i);
+    po_ext(i).wvalid <= wvalid(i);
+    po_ext(i).bready <= bready(i);
+    po_ext(i).awaddr <= (
+      C_EXT_AW(i)-1 downto 0 => awaddr(i)(C_EXT_AW(i)-1 downto 0),
+      others                 => '0'
+    );
+    po_ext(i).wdata(31 downto 0) <= wdata(i);
+    po_ext(i).wstrb(3 downto 0) <= wstrb(i);
+  end generate;
 
   -- ### read logic
 
@@ -140,6 +169,12 @@ begin
       if reset = '1' then
         state_read <= ST_READ_IDLE;
         mem_ren <= (others => '0');
+
+        -- some AXI4 signals must be reset here
+        for i in C_EXTCOUNT-1 downto 0 loop
+          arvalid(i) <= '0';
+          rready(i) <= '0';
+        end loop;
       else
         state_read <= state_read;
 
@@ -166,9 +201,9 @@ begin
             elsif rtarget = EXT then
               state_read <= ST_READ_EXT_BUSY;
               ext_rsel_q <= ext_rsel;
-              po_ext(ext_rsel).arvalid <= '1';
-              po_ext(ext_rsel).araddr <= raddr_q;
-              po_ext(ext_rsel).rready <= '1';
+              arvalid(ext_rsel) <= '1';
+              araddr(ext_rsel) <= raddr_q;
+              rready(ext_rsel) <= '1';
               --}
             end if;
 
@@ -187,14 +222,14 @@ begin
             -- This state begins with awvalid=1 and wvalid=1, so once we see a
             -- ready signal the addr or data was accepted.
             if pi_ext(ext_rsel_q).arready = '1' then
-              po_ext(ext_rsel_q).arvalid <= '0';
+              arvalid(ext_rsel_q) <= '0';
             end if;
 
             if pi_ext(ext_rsel_q).rvalid = '1' then
               state_read <= ST_READ_VALID;
-              rdata_ext <= pi_ext(ext_rsel_q).rdata;
+              rdata_ext <= pi_ext(ext_rsel_q).rdata(31 downto 0);
 
-              po_ext(ext_rsel_q).arvalid <= '0';
+              arvalid(ext_rsel_q) <= '1';
             end if; --}
 
           when ST_READ_VALID =>
@@ -348,6 +383,13 @@ begin
       if reset = '1' then
         state_write <= ST_WriteIdle;
         mem_wen <= (others => '0');
+
+        -- some AXI4 signals must be reset here
+        for i in C_EXTCOUNT-1 downto 0 loop
+          awvalid(i) <= '0';
+          wvalid(i) <= '0';
+          bready(i) <= '0';
+        end loop;
       else
         case state_write is
           when ST_WriteIdle =>
@@ -357,6 +399,7 @@ begin
               waddr_q <= S_AXI_AWADDR;
               S_AXI_BID <= S_AXI_AWID;
               wdata_q <= S_AXI_WDATA;
+              wstrb_q <= S_AXI_WSTRB;
             elsif S_AXI_AWVALID = '1' and S_AXI_WVALID = '0' then
               state_write <= ST_WriteWaitData;
               waddr_q <= S_AXI_AWADDR;
@@ -364,12 +407,14 @@ begin
             elsif S_AXI_AWVALID = '0' and S_AXI_WVALID = '1' then
               state_write <= ST_WriteWaitAddr;
               wdata_q <= S_AXI_WDATA;
+              wstrb_q <= S_AXI_WSTRB;
             end if;
 
           when ST_WriteWaitData =>
             if S_AXI_WVALID = '1' then
               state_write <= ST_WriteSelect;
               wdata_q <= S_AXI_WDATA;
+              wstrb_q <= S_AXI_WSTRB;
             end if;
 
           when ST_WriteWaitAddr =>
@@ -394,11 +439,12 @@ begin
             elsif wtarget = EXT then
               state_write <= ST_WriteExtBusy;
               ext_wsel_q <= ext_wsel;
-              po_ext(ext_wsel).awvalid <= '1';
-              po_ext(ext_wsel).awaddr <= waddr_q;
-              po_ext(ext_wsel).wvalid <= '1';
-              po_ext(ext_wsel).wdata <= wdata_q;
-              po_ext(ext_wsel).bready <= '1'; --}
+              awvalid(ext_wsel) <= '1';
+              awaddr(ext_wsel) <= waddr_q;
+              wvalid(ext_wsel) <= '1';
+              wdata(ext_wsel) <= wdata_q;
+              wstrb(ext_wsel) <= wstrb_q;
+              bready(ext_wsel) <= '1'; --}
             end if;
 
           when ST_WriteMemBusy =>
@@ -412,18 +458,19 @@ begin
             -- This state begins with awvalid=1 and wvalid=1, so once we see a
             -- ready signal the addr or data was accepted.
             if pi_ext(ext_wsel_q).awready = '1' then
-              po_ext(ext_wsel_q).awvalid <= '0';
+              awvalid(ext_wsel_q) <= '0';
             end if;
             if pi_ext(ext_wsel_q).wready = '1' then
-              po_ext(ext_wsel_q).wvalid <= '0';
+              wvalid(ext_wsel_q) <= '0';
             end if;
 
             if pi_ext(ext_wsel_q).bvalid = '1' then
               state_write <= ST_WriteResp;
+              bready(ext_wsel_q) <= '0';
 
-              -- might not be neccesarry
-              po_ext(ext_wsel_q).awvalid <= '0';
-              po_ext(ext_wsel_q).wvalid <= '0';
+              -- might be redundant
+              awvalid(ext_wsel_q) <= '0';
+              wvalid(ext_wsel_q) <= '0';
             end if; --}
 
           when ST_WriteResp =>
