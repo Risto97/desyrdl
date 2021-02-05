@@ -229,8 +229,8 @@ begin
     end process;
 
     spi_dout(23) <= rena;
-    spi_dout(22 downto g_addr_width) <= (others => '0');
-    spi_dout(g_addr_width-1 downto 0) <= addr(1+g_addr_width downto 2);
+    spi_dout(22 downto g_addr_width+8) <= (others => '0');
+    spi_dout(g_addr_width+8-1 downto 8) <= addr(g_addr_width-1 downto 0);
 
     spi_dout(3 downto 0) <= data(3 downto 0);
 

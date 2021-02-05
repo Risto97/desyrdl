@@ -16,5 +16,5 @@ addrmap test_hectare {
     mementries = 1024;
   } coolmem;
 
-  external spi_ad9510 spi_ad9510_a ;
+  external spi_ad9510 spi_ad9510_a @0x10000;
 };

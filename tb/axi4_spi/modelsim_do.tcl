@@ -38,3 +38,4 @@ add wave /tb_top/*
 add wave /tb_top/ins_dut/*
 add wave /tb_top/ins_dut/ins_top_reg_test_hectare/*
 add wave /tb_top/ins_dut/ins_top_reg_test_hectare/ins_adapter/*
+add wave /tb_top/ins_dut/ins_axi4_spi/*

@@ -127,6 +127,9 @@ begin
   );
 
   ins_axi4_spi : entity work.axi4_spi
+  generic map (
+    g_addr_width => 5
+  )
   port map (
     pi_clock => pi_clock,
     pi_reset => pi_reset,
