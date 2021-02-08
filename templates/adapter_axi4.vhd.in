@@ -219,7 +219,7 @@ begin
 
           -- external interfaces (if present) {n_extnames:ifgtzero:
           when ST_READ_EXT_BUSY =>
-            -- This state begins with awvalid=1 and wvalid=1, so once we see a
+            -- This state begins with arvalid=1, so once we see a
             -- ready signal the addr or data was accepted.
             if pi_ext(ext_rsel_q).arready = '1' then
               arvalid(ext_rsel_q) <= '0';
@@ -228,8 +228,10 @@ begin
             if pi_ext(ext_rsel_q).rvalid = '1' then
               state_read <= ST_READ_VALID;
               rdata_ext <= pi_ext(ext_rsel_q).rdata(31 downto 0);
+              rready(ext_rsel_q) <= '0';
 
-              arvalid(ext_rsel_q) <= '1';
+              -- might be redundant
+              arvalid(ext_rsel_q) <= '0';
             end if; --}
 
           when ST_READ_VALID =>
