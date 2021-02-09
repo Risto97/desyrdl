@@ -1,0 +1,12 @@
+@MAPFILE_REVISION 9999
+{addrmaps:repeat:addrmaps:
+{{regnames:repeat:regnames:
+{{{{addrmap}}}}.{{{{i}}}}.{{{{reg.inst_name}}}} {{{{M}}}} {{{{reg.absolute_address}}}} {{{{reg.total_size}}}} {{{{bar}}}} {{{{reg.size}}}} 0 0 {{{{rw}}}}
+}}
+{{memnames:repeat:memnames:
+{{{{addrmap}}}}.{{{{i}}}}.{{{{mem.inst_name}}}} {{{{M}}}} {{{{mem.absolute_address}}}} {{{{mem.total_size}}}} {{{{bar}}}} {{{{mem.size}}}} 0 0 RW
+}}
+{{extnames:repeat:extnames:
+{{{{addrmap}}}}.{{{{i}}}}.{{{{ext.inst_name}}}} {{{{ext.size}}}} {{{{ext.absolute_address}}}} {{{{ext.total_size}}}} {{{{bar}}}} {{{{ext.size}}}} 0 0 RW
+}}
+}

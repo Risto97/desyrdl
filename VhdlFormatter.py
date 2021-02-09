@@ -5,7 +5,7 @@ from pathlib import Path # get filenames
 
 from systemrdl import RDLCompileError, RDLCompiler, RDLWalker
 from systemrdl import RDLListener
-from systemrdl.node import RegNode, FieldNode, AddressableNode, AddrmapNode, MemNode, RootNode
+from systemrdl.node import RegNode, RegfileNode, FieldNode, AddressableNode, AddrmapNode, MemNode, RootNode
 
 
 class VhdlFormatter(string.Formatter):
@@ -23,6 +23,13 @@ class VhdlFormatter(string.Formatter):
             return "std_logic_vector(to_signed({reset}, {width}))".format(reset=reset, width=32)
 
     def format_field(self, value, spec):
+        if spec.startswith("ifgtzero"):
+            template = spec.partition(":")[2]
+            if value > 0:
+                return template
+            else:
+                return ""
+
         if spec == "ftype" and isinstance(value, FieldNode):
             # Expects FieldNode type as value
             if value.get_property("counter"):
@@ -99,6 +106,8 @@ class VhdlFormatter(string.Formatter):
                     N = r[1].array_dimensions[0] if (r[1].is_array and len(r[1].array_dimensions)==2) else 1
                     M = r[1].array_dimensions[1] if (r[1].is_array and len(r[1].array_dimensions)==2) else r[1].array_dimensions[0] if (r[1].is_array and len(r[1].array_dimensions)==1) else 1
                     base.append(base[i]+N*M)
+                for reg in value:
+                    print(f"reg: {reg[1].owning_addrmap.inst_name}")
 
                 # format the template
                 return ''.join([self.format(
@@ -108,7 +117,10 @@ class VhdlFormatter(string.Formatter):
                     reg=r[1],
                     # please don't look at the next two lines. On refactoring I will put it in a dict, promise.
                     N= r[1].array_dimensions[0] if (r[1].is_array and len(r[1].array_dimensions)==2) else 1,
-                    M= r[1].array_dimensions[1] if (r[1].is_array and len(r[1].array_dimensions)==2) else r[1].array_dimensions[0] if (r[1].is_array and len(r[1].array_dimensions)==1) else 1)
+                    M= r[1].array_dimensions[1] if (r[1].is_array and len(r[1].array_dimensions)==2) else r[1].array_dimensions[0] if (r[1].is_array and len(r[1].array_dimensions)==1) else 1,
+                    rw = "RW" if r[1].has_sw_writable else "RO",
+                    addrmap = r[1].owning_addrmap,
+                    bar = r[1].owning_addrmap.get_property("bar"))
                     for r in value])
             elif what == "memnames":
                 # for..in..if filters the list comprehension
@@ -118,8 +130,18 @@ class VhdlFormatter(string.Formatter):
                 return ''.join([self.format(
                     template,
                     i=m[0],
-                    mem=m[1])
+                    mem=m[1],
+                    addrmap = m[1].owning_addrmap,
+                    bar = m[1].owning_addrmap.get_property("bar"))
                     for m in value])
+            elif what == "extnames":
+                return ''.join([self.format(
+                    template,
+                    i=ext[0],
+                    ext=ext[1],
+                    addrmap = ext[1].owning_addrmap,
+                    bar = ext[1].owning_addrmap.get_property("bar"))
+                    for ext in value])
 
             else:
                 return "-- VOID" # this shouldn't happen
@@ -166,7 +188,7 @@ class VhdlListener(RDLListener):
             if node.type_name not in self.memtypes:
                 self.memtypes[node.type_name] = node
 
-        if isinstance(node, RegNode):
+        if isinstance(node, RegNode) and not node.external:
             if node.type_name not in self.regtypes:
                 self.regtypes[node.type_name] = node
 
@@ -249,10 +271,16 @@ def main():
             print([regname[1].inst_name for regname in regnames])
             memnames = [x for x in gen_node_names(node, MemNode, first_only=False)]
             print([memname[1].inst_name for memname in memnames])
+            extnames = [x for x in gen_node_names(node, RegfileNode, first_only=False) if node.external]
+            #print([extname[1].inst_name for extname in extnames])
+            print([extname for extname in extnames])
+            #addrmaps = [x for x in gen_node_names(node, AddrmapNode, first_only=False)])
             regcount = get_regcount(node, RegNode)
             print("regcount = {}".format(regcount))
 
-            for tpl in Path('./templates').glob('*.vhd.in'):
+            basedir = Path(__file__).parent.absolute()
+            tpldir = basedir / "templates"
+            for tpl in tpldir.glob('*.in'):
                 with tpl.open('r') as f_in:
                     s_in = f_in.read()
                 # creating "views" on dictionaries: d.keys(), d.values() or d.items()
@@ -275,11 +303,13 @@ def main():
                         memtypes=memtypes.values(),
                         regnames=regnames,
                         memnames=memnames,
+                        extnames=extnames,
                         n_regtypes=len(regtypes), # sigh..
                         n_regnames=len(regnames),
                         n_regcount=regcount,
                         n_memtypes=len(memtypes),
-                        n_memnames=len(memnames))
+                        n_memnames=len(memnames),
+                        n_extnames=len(extnames))
 
                 suffix = "".join(tpl.suffixes) # get the ".vhd.in"
                 out_file = "".join([str(tpl.name).replace(suffix, ""), "_", node.inst_name, ".vhd"])
