@@ -196,6 +196,33 @@ class VhdlFormatter(string.Formatter):
                     addr = ext[1].absolute_address-baraddr[ext[0]],
                     bar = bar[ext[0]])
                     for ext in value])
+            elif what == "addrmaps":
+                addrmap = []
+                bar = []
+                baraddr = []
+                for x in value:
+                    if x[1].is_array:
+                        addrmap.append(f"{x[1].parent.inst_name}.{x[1].owning_addrmap.current_idx}")
+                    else:
+                        addrmap.append(f"{x[1].parent.inst_name}.0")
+
+                    parent = x[1]
+                    while parent.get_property("BAR") == None:
+                        parent = parent.parent
+                    bar.append(parent.get_property("BAR"))
+                    baraddr.append(parent.absolute_address)
+
+                return ''.join([self.format(
+                    template,
+                    i=x[0],
+                    x=x[1],
+                    # FIXME this only works because SPI registers are 8 bits wide.
+                    #       With 32 bit registers it would have to be total_size/4
+                    total_words = x[1].total_size,
+                    addrmap = addrmap[x[0]],
+                    addr = x[1].absolute_address-baraddr[x[0]],
+                    bar = bar[x[0]])
+                    for x in value])
 
             else:
                 return "-- VOID" # this shouldn't happen
@@ -328,7 +355,7 @@ def main():
             extnames = [x for x in gen_node_names(node, RegfileNode, first_only=False) if node.external]
             #print([extname[1].inst_name for extname in extnames])
             print([extname for extname in extnames])
-            #addrmaps = [x for x in gen_node_names(node, AddrmapNode, first_only=False)])
+            addrmaps = [x for x in gen_node_names(node, AddrmapNode, first_only=False)]
             regcount = get_regcount(node, RegNode)
             print("regcount = {}".format(regcount))
 
@@ -358,6 +385,7 @@ def main():
                         regnames=regnames,
                         memnames=memnames,
                         extnames=extnames,
+                        addrmaps=addrmaps,
                         n_regtypes=len(regtypes), # sigh..
                         n_regnames=len(regnames),
                         n_regcount=regcount,

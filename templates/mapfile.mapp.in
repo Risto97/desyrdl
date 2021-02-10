@@ -1,4 +1,7 @@
 @MAPFILE_REVISION 9999
+{addrmaps:repeat:addrmaps:
+{{addrmap}}.{{x.inst_name}} {{total_words}} {{addr}} {{x.total_size}} {{bar}} 32 0 0 RW}
+
 {regnames:repeat:regnames:
 {{addrmap}}.{{reg.inst_name}} {{M}} {{addr}} {{reg.total_size}} {{bar}} {{regwidth}} 0 0 {{rw}}}
 
