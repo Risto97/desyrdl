@@ -163,6 +163,8 @@ class VhdlFormatter(string.Formatter):
                     mem=m[1],
                     mementries = m[1].get_property("mementries"),
                     memwidth = m[1].get_property("memwidth"),
+                    addresses = int(m[1].get_property("mementries") * m[1].get_property("memwidth")/8),
+                    #addresses = m[1].get_property("mementries") * 4,
                     addrmap = addrmap[m[0]],
                     addr = m[1].absolute_address-baraddr[m[0]],
                     bar = bar[m[0]])

@@ -3,7 +3,7 @@
 {{addrmap}}.{{reg.inst_name}} {{M}} {{addr}} {{reg.total_size}} {{bar}} {{regwidth}} 0 0 {{rw}}}
 
 {memnames:repeat:memnames:
-{{addrmap}}.{{mem.inst_name}} {{mementries}} {{addr}} {{mem.total_size}} {{bar}} {{memwidth}} 0 0 RW}
+{{addrmap}}.{{mem.inst_name}} {{mementries}} {{addr}} {{addresses}} {{bar}} {{memwidth}} 0 0 RW}
 
 {extnames:repeat:extnames:
 {{addrmap}}.{{ext.inst_name}} {{total_words}} {{addr}} {{ext.size}} {{bar}} 32 0 0 RW}
