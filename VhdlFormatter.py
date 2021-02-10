@@ -102,12 +102,23 @@ class VhdlFormatter(string.Formatter):
                 # For indexing of flattened arrays in VHDL port definitions.
                 # Move to a dict() or improve VHDL code.
                 base = [0]
-                for i,r in enumerate(value):
-                    N = r[1].array_dimensions[0] if (r[1].is_array and len(r[1].array_dimensions)==2) else 1
-                    M = r[1].array_dimensions[1] if (r[1].is_array and len(r[1].array_dimensions)==2) else r[1].array_dimensions[0] if (r[1].is_array and len(r[1].array_dimensions)==1) else 1
+                for i,x in enumerate(value):
+                    N = x[1].array_dimensions[0] if (x[1].is_array and len(x[1].array_dimensions)==2) else 1
+                    M = x[1].array_dimensions[1] if (x[1].is_array and len(x[1].array_dimensions)==2) else x[1].array_dimensions[0] if (x[1].is_array and len(x[1].array_dimensions)==1) else 1
                     base.append(base[i]+N*M)
-                for reg in value:
-                    print(f"reg: {reg[1].owning_addrmap.inst_name}")
+
+                addrmap = []
+                bar = []
+                for x in value:
+                    if x[1].owning_addrmap.is_array:
+                        addrmap.append(f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}")
+                    else:
+                        addrmap.append(f"{x[1].owning_addrmap.inst_name}.0")
+
+                    parent = x[1].parent
+                    while parent.get_property("BAR") == None:
+                        parent = parent.parent
+                    bar.append(parent.get_property("BAR"))
 
                 # format the template
                 return ''.join([self.format(
@@ -119,10 +130,26 @@ class VhdlFormatter(string.Formatter):
                     N= r[1].array_dimensions[0] if (r[1].is_array and len(r[1].array_dimensions)==2) else 1,
                     M= r[1].array_dimensions[1] if (r[1].is_array and len(r[1].array_dimensions)==2) else r[1].array_dimensions[0] if (r[1].is_array and len(r[1].array_dimensions)==1) else 1,
                     rw = "RW" if r[1].has_sw_writable else "RO",
-                    addrmap = r[1].owning_addrmap,
-                    bar = r[1].owning_addrmap.get_property("bar"))
+                    regwidth = r[1].get_property("regwidth"),
+                    addrmap = addrmap[r[0]],
+                    bar = bar[r[0]])
                     for r in value])
             elif what == "memnames":
+                addrmap = []
+                bar = []
+                baraddr = []
+                for x in value:
+                    if x[1].is_array:
+                        addrmap.append(f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}")
+                    else:
+                        addrmap.append(f"{x[1].owning_addrmap.inst_name}.0")
+
+                    parent = x[1].parent
+                    while parent.get_property("BAR") == None:
+                        parent = parent.parent
+                    bar.append(parent.get_property("BAR"))
+                    baraddr.append(parent.absolute_address)
+
                 # for..in..if filters the list comprehension
                 #memnames = [(i,child) for i,child in enumerate(value.descendants()) if isinstance(child, MemNode)]
                 # TODO: use the current node in here instead of filling memnames once for the top node.
@@ -131,16 +158,35 @@ class VhdlFormatter(string.Formatter):
                     template,
                     i=m[0],
                     mem=m[1],
-                    addrmap = m[1].owning_addrmap,
-                    bar = m[1].owning_addrmap.get_property("bar"))
+                    mementries = m[1].get_property("mementries"),
+                    memwidth = m[1].get_property("memwidth"),
+                    addrmap = addrmap[m[0]],
+                    addr = m[1].absolute_address-baraddr[m[0]],
+                    bar = bar[m[0]])
                     for m in value])
             elif what == "extnames":
+                addrmap = []
+                bar = []
+                for x in value:
+                    if x[1].is_array:
+                        addrmap.append(f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}")
+                    else:
+                        addrmap.append(f"{x[1].owning_addrmap.inst_name}.0")
+
+                    parent = x[1].parent
+                    while parent.get_property("BAR") == None:
+                        parent = parent.parent
+                    bar.append(parent.get_property("BAR"))
+
                 return ''.join([self.format(
                     template,
                     i=ext[0],
                     ext=ext[1],
-                    addrmap = ext[1].owning_addrmap,
-                    bar = ext[1].owning_addrmap.get_property("bar"))
+                    # FIXME this only works because SPI registers are 8 bits wide.
+                    #       With 32 bit registers it would have to be total_size/4
+                    total_words = ext[1].total_size,
+                    addrmap = addrmap[ext[0]],
+                    bar = bar[ext[0]])
                     for ext in value])
 
             else:
@@ -312,7 +358,7 @@ def main():
                         n_extnames=len(extnames))
 
                 suffix = "".join(tpl.suffixes) # get the ".vhd.in"
-                out_file = "".join([str(tpl.name).replace(suffix, ""), "_", node.inst_name, ".vhd"])
+                out_file = "".join([str(tpl.name).replace(suffix, ""), "_", node.inst_name, suffix[:-3]])
                 out_path = Path(out_dir, out_file)
                 print(out_path)
                 with out_path.open('w') as f_out:
