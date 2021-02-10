@@ -109,6 +109,7 @@ class VhdlFormatter(string.Formatter):
 
                 addrmap = []
                 bar = []
+                baraddr = []
                 for x in value:
                     if x[1].owning_addrmap.is_array:
                         addrmap.append(f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}")
@@ -119,6 +120,7 @@ class VhdlFormatter(string.Formatter):
                     while parent.get_property("BAR") == None:
                         parent = parent.parent
                     bar.append(parent.get_property("BAR"))
+                    baraddr.append(parent.absolute_address)
 
                 # format the template
                 return ''.join([self.format(
@@ -132,6 +134,7 @@ class VhdlFormatter(string.Formatter):
                     rw = "RW" if r[1].has_sw_writable else "RO",
                     regwidth = r[1].get_property("regwidth"),
                     addrmap = addrmap[r[0]],
+                    addr = r[1].absolute_address-baraddr[r[0]],
                     bar = bar[r[0]])
                     for r in value])
             elif what == "memnames":
@@ -167,6 +170,7 @@ class VhdlFormatter(string.Formatter):
             elif what == "extnames":
                 addrmap = []
                 bar = []
+                baraddr = []
                 for x in value:
                     if x[1].is_array:
                         addrmap.append(f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}")
@@ -177,6 +181,7 @@ class VhdlFormatter(string.Formatter):
                     while parent.get_property("BAR") == None:
                         parent = parent.parent
                     bar.append(parent.get_property("BAR"))
+                    baraddr.append(parent.absolute_address)
 
                 return ''.join([self.format(
                     template,
@@ -186,6 +191,7 @@ class VhdlFormatter(string.Formatter):
                     #       With 32 bit registers it would have to be total_size/4
                     total_words = ext[1].total_size,
                     addrmap = addrmap[ext[0]],
+                    addr = ext[1].absolute_address-baraddr[ext[0]],
                     bar = bar[ext[0]])
                     for ext in value])
 
