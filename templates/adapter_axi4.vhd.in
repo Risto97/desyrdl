@@ -13,7 +13,7 @@ use work.pkg_types.all;
 use work.pkg_axi.all;
 use work.pkg_reg_{modname}.all; -- maybe rename to sth like pkg_axi4_foocomponent
 
-entity adapter_axi4 is
+entity adapter_axi4_{modname} is
   generic (
     G_ADDR_W : integer := 8;
     G_REGCOUNT : natural := 0
@@ -63,9 +63,9 @@ entity adapter_axi4 is
     S_AXI_RREADY  : in std_logic;
     S_AXI_RID     : out std_logic_vector(16-1 downto 0)
 );
-end entity adapter_axi4;
+end entity adapter_axi4_{modname};
 
-architecture arch of adapter_axi4 is
+architecture arch of adapter_axi4_{modname} is
 
   type t_target is (REG, MEM, EXT);
   signal rtarget, wtarget : t_target;

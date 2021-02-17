@@ -25,7 +25,7 @@ library work;
 use work.pkg_types.all;
 use work.pkg_reg_{modname}.all;
 
-entity reg_field_counter is
+entity reg_field_counter_{node.inst_name} is
   generic (
             -- contains an array of field info
             g_info : t_field_info
@@ -47,9 +47,9 @@ entity reg_field_counter is
          pi_hw_decrvalue : in std_logic_vector(g_info.decrwidth-1 downto 0);
          pi_hw_incrvalue : in std_logic_vector(g_info.incrwidth-1 downto 0)
        );
-end entity reg_field_counter;
+end entity reg_field_counter_{node.inst_name};
 
-architecture rtl of reg_field_counter is
+architecture rtl of reg_field_counter_{node.inst_name} is
   signal instruction : std_logic_vector(3 downto 0);
   signal counter : unsigned(g_info.len-1 downto 0);
   signal overflow, underflow : std_logic;

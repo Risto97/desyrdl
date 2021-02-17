@@ -43,7 +43,7 @@ architecture arch of top_reg_{modname} is
   signal adapter_to_ext : t_axi4_m2s_array(C_EXTCOUNT downto 0);
 
 begin
-  ins_adapter: entity work.adapter_axi4
+  ins_adapter: entity work.adapter_axi4_{modname}
   generic map (
                 G_ADDR_W    => C_ADDR_W,
                 G_REGCOUNT => C_REGCOUNT
@@ -144,7 +144,7 @@ begin
         -- TODO implement swacc
         l_reg_swacc <= (others => '0');
 
-        ins_reg: entity work.register32
+        ins_reg: entity work.reg_{{reg.owning_addrmap.inst_name}}
         generic map (
                       -- contains an array of field info
                       g_fields => l_reg_info.fields
