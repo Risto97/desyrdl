@@ -1,8 +1,0 @@
---{regtypes:repeat:regtypes:
-  constant C_{{name}}_INFO : t_field_info_arr := (
-    --{{regtype:repeat:fields:
-    {{{{i}}}} => (ftype => {{{{field:ftype}}}}, len => {{{{field.width}}}}, upper => {{{{field.high}}}}, lower => {{{{field.low}}}}, hw_we => {{{{hw_we}}}}, sw_access => C_{{{{sw_access}}}}, hw_access => C_{{{{hw_access}}}},  def_val => {{{{reset}}}}), -- {{{{name}}}}
-    --}}
-    others => C_FIELD_NONE
-  );
---}
