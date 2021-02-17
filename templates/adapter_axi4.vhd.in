@@ -65,7 +65,7 @@ end entity adapter_axi4_{modname};
 
 architecture arch of adapter_axi4_{modname} is
 
-  type t_target is (REG, MEM, EXT);
+  type t_target is (NONE, REG, MEM, EXT);
   signal rtarget, wtarget : t_target;
   signal rtarget_q, wtarget_q : t_target;
   -- read
@@ -272,23 +272,16 @@ begin
 
   prs_rtarget_sel: process (raddr_q_32_int)
   begin
+    rtarget <= NONE;
+    reg_rsel <= 0;
+    mem_rsel <= 0;
+    ext_rsel <= 0;
 
     -- TODO: optimize: do the comparisons during ST_READ_IDLE
     -- and put in raddr_is_mem_x[C_MEMCOUNT]
     -- TODO must be C_MEMCOUNT
     -- TODO optimize. Also see:
     -- https://zipcpu.com/blog/2019/07/17/crossbar.html#examining-the-arbitration-code
-
-    for i in 0 to C_REGNAMES-1 loop
-      for j in 0 to C_REGISTER_INFO(i).N-1 loop
-        for k in 0 to C_REGISTER_INFO(i).M-1 loop
-          if raddr_q_32_int = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then
-            rtarget <= REG;
-            reg_rsel <= C_REGISTER_INFO(i).base+j*C_REGISTER_INFO(i).M+k;
-          end if;
-        end loop;
-      end loop;
-    end loop;
 
     for i in C_MEMNAMES-1 downto 0 loop
       if raddr_q_32_int-C_MEM_START(i)/4 >= 0
@@ -306,6 +299,17 @@ begin
         ext_rsel <= i;
       end if;
     end loop; --}
+
+    for i in 0 to C_REGNAMES-1 loop
+      for j in 0 to C_REGISTER_INFO(i).N-1 loop
+        for k in 0 to C_REGISTER_INFO(i).M-1 loop
+          if raddr_q_32_int = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then
+            rtarget <= REG;
+            reg_rsel <= C_REGISTER_INFO(i).base+j*C_REGISTER_INFO(i).M+k;
+          end if;
+        end loop;
+      end loop;
+    end loop;
 
   end process;
 
@@ -328,28 +332,32 @@ begin
     begin
       l_rwsel <= mem_ren(i) & mem_wen(i);
 
-      prs_rwsel : process(l_rwsel, l_mem_addr, waddr_q_32, raddr_q_32)
+      with l_rwsel select l_mem_addr <=
+        waddr_q_32(C_MEM_AW(i)-1 downto 0) when "00", -- don't care
+        waddr_q_32(C_MEM_AW(i)-1 downto 0) when "01",
+        raddr_q_32(C_MEM_AW(i)-1 downto 0) when "10",
+        raddr_q_32(C_MEM_AW(i)-1 downto 0) when "11",
+        (others => '0') when others;
+
+      prs_rwsel : process(l_rwsel)
       begin
         case l_rwsel is
           when "00" =>
             -- memory signals
             l_ena <= '0';
             l_wr <= '0';
-            l_mem_addr <= l_mem_addr;
             -- ack for state logic
             mem_rack(i) <= '0';
             mem_wack(i) <= '0';
           when "01" =>
             l_ena <= '1';
             l_wr <= '1';
-            l_mem_addr <= waddr_q_32(C_MEM_AW(i)-1 downto 0);
 
             mem_rack(i) <= '0';
             mem_wack(i) <= '1';
           when "10" =>
             l_ena <= '1';
             l_wr <= '0';
-            l_mem_addr <= raddr_q_32(C_MEM_AW(i)-1 downto 0);
 
             mem_rack(i) <= '1';
             mem_wack(i) <= '0';
@@ -357,7 +365,6 @@ begin
             -- read has precedence (random designer's choice)
             l_ena <= '1';
             l_wr <= '0';
-            l_mem_addr <= raddr_q_32(C_MEM_AW(i)-1 downto 0);
 
             mem_rack(i) <= '1';
             mem_wack(i) <= '0';
@@ -503,19 +510,14 @@ begin
   prs_write_sel: process (waddr_q_32_int)
   begin
 
+    wtarget <= NONE;
+    reg_wsel <= 0;
+    mem_wsel <= 0;
+    ext_wsel <= 0;
+
     -- TODO this is a copy of the read address decoder, just a few renames.
     -- Move to a procedure or so... right?
 
-    for i in 0 to C_REGNAMES-1 loop
-      for j in 0 to C_REGISTER_INFO(i).N-1 loop
-        for k in 0 to C_REGISTER_INFO(i).M-1 loop
-          if waddr_q_32_int = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then
-            wtarget <= REG;
-            reg_wsel <= C_REGISTER_INFO(i).base+j*C_REGISTER_INFO(i).M+k;
-          end if;
-        end loop;
-      end loop;
-    end loop;
 
     for i in C_MEMNAMES-1 downto 0 loop
       if waddr_q_32_int-C_MEM_START(i)/4 >= 0
@@ -533,6 +535,17 @@ begin
         ext_wsel <= i;
       end if;
     end loop; --}
+
+    for i in 0 to C_REGNAMES-1 loop
+      for j in 0 to C_REGISTER_INFO(i).N-1 loop
+        for k in 0 to C_REGISTER_INFO(i).M-1 loop
+          if waddr_q_32_int = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then
+            wtarget <= REG;
+            reg_wsel <= C_REGISTER_INFO(i).base+j*C_REGISTER_INFO(i).M+k;
+          end if;
+        end loop;
+      end loop;
+    end loop;
 
   end process;
 
