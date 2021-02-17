@@ -97,11 +97,7 @@ begin
   --}
 
   po_s_axi4.aclk <= pi_clock;
-  -- needed?
-  po_s_axi4.rdata(po_s_axi4.rdata'left downto 32) <= (others => '0');
-  po_s_axi4.bid <= (others => '0');
-  po_s_axi4.rid <= (others => '0');
-  po_s_axi4.rlast <= '0';
+  po_s_axi4.rlast <= '1';
 
   -- memory instances
   --{memnames:repeat:memnames:

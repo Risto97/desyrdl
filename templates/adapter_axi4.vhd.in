@@ -142,18 +142,14 @@ begin
   -- external interfaces (if present) {n_extnames:ifgtzero:
   gen_ext_if : for i in C_EXTCOUNT-1 downto 0 generate
     po_ext(i).arvalid <= ext_arvalid(i);
-    po_ext(i).araddr <= (
-      C_EXT_AW(i)-1 downto 0 => ext_araddr(i)(C_EXT_AW(i)-1 downto 0),
-      others                 => '0'
-    );
+    po_ext(i).araddr(C_EXT_AW(i)-1 downto 0) <= ext_araddr(i)(C_EXT_AW(i)-1 downto 0);
+    po_ext(i).araddr(po_ext(i).araddr'left downto C_EXT_AW(i)) <= (others => '0');
     po_ext(i).rready <= ext_rready(i);
     po_ext(i).awvalid <= ext_awvalid(i);
     po_ext(i).wvalid <= ext_wvalid(i);
     po_ext(i).bready <= ext_bready(i);
-    po_ext(i).awaddr <= (
-      C_EXT_AW(i)-1 downto 0 => ext_awaddr(i)(C_EXT_AW(i)-1 downto 0),
-      others                 => '0'
-    );
+    po_ext(i).awaddr(C_EXT_AW(i)-1 downto 0) <= ext_awaddr(i)(C_EXT_AW(i)-1 downto 0);
+    po_ext(i).awaddr(po_ext(i).awaddr'left downto C_EXT_AW(i)) <= (others => '0');
     po_ext(i).wdata(31 downto 0) <= ext_wdata(i);
     po_ext(i).wstrb(3 downto 0) <= ext_wstrb(i);
   end generate;
@@ -371,7 +367,8 @@ begin
 
       po_mem(i).ena <= l_ena;
       po_mem(i).wr <= l_wr;
-      po_mem(i).addr <= (C_MEM_AW(i)-1 downto 0 => std_logic_vector(l_mem_addr), others => '0');
+      po_mem(i).addr(C_MEM_AW(i)-1 downto 0) <= std_logic_vector(l_mem_addr);
+      po_mem(i).addr(po_mem(i).addr'high downto C_MEM_AW(i)) <= (others => '0');
       po_mem(i).data <= wdata_q;
       rdata_mem(i) <= pi_mem(i);
 
@@ -385,6 +382,11 @@ begin
       if reset = '1' then
         state_write <= ST_WriteIdle;
         mem_wen <= (others => '0');
+
+        po_we <= '0';
+        for i in G_REGCOUNT-1 downto 0 loop
+          po_stb(i) <= '0';
+        end loop;
 
         -- some AXI4 signals must be reset here
         for i in C_EXTCOUNT-1 downto 0 loop
@@ -447,6 +449,8 @@ begin
               ext_wdata(ext_wsel) <= wdata_q;
               ext_wstrb(ext_wsel) <= wstrb_q;
               ext_bready(ext_wsel) <= '1'; --}
+            else
+              state_write <= ST_WriteIdle;
             end if;
 
           when ST_WriteMemBusy =>
