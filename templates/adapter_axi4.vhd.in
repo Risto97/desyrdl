@@ -27,10 +27,8 @@ entity adapter_axi4_{modname} is
     po_we   : out std_logic;
     po_data : out std_logic_vector(32-1 downto 0);
 
-    -- external interfaces (if present) {n_memnames:ifgtzero:
-    pi_mem : in t_mem_out_arr(C_MEMNAMES-1 downto 0);
-    po_mem : out t_mem_in_arr(C_MEMNAMES-1 downto 0);
-    --}
+    pi_mem : in t_mem_out_arr(C_MEMNAMES downto 0);
+    po_mem : out t_mem_in_arr(C_MEMNAMES downto 0);
 
     -- external interfaces (if present) {n_extnames:ifgtzero:
     pi_ext : in t_axi4_s2m_array(C_EXTCOUNT-1 downto 0);
@@ -141,6 +139,7 @@ architecture arch of adapter_axi4_{modname} is
 
 begin
 
+  -- external interfaces (if present) {n_extnames:ifgtzero:
   gen_ext_if : for i in C_EXTCOUNT-1 downto 0 generate
     po_ext(i).arvalid <= ext_arvalid(i);
     po_ext(i).araddr <= (
@@ -158,6 +157,7 @@ begin
     po_ext(i).wdata(31 downto 0) <= ext_wdata(i);
     po_ext(i).wstrb(3 downto 0) <= ext_wstrb(i);
   end generate;
+  --}
 
   -- ### read logic
 
@@ -171,7 +171,7 @@ begin
         mem_ren <= (others => '0');
 
         -- some AXI4 signals must be reset here
-        for i in C_EXTCOUNT-1 downto 0 loop
+        for i in C_EXTCOUNT downto 0 loop
           ext_arvalid(i) <= '0';
           ext_rready(i) <= '0';
         end loop;
@@ -303,7 +303,7 @@ begin
     end loop;
 
     -- external interfaces (if present) {n_extnames:ifgtzero:
-    for i in C_EXTCOUNT-1 downto 0 loop
+    for i in C_EXTCOUNT downto 0 loop
       if raddr_q_32_int-C_EXT_START(i)/4 >= 0
       and raddr_q_32_int-(C_EXT_START(i)/4+2**C_EXT_AW(i)) < 0 then
         rtarget <= EXT;

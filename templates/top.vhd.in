@@ -20,12 +20,12 @@ entity top_reg_{modname} is
     pi_logic_regs : in t_registers_{modname}_in;
     po_logic_regs : out t_registers_{modname}_out;
 
-    pi_mem : in t_memories_{modname}_out;
-    po_mem : out t_memories_{modname}_in;
-
     -- external interfaces (if present) {n_extnames:ifgtzero:
     pi_ext : in t_axi4_s2m_array(C_EXTCOUNT-1 downto 0);
-    po_ext : out t_axi4_m2s_array(C_EXTCOUNT-1 downto 0) --}
+    po_ext : out t_axi4_m2s_array(C_EXTCOUNT-1 downto 0); --}
+
+    pi_mem : in t_memories_{modname}_out;
+    po_mem : out t_memories_{modname}_in
   );
 end entity top_reg_{modname};
 
@@ -36,8 +36,8 @@ architecture arch of top_reg_{modname} is
   signal adapter_wdata : std_logic_vector(32-1 downto 0);
   signal adapter_rdata : t_32BitArray(C_REGCOUNT-1 downto 0);
 
-  signal adapter_from_dpm : t_mem_out_arr(C_MEMNAMES-1 downto 0);
-  signal adapter_to_dpm : t_mem_in_arr(C_MEMNAMES-1 downto 0);
+  signal adapter_from_dpm : t_mem_out_arr(C_MEMNAMES downto 0);
+  signal adapter_to_dpm : t_mem_in_arr(C_MEMNAMES downto 0);
 
   signal adapter_from_ext : t_axi4_s2m_array(C_EXTCOUNT downto 0);
   signal adapter_to_ext : t_axi4_m2s_array(C_EXTCOUNT downto 0);

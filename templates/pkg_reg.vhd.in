@@ -170,21 +170,25 @@ package pkg_reg_{modname} is
   type t_registers_{modname}_in is record
     --{regnames:repeat:regnames:
     {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_in(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
+    NONE : std_logic;
   end record;
 
   type t_registers_{modname}_out is record
     --{regnames:repeat:regnames:
     {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_out(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
+    NONE : std_logic;
   end record;
 
   type t_memories_{modname}_out is record
     --{memnames:repeat:memnames:
     {{mem.inst_name}}     : t_mem_out; --}
+    NONE : t_mem_out;
   end record;
 
   type t_memories_{modname}_in is record
     --{memnames:repeat:memnames:
     {{mem.inst_name}}     : t_mem_in; --}
+    NONE : t_mem_in;
   end record;
 
   --{regtypes:repeat:regtypes:
