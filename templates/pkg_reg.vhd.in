@@ -4,7 +4,6 @@ use ieee.numeric_std.all;
 
 library work;
 use work.pkg_types.all;
-use work.math_basic.all;
 
 package pkg_reg_{modname} is
 
@@ -82,7 +81,7 @@ package pkg_reg_{modname} is
   constant C_MEM_AW : T_IntegerArray(C_MEMNAMES downto 0) := (
     -- divide by four for addressing 32-bit elements
     --{memnames:repeat:memnames:
-    {{i}} => ceil_log2({{mem.size}}/4), -- {{mem.inst_name}}}
+    {{i}} => {{aw}}, -- {{mem.inst_name}}}
     C_MEMNAMES => 0 -- dummy
   );
   -- The two numbers below must both be a multiple of 4 (for 32 bit addresses)
@@ -95,9 +94,9 @@ package pkg_reg_{modname} is
   constant C_EXTNAMES : integer := {n_extnames};
   constant C_EXTCOUNT : integer := C_EXTNAMES;
   constant C_EXT_AW : T_IntegerArray(C_EXTNAMES downto 0) := (
-    -- divide by four for addressing 32-bit elements
+    -- divide by four for addressing 32-bit elements FIXME ceil(x/4)
     --{extnames:repeat:extnames:
-    {{i}} => ceil_log2({{ext.size}}/4), -- {{ext.inst_name}}}
+    {{i}} => {{aw}}, -- {{ext.inst_name}}}
     C_EXTNAMES => 0 -- dummy
   );
   -- The two numbers below must both be a multiple of 4 (for 32 bit addresses)

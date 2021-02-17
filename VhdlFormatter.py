@@ -2,6 +2,7 @@ import os
 import sys
 import string
 from pathlib import Path # get filenames
+from math import ceil, log2
 
 from systemrdl import RDLCompileError, RDLCompiler, RDLWalker
 from systemrdl import RDLListener
@@ -165,6 +166,7 @@ class VhdlFormatter(string.Formatter):
                     memwidth = m[1].get_property("memwidth"),
                     addresses = int(m[1].get_property("mementries") * m[1].get_property("memwidth")/8),
                     #addresses = m[1].get_property("mementries") * 4,
+                    aw = ceil(log2(m[1].size/4)),
                     addrmap = addrmap[m[0]],
                     addr = m[1].absolute_address-baraddr[m[0]],
                     bar = bar[m[0]])
@@ -192,6 +194,7 @@ class VhdlFormatter(string.Formatter):
                     # FIXME this only works because SPI registers are 8 bits wide.
                     #       With 32 bit registers it would have to be total_size/4
                     total_words = ext[1].total_size,
+                    aw = ceil(log2(ext[1].size/4)),
                     addrmap = addrmap[ext[0]],
                     addr = ext[1].absolute_address-baraddr[ext[0]],
                     bar = bar[ext[0]])
