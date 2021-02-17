@@ -176,12 +176,19 @@ class VhdlFormatter(string.Formatter):
                 bar = []
                 baraddr = []
                 for x in value:
-                    if x[1].is_array:
-                        addrmap.append(f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}")
+                    if isinstance(x[1], AddrmapNode):
+                        if x[1].is_array:
+                            addrmap.append(f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}")
+                        else:
+                            addrmap.append(f"{x[1].owning_addrmap.inst_name}.0")
+                        parent = x[1]
                     else:
-                        addrmap.append(f"{x[1].owning_addrmap.inst_name}.0")
+                        if x[1].is_array:
+                            addrmap.append(f"{x[1].parent.inst_name}.{x[1].owning_addrmap.current_idx}")
+                        else:
+                            addrmap.append(f"{x[1].parent.inst_name}.0")
+                        parent = x[1].parent
 
-                    parent = x[1].parent
                     while parent.get_property("BAR") == None:
                         parent = parent.parent
                     bar.append(parent.get_property("BAR"))
@@ -277,6 +284,20 @@ class VhdlListener(RDLListener):
                 self.regtypes[node.type_name] = node
 
 
+# yields a tuple (i, node) for each downstream component
+# (Addrmap or external Regfile)
+def gen_ext_names(node, first_only=True):
+    i = 0
+    for child in node.children(unroll=True):
+        if isinstance(child, AddrmapNode) or (isinstance(child, RegfileNode) and child.external):
+            # if the child is an array, only take
+            # the first element, otherwise return
+            if child.is_array and first_only==True:
+                if any(k!=0 for k in child.current_idx):
+                    continue
+            yield (i, child)
+            i += 1
+
 # yields a tuple (i, node) for each child of node that matches type
 def gen_node_names(node, type, first_only=True):
     i = 0
@@ -355,7 +376,7 @@ def main():
             print([regname[1].inst_name for regname in regnames])
             memnames = [x for x in gen_node_names(node, MemNode, first_only=False)]
             print([memname[1].inst_name for memname in memnames])
-            extnames = [x for x in gen_node_names(node, RegfileNode, first_only=False) if node.external]
+            extnames = [x for x in gen_ext_names(node, first_only=False)]
             #print([extname[1].inst_name for extname in extnames])
             print([extname for extname in extnames])
             addrmaps = [x for x in gen_node_names(node, AddrmapNode, first_only=False)]
