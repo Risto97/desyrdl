@@ -8,6 +8,7 @@ from systemrdl import RDLCompileError, RDLCompiler, RDLWalker
 from systemrdl import RDLListener
 from systemrdl.node import RegNode, RegfileNode, FieldNode, AddressableNode, AddrmapNode, MemNode, RootNode
 
+from peakrdl.html import HTMLExporter
 
 class VhdlFormatter(string.Formatter):
 
@@ -359,6 +360,9 @@ def main():
 
     out_dir = Path("HECTARE")
     out_dir.mkdir(exist_ok=True)
+
+    exporter = HTMLExporter()
+    exporter.export(root, str(out_dir))
 
     # component type name, either definitive or anonymous: systemrdl.component.Component.type_name
     # The instantiated element is Component.inst_name, right?!
