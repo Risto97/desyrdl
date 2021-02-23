@@ -81,8 +81,7 @@ architecture arch of adapter_axi4_{modname} is
   signal rdata_mem : t_32BitArray(C_MEMNAMES-1 downto 0);
   signal rdata_ext : std_logic_vector(31 downto 0);
   signal raddr_q : std_logic_vector(G_ADDR_W-1 downto 0);
-  signal raddr_q_32 : unsigned(G_ADDR_W-2-1 downto 0);
-  signal raddr_q_32_int : integer;
+  signal raddr_q_int : integer;
 
   signal rdata   : std_logic_vector(31 downto 0);
 
@@ -97,8 +96,7 @@ architecture arch of adapter_axi4_{modname} is
   signal wdata_q : std_logic_vector(31 downto 0);
   signal wstrb_q : std_logic_vector(3 downto 0);
   signal waddr_q : std_logic_vector(G_ADDR_W-1 downto 0);
-  signal waddr_q_32 : unsigned(G_ADDR_W-2-1 downto 0);
-  signal waddr_q_32_int : integer;
+  signal waddr_q_int : integer;
 
   -- select read
   signal reg_rsel : integer := 0;
@@ -267,10 +265,9 @@ begin
     end case;
   end process;
 
-  raddr_q_32 <= unsigned(raddr_q(G_ADDR_W-1 downto 2));
-  raddr_q_32_int <= to_integer(unsigned(raddr_q(G_ADDR_W-1 downto 2)));
+  raddr_q_int <= to_integer(unsigned(raddr_q));
 
-  prs_rtarget_sel: process (raddr_q_32_int)
+  prs_rtarget_sel: process (raddr_q_int)
   begin
     rtarget <= NONE;
     reg_rsel <= 0;
@@ -283,18 +280,18 @@ begin
     -- TODO optimize. Also see:
     -- https://zipcpu.com/blog/2019/07/17/crossbar.html#examining-the-arbitration-code
 
-    for i in C_MEMNAMES-1 downto 0 loop
-      if raddr_q_32_int-C_MEM_START(i)/4 >= 0
-      and raddr_q_32_int-(C_MEM_START(i)/4+2**C_MEM_AW(i)) < 0 then
+    for i in 0 to C_MEMNAMES-1 loop
+      if raddr_q_int-C_MEM_START(i) >= 0
+      and raddr_q_int-(C_MEM_START(i)+2**C_MEM_AW(i)) < 0 then
         rtarget <= MEM;
         mem_rsel <= i;
       end if;
     end loop;
 
     -- external interfaces (if present) {n_extnames:ifgtzero:
-    for i in C_EXTCOUNT downto 0 loop
-      if raddr_q_32_int-C_EXT_START(i)/4 >= 0
-      and raddr_q_32_int-(C_EXT_START(i)/4+2**C_EXT_AW(i)) < 0 then
+    for i in 0 to C_EXTCOUNT-1 loop
+      if raddr_q_int-C_EXT_START(i) >= 0
+      and raddr_q_int-(C_EXT_START(i)+2**C_EXT_AW(i)) < 0 then
         rtarget <= EXT;
         ext_rsel <= i;
       end if;
@@ -303,7 +300,7 @@ begin
     for i in 0 to C_REGNAMES-1 loop
       for j in 0 to C_REGISTER_INFO(i).N-1 loop
         for k in 0 to C_REGISTER_INFO(i).M-1 loop
-          if raddr_q_32_int = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then
+          if raddr_q_int = C_REGISTER_INFO(i).addr+4*(j*C_REGISTER_INFO(i).M+k) then
             rtarget <= REG;
             reg_rsel <= C_REGISTER_INFO(i).base+j*C_REGISTER_INFO(i).M+k;
           end if;
@@ -322,64 +319,69 @@ begin
     rdata_reg when others;
 
   -- Dual-port memories
+  --
+  -- AXI address is addressing bytes
+  -- DPM address is addressing the AXI data width (4 bytes)
+  -- DPM data width is the same as the AXI data width
+  --
   gen_memories : for i in C_MEMNAMES-1 downto 0 generate
-    gen_internal : if C_MEM_INTERNAL(i) = 1 generate
-      signal l_rwsel : std_logic_vector(1 downto 0) := (others => '0');
-      signal l_mem_addr : unsigned(C_MEM_AW(i)-1 downto 0) := (others => '0');
+    signal l_rwsel : std_logic_vector(1 downto 0) := (others => '0');
+    signal l_mem_addr : std_logic_vector(G_ADDR_W-1 downto 0) := (others => '0');
 
-      signal l_ena : std_logic := '0';
-      signal l_wr : std_logic := '0';
+    signal l_ena : std_logic := '0';
+    signal l_wr : std_logic := '0';
+  begin
+    l_rwsel <= mem_ren(i) & mem_wen(i);
+
+    with l_rwsel select l_mem_addr <=
+      waddr_q when "00", -- don't care
+      waddr_q when "01",
+      raddr_q when "10",
+      raddr_q when "11",
+      (others => '0') when others;
+
+    prs_rwsel : process(l_rwsel)
     begin
-      l_rwsel <= mem_ren(i) & mem_wen(i);
+      case l_rwsel is
+        when "00" =>
+          -- memory signals
+          l_ena <= '0';
+          l_wr <= '0';
+          -- ack for state logic
+          mem_rack(i) <= '0';
+          mem_wack(i) <= '0';
+        when "01" =>
+          l_ena <= '1';
+          l_wr <= '1';
 
-      with l_rwsel select l_mem_addr <=
-        waddr_q_32(C_MEM_AW(i)-1 downto 0) when "00", -- don't care
-        waddr_q_32(C_MEM_AW(i)-1 downto 0) when "01",
-        raddr_q_32(C_MEM_AW(i)-1 downto 0) when "10",
-        raddr_q_32(C_MEM_AW(i)-1 downto 0) when "11",
-        (others => '0') when others;
+          mem_rack(i) <= '0';
+          mem_wack(i) <= '1';
+        when "10" =>
+          l_ena <= '1';
+          l_wr <= '0';
 
-      prs_rwsel : process(l_rwsel)
-      begin
-        case l_rwsel is
-          when "00" =>
-            -- memory signals
-            l_ena <= '0';
-            l_wr <= '0';
-            -- ack for state logic
-            mem_rack(i) <= '0';
-            mem_wack(i) <= '0';
-          when "01" =>
-            l_ena <= '1';
-            l_wr <= '1';
+          mem_rack(i) <= '1';
+          mem_wack(i) <= '0';
+        when "11" =>
+          -- read has precedence (random designer's choice)
+          l_ena <= '1';
+          l_wr <= '0';
 
-            mem_rack(i) <= '0';
-            mem_wack(i) <= '1';
-          when "10" =>
-            l_ena <= '1';
-            l_wr <= '0';
+          mem_rack(i) <= '1';
+          mem_wack(i) <= '0';
+        when others => report "impossible case" severity failure;
+      end case;
+    end process;
 
-            mem_rack(i) <= '1';
-            mem_wack(i) <= '0';
-          when "11" =>
-            -- read has precedence (random designer's choice)
-            l_ena <= '1';
-            l_wr <= '0';
+    po_mem(i).ena <= l_ena;
+    po_mem(i).wr <= l_wr;
+    -- addresses from SW are always increasing by 32 bit words
+    -- regardless of the memory width
+    po_mem(i).addr(C_MEM_AW(i)-3 downto 0) <= l_mem_addr(C_MEM_AW(i)-1 downto 2);
+    po_mem(i).addr(po_mem(i).addr'high downto C_MEM_AW(i)-2) <= (others => '0');
+    po_mem(i).data <= wdata_q;
+    rdata_mem(i) <= pi_mem(i);
 
-            mem_rack(i) <= '1';
-            mem_wack(i) <= '0';
-          when others => report "impossible case" severity failure;
-        end case;
-      end process;
-
-      po_mem(i).ena <= l_ena;
-      po_mem(i).wr <= l_wr;
-      po_mem(i).addr(C_MEM_AW(i)-1 downto 0) <= std_logic_vector(l_mem_addr);
-      po_mem(i).addr(po_mem(i).addr'high downto C_MEM_AW(i)) <= (others => '0');
-      po_mem(i).data <= wdata_q;
-      rdata_mem(i) <= pi_mem(i);
-
-    end generate;
   end generate;
 
   -- ### write logic
@@ -502,12 +504,11 @@ begin
     end if;
   end process;
 
-  waddr_q_32 <= unsigned(waddr_q(G_ADDR_W-1 downto 2));
-  waddr_q_32_int <= to_integer(unsigned(waddr_q(G_ADDR_W-1 downto 2)));
+  waddr_q_int <= to_integer(unsigned(waddr_q));
 
   po_data <= wdata_q; -- REG
 
-  prs_write_sel: process (waddr_q_32_int)
+  prs_wtarget_sel: process (waddr_q_int)
   begin
 
     wtarget <= NONE;
@@ -519,18 +520,18 @@ begin
     -- Move to a procedure or so... right?
 
 
-    for i in C_MEMNAMES-1 downto 0 loop
-      if waddr_q_32_int-C_MEM_START(i)/4 >= 0
-      and waddr_q_32_int-(C_MEM_START(i)/4+2**C_MEM_AW(i)) < 0 then
+    for i in 0 to C_MEMNAMES-1 loop
+      if waddr_q_int-C_MEM_START(i) >= 0
+      and waddr_q_int-(C_MEM_START(i)+2**C_MEM_AW(i)) < 0 then
         wtarget <= MEM;
         mem_wsel <= i;
       end if;
     end loop;
 
     -- external interfaces (if present) {n_extnames:ifgtzero:
-    for i in C_EXTCOUNT-1 downto 0 loop
-      if waddr_q_32_int-C_EXT_START(i)/4 >= 0
-      and waddr_q_32_int-(C_EXT_START(i)/4+2**C_EXT_AW(i)) < 0 then
+    for i in 0 to C_EXTCOUNT-1 loop
+      if waddr_q_int-C_EXT_START(i) >= 0
+      and waddr_q_int-(C_EXT_START(i)+2**C_EXT_AW(i)) < 0 then
         wtarget <= EXT;
         ext_wsel <= i;
       end if;
@@ -539,7 +540,7 @@ begin
     for i in 0 to C_REGNAMES-1 loop
       for j in 0 to C_REGISTER_INFO(i).N-1 loop
         for k in 0 to C_REGISTER_INFO(i).M-1 loop
-          if waddr_q_32_int = C_REGISTER_INFO(i).addr/4+j*C_REGISTER_INFO(i).M+k then
+          if waddr_q_int = C_REGISTER_INFO(i).addr+4*(j*C_REGISTER_INFO(i).M+k) then
             wtarget <= REG;
             reg_wsel <= C_REGISTER_INFO(i).base+j*C_REGISTER_INFO(i).M+k;
           end if;

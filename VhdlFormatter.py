@@ -158,16 +158,14 @@ class VhdlFormatter(string.Formatter):
                 # for..in..if filters the list comprehension
                 #memnames = [(i,child) for i,child in enumerate(value.descendants()) if isinstance(child, MemNode)]
                 # TODO: use the current node in here instead of filling memnames once for the top node.
-                # TODO: use properties of m[0] of type MemNode (available?): memwidth, mementries
                 return ''.join([self.format(
                     template,
                     i=m[0],
                     mem=m[1],
                     mementries = m[1].get_property("mementries"),
                     memwidth = m[1].get_property("memwidth"),
-                    addresses = int(m[1].get_property("mementries") * m[1].get_property("memwidth")/8),
-                    #addresses = m[1].get_property("mementries") * 4,
-                    aw = ceil(log2(m[1].size/4)),
+                    addresses = m[1].get_property("mementries") * 4,
+                    aw = ceil(log2(m[1].get_property("mementries") * 4)),
                     addrmap = addrmap[m[0]],
                     addr = m[1].absolute_address-baraddr[m[0]],
                     bar = bar[m[0]])
@@ -199,10 +197,8 @@ class VhdlFormatter(string.Formatter):
                     template,
                     i=ext[0],
                     ext=ext[1],
-                    # FIXME this only works because SPI registers are 8 bits wide.
-                    #       With 32 bit registers it would have to be total_size/4
-                    total_words = ext[1].total_size,
-                    aw = ceil(log2(ext[1].size/4)),
+                    total_words = int(ext[1].total_size/4),
+                    aw = ceil(log2(ext[1].size)),
                     addrmap = addrmap[ext[0]],
                     addr = ext[1].absolute_address-baraddr[ext[0]],
                     bar = bar[ext[0]])
@@ -227,9 +223,7 @@ class VhdlFormatter(string.Formatter):
                     template,
                     i=x[0],
                     x=x[1],
-                    # FIXME this only works because SPI registers are 8 bits wide.
-                    #       With 32 bit registers it would have to be total_size/4
-                    total_words = x[1].total_size,
+                    total_words = int(x[1].total_size/4),
                     addrmap = addrmap[x[0]],
                     addr = x[1].absolute_address-baraddr[x[0]],
                     bar = bar[x[0]])
