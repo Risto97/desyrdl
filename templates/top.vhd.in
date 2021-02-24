@@ -21,8 +21,8 @@ entity top_reg_{modname} is
     po_logic_regs : out t_registers_{modname}_out;
 
     -- external interfaces (if present) {n_extnames:ifgtzero:
-    pi_ext : in t_axi4_s2m_array(C_EXTCOUNT-1 downto 0);
-    po_ext : out t_axi4_m2s_array(C_EXTCOUNT-1 downto 0); --}
+    pi_ext : in t_externals_{{modname}}_s2m;
+    po_ext : out t_externals_{{modname}}_m2s; --}
 
     pi_mem : in t_memories_{modname}_out;
     po_mem : out t_memories_{modname}_in
@@ -90,27 +90,28 @@ begin
              S_AXI_RID     => po_s_axi4.rid
            );
 
-  --adapter_from_ext(C_EXTCOUNT) <= C_AXI4_S2M_DEFAULT;
   -- external interfaces (if present) {n_extnames:ifgtzero:
-  po_ext <= adapter_to_ext(C_EXTCOUNT-1 downto 0);
-  adapter_from_ext(C_EXTCOUNT-1 downto 0) <= pi_ext;
+  -- downstream interface assignments
+  blk_ext_ports : block
+  begin
+  --{{extnames:repeat:extnames:
+    po_ext.{{{{ext.inst_name}}}} <= adapter_to_ext({{{{i}}}});
+    adapter_from_ext({{{{i}}}}) <= pi_ext.{{{{ext.inst_name}}}}; --}}
+  end block;
   --}
 
   po_s_axi4.aclk <= pi_clock;
   po_s_axi4.rlast <= '1';
 
-  -- memory instances
-  --{memnames:repeat:memnames:
-
-  blk_mem{{i}}_{{mem.inst_name}} : block
-    constant l_idx : integer := {{i}};
+  -- memory assignments
+  blk_mem_ports : block
   begin
-    -- TODO implement arrays
-    po_mem.{{mem.inst_name}} <= adapter_to_dpm(l_idx);
-    adapter_from_dpm(l_idx) <= pi_mem.{{mem.inst_name}};
-
+  --{memnames:repeat:memnames:
+    -- TODO implement arrays of memories? DeviceAccess couldn't handle,
+    -- rely on separate instances for now.
+    po_mem.{{mem.inst_name}} <= adapter_to_dpm({{i}});
+    adapter_from_dpm({{i}}) <= pi_mem.{{mem.inst_name}}; --}
   end block;
-  --}
 
   --{regnames:repeat:regnames:
   -- regname {{reg.inst_name}} regtype {{reg.type_name}}

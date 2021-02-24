@@ -184,6 +184,18 @@ package pkg_reg_{modname} is
     NONE : t_mem_in;
   end record;
 
+  type t_externals_{modname}_m2s is record
+    --{extnames:repeat:extnames:
+    {{ext.inst_name}} : t_axi4_m2s; --}
+    NONE : std_logic;
+  end record;
+
+  type t_externals_{modname}_s2m is record
+    --{extnames:repeat:extnames:
+    {{ext.inst_name}} : t_axi4_s2m; --}
+    NONE : std_logic;
+  end record;
+
   --{regtypes:repeat:regtypes:
   -----------------------------------------------
   -- register type functions: {{regtype.type_name}}
