@@ -1,0 +1,5 @@
+= Usage
+
+All RDL files must be passed to VhdlFormatter.py in the correct order.
+A module which defines an addrmap `timing` would have to be passed before
+another module that instantiates it with `timing TIMING ;`.
