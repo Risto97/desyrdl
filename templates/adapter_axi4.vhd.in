@@ -30,7 +30,7 @@ entity adapter_axi4_{modname} is
     pi_mem : in t_mem_out_arr(C_MEMNAMES downto 0);
     po_mem : out t_mem_in_arr(C_MEMNAMES downto 0);
 
-    -- external interfaces (if present) {n_extnames:ifgtzero:
+    -- external interfaces (if present) {context:ifgtzero:n_extnames:
     pi_ext : in t_axi4_s2m_array(C_EXTCOUNT-1 downto 0);
     po_ext : out t_axi4_m2s_array(C_EXTCOUNT-1 downto 0);
     --}
@@ -137,7 +137,7 @@ architecture arch of adapter_axi4_{modname} is
 
 begin
 
-  -- external interfaces (if present) {n_extnames:ifgtzero:
+  -- external interfaces (if present) {context:ifgtzero:n_extnames:
   gen_ext_if : for i in C_EXTCOUNT-1 downto 0 generate
     po_ext(i).arvalid <= ext_arvalid(i);
     po_ext(i).araddr(C_EXT_AW(i)-1 downto 0) <= ext_araddr(i)(C_EXT_AW(i)-1 downto 0);
@@ -191,7 +191,7 @@ begin
               state_read <= ST_READ_MEM_BUSY;
               mem_rsel_q <= mem_rsel;
               mem_ren(mem_rsel) <= '1';
-            -- external interfaces (if present) {n_extnames:ifgtzero:
+            -- external interfaces (if present) {context:ifgtzero:n_extnames:
             elsif rtarget = EXT then
               state_read <= ST_READ_EXT_BUSY;
               ext_rsel_q <= ext_rsel;
@@ -211,7 +211,7 @@ begin
               mem_ren <= (others => '0');
             end if;
 
-          -- external interfaces (if present) {n_extnames:ifgtzero:
+          -- external interfaces (if present) {context:ifgtzero:n_extnames:
           when ST_READ_EXT_BUSY =>
             -- This state begins with ext_arvalid=1, so once we see a
             -- ready signal the addr or data was accepted.
@@ -288,7 +288,7 @@ begin
       end if;
     end loop;
 
-    -- external interfaces (if present) {n_extnames:ifgtzero:
+    -- external interfaces (if present) {context:ifgtzero:n_extnames:
     for i in 0 to C_EXTCOUNT-1 loop
       if raddr_q_int-C_EXT_START(i) >= 0
       and raddr_q_int-(C_EXT_START(i)+2**C_EXT_AW(i)) < 0 then
@@ -448,7 +448,7 @@ begin
               state_write <= ST_WriteMemBusy;
               mem_wsel_q <= mem_wsel;
               mem_wen(mem_wsel) <= '1';
-            -- external interfaces (if present) {n_extnames:ifgtzero:
+            -- external interfaces (if present) {context:ifgtzero:n_extnames:
             elsif wtarget = EXT then
               state_write <= ST_WriteExtBusy;
               ext_wsel_q <= ext_wsel;
@@ -468,7 +468,7 @@ begin
               mem_wen <= (others => '0');
             end if;
 
-          -- external interfaces (if present) {n_extnames:ifgtzero:
+          -- external interfaces (if present) {context:ifgtzero:n_extnames:
           when ST_WriteExtBusy =>
             -- This state begins with ext_awvalid=1 and ext_wvalid=1, so once we see a
             -- ready signal the addr or data was accepted.
@@ -528,7 +528,7 @@ begin
       end if;
     end loop;
 
-    -- external interfaces (if present) {n_extnames:ifgtzero:
+    -- external interfaces (if present) {context:ifgtzero:n_extnames:
     for i in 0 to C_EXTCOUNT-1 loop
       if waddr_q_int-C_EXT_START(i) >= 0
       and waddr_q_int-(C_EXT_START(i)+2**C_EXT_AW(i)) < 0 then

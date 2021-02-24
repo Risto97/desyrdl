@@ -26,9 +26,13 @@ class VhdlFormatter(string.Formatter):
 
     def format_field(self, value, spec):
         if spec.startswith("ifgtzero"):
-            template = spec.partition(":")[2]
-            if value > 0:
-                return template
+            (checkme,colon,foo) = spec.partition(":")
+            (target,colon,template) = foo.partition(":")
+            if checkme != "ifgtzero":
+                raise Exception("Template function ifgtzero detected but the spec seems to be broken")
+
+            if value[target] > 0:
+                return self.format(template, value)
             else:
                 return ""
 
@@ -413,7 +417,8 @@ def main():
                         n_regcount=regcount,
                         n_memtypes=len(memtypes),
                         n_memnames=len(memnames),
-                        n_extnames=len(extnames))
+                        n_extnames=len(extnames),
+                        context={"n_extnames":1})
 
                 suffix = "".join(tpl.suffixes) # get the ".vhd.in"
                 out_file = "".join([str(tpl.name).replace(suffix, ""), "_", node.inst_name, suffix[:-3]])

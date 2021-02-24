@@ -20,7 +20,7 @@ entity top_reg_{modname} is
     pi_logic_regs : in t_registers_{modname}_in;
     po_logic_regs : out t_registers_{modname}_out;
 
-    -- external interfaces (if present) {n_extnames:ifgtzero:
+    -- external interfaces (if present) {context:ifgtzero:n_extnames:
     pi_ext : in t_externals_{{modname}}_s2m;
     po_ext : out t_externals_{{modname}}_m2s; --}
 
@@ -60,7 +60,7 @@ begin
              po_mem        => adapter_to_dpm,
              pi_mem        => adapter_from_dpm,
 
-             -- external interfaces (if present) {n_extnames:ifgtzero:
+             -- external interfaces (if present) {context:ifgtzero:n_extnames:
              po_ext        => adapter_to_ext(C_EXTCOUNT-1 downto 0),
              pi_ext        => adapter_from_ext(C_EXTCOUNT-1 downto 0),
              --}
@@ -90,7 +90,7 @@ begin
              S_AXI_RID     => po_s_axi4.rid
            );
 
-  -- external interfaces (if present) {n_extnames:ifgtzero:
+  -- external interfaces (if present) {context:ifgtzero:n_extnames:
   -- downstream interface assignments
   blk_ext_ports : block
   begin
