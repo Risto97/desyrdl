@@ -79,14 +79,14 @@ class VhdlFormatter(string.Formatter):
                     i=i,
                     regtype=regtype,
                     name=regtype.type_name)
-                    for i,regtype in enumerate(value)])
+                    for i,regtype in enumerate(value[what])])
             if what == "memtypes":
                 return ''.join([self.format(
                     template,
                     i=i,
                     memtype=memtype,
                     name=memtype.type_name)
-                    for i,memtype in enumerate(value)])
+                    for i,memtype in enumerate(value[what])])
             elif what == "fields":
 
                 return ''.join([self.format(
@@ -100,7 +100,7 @@ class VhdlFormatter(string.Formatter):
                     decrwidth=field.get_property("decrwidth") if (field.get_property("decrwidth") != None) else 1,
                     incrwidth=field.get_property("incrwidth") if (field.get_property("incrwidth") != None) else 1,
                     name=field.type_name)
-                    for i,field in enumerate(value.fields())])
+                    for i,field in enumerate(value[what].fields())])
             elif what == "regnames":
                 #print("repeating regnames with RegNodes in ", value, " and template ", template)
                 # value is a list of tuples (i, RegNode)
@@ -108,7 +108,7 @@ class VhdlFormatter(string.Formatter):
                 # For indexing of flattened arrays in VHDL port definitions.
                 # Move to a dict() or improve VHDL code.
                 base = [0]
-                for i,x in enumerate(value):
+                for i,x in enumerate(value[what]):
                     N = x[1].array_dimensions[0] if (x[1].is_array and len(x[1].array_dimensions)==2) else 1
                     M = x[1].array_dimensions[1] if (x[1].is_array and len(x[1].array_dimensions)==2) else x[1].array_dimensions[0] if (x[1].is_array and len(x[1].array_dimensions)==1) else 1
                     base.append(base[i]+N*M)
@@ -116,7 +116,7 @@ class VhdlFormatter(string.Formatter):
                 addrmap = []
                 bar = []
                 baraddr = []
-                for x in value:
+                for x in value[what]:
                     if x[1].owning_addrmap.is_array:
                         addrmap.append(f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}")
                     else:
@@ -142,12 +142,12 @@ class VhdlFormatter(string.Formatter):
                     addrmap = addrmap[r[0]],
                     addr = r[1].absolute_address-baraddr[r[0]],
                     bar = bar[r[0]])
-                    for r in value])
+                    for r in value[what]])
             elif what == "memnames":
                 addrmap = []
                 bar = []
                 baraddr = []
-                for x in value:
+                for x in value[what]:
                     if x[1].is_array:
                         addrmap.append(f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}")
                     else:
@@ -173,12 +173,12 @@ class VhdlFormatter(string.Formatter):
                     addrmap = addrmap[m[0]],
                     addr = m[1].absolute_address-baraddr[m[0]],
                     bar = bar[m[0]])
-                    for m in value])
+                    for m in value[what]])
             elif what == "extnames":
                 addrmap = []
                 bar = []
                 baraddr = []
-                for x in value:
+                for x in value[what]:
                     if isinstance(x[1], AddrmapNode):
                         if x[1].is_array:
                             addrmap.append(f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}")
@@ -206,12 +206,12 @@ class VhdlFormatter(string.Formatter):
                     addrmap = addrmap[ext[0]],
                     addr = ext[1].absolute_address-baraddr[ext[0]],
                     bar = bar[ext[0]])
-                    for ext in value])
+                    for ext in value[what]])
             elif what == "addrmaps":
                 addrmap = []
                 bar = []
                 baraddr = []
-                for x in value:
+                for x in value[what]:
                     if x[1].is_array:
                         addrmap.append(f"{x[1].parent.inst_name}.{x[1].owning_addrmap.current_idx}")
                     else:
@@ -231,7 +231,7 @@ class VhdlFormatter(string.Formatter):
                     addrmap = addrmap[x[0]],
                     addr = x[1].absolute_address-baraddr[x[0]],
                     bar = bar[x[0]])
-                    for x in value])
+                    for x in value[what]])
 
             else:
                 return "-- VOID" # this shouldn't happen
@@ -401,11 +401,8 @@ def main():
                 # registers: count of individual registers including those in arrays
                 # memtypes: list of MemNodes -> type_name only
                 # memnames: longer list of MemNodes -> both type_name, inst_name
-
-                # TODO either pass the top_node or a complete dict() similar to Jinja context
-                hdl = vf.format(s_in,
+                context = dict(
                         node=node,
-                        modname=node.get_path_segment(),
                         regtypes=regtypes.values(),
                         memtypes=memtypes.values(),
                         regnames=regnames,
@@ -417,13 +414,18 @@ def main():
                         n_regcount=regcount,
                         n_memtypes=len(memtypes),
                         n_memnames=len(memnames),
-                        n_extnames=len(extnames),
-                        context={"n_extnames":1})
+                        n_extnames=len(extnames))
+
+                print(f"modname = {node.get_path_segment()}")
+                print(f"node.inst_name = {node.inst_name}")
 
                 suffix = "".join(tpl.suffixes) # get the ".vhd.in"
                 out_file = "".join([str(tpl.name).replace(suffix, ""), "_", node.inst_name, suffix[:-3]])
                 out_path = Path(out_dir, out_file)
                 print(out_path)
+
+                hdl = vf.format(s_in, context=context, modname=node.get_path_segment())
+
                 with out_path.open('w') as f_out:
                     f_out.write(hdl)
                 #print(hdl)

@@ -70,23 +70,23 @@ package pkg_reg_{modname} is
 
   -- must be calculated by register tool
   -- always add +1 for the dummy
-  constant C_REGTYPES  : integer := {n_regtypes};
-  constant C_REGNAMES : integer := {n_regnames};
-  constant C_REGCOUNT : integer := {n_regcount};
-  constant C_MEMNAMES : integer := {n_memnames};
+  constant C_REGTYPES  : integer := {context[n_regtypes]};
+  constant C_REGNAMES : integer := {context[n_regnames]};
+  constant C_REGCOUNT : integer := {context[n_regcount]};
+  constant C_MEMNAMES : integer := {context[n_memnames]};
   -- TODO C_MEMCOUNT
   constant C_MEM_AW : T_IntegerArray(C_MEMNAMES downto 0) := (
-    --{memnames:repeat:memnames:
+    --{context:repeat:memnames:
     {{i}} => {{aw}}, -- {{mem.inst_name}}}
     C_MEMNAMES => 0 -- dummy
   );
   constant C_MEM_START : T_IntegerArray(C_MEMNAMES downto 0) := (
-    --{memnames:repeat:memnames:
+    --{context:repeat:memnames:
     {{i}} => {{addr}}, -- {{mem.inst_name}}}
     C_MEMNAMES => 0 -- dummy
   );
 
-  constant C_EXTNAMES : integer := {n_extnames};
+  constant C_EXTNAMES : integer := {context[n_extnames]};
   constant C_EXTCOUNT : integer := C_EXTNAMES;
   constant C_EXT_AW : T_IntegerArray(C_EXTNAMES downto 0) := (
     --{extnames:repeat:extnames:
@@ -102,7 +102,7 @@ package pkg_reg_{modname} is
   -- register types
 
   type t_regtype is (
-    --{regtypes:repeat:regtypes:
+    --{context:repeat:regtypes:
     {{regtype.type_name}}, --}
     NONE -- dummy
   );
@@ -120,7 +120,7 @@ package pkg_reg_{modname} is
   type t_reg_info_array is array (0 to C_REGNAMES) of t_reg_info;
   constant C_REG_NONE : t_reg_info := (0, 0, NONE, (others => C_FIELD_NONE), 1, 1);
 
-  --{regtypes:repeat:regtypes:
+  --{context:repeat:regtypes:
   constant C_{{regtype.type_name:upper}}_FIELDS : t_field_info_arr := (
     --{{regtype:repeat:fields:
     {{{{i}}}} => (ftype => {{{{field:ftype}}}}, len => {{{{field.width}}}}, upper => {{{{field.high}}}}, lower => {{{{field.low}}}}, hw_we => {{{{hw_we}}}}, sw_access => C_{{{{sw_access:upper}}}}, hw_access => C_{{{{hw_access:upper}}}},  def_val => {{{{reset}}}}, decrwidth => {{{{decrwidth}}}}, incrwidth => {{{{incrwidth}}}}), -- {{{{field.inst_name}}}} --}}
@@ -130,12 +130,12 @@ package pkg_reg_{modname} is
   --}
 
   constant C_REGISTER_INFO : t_reg_info_array := (
-    --{regnames:repeat:regnames:
+    --{context:repeat:regnames:
     {{i}} => (addr => {{addr}}, base => {{base}}, regtype => {{reg.type_name}}, fields => C_{{reg.type_name:upper}}_FIELDS, N => {{N}}, M => {{M}}), --}
     others => C_REG_NONE
   );
 
-  --{regtypes:repeat:regtypes:
+  --{context:repeat:regtypes:
   -----------------------------------------------
   -- register type: {{regtype.type_name}}
   -----------------------------------------------
@@ -161,25 +161,25 @@ package pkg_reg_{modname} is
   -----------------------------------------------
   -- TODO generate external interface if that attribute is set
   type t_registers_{modname}_in is record
-    --{regnames:repeat:regnames:
+    --{context:repeat:regnames:
     {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_in(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
     NONE : std_logic;
   end record;
 
   type t_registers_{modname}_out is record
-    --{regnames:repeat:regnames:
+    --{context:repeat:regnames:
     {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_out(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
     NONE : std_logic;
   end record;
 
   type t_memories_{modname}_out is record
-    --{memnames:repeat:memnames:
+    --{context:repeat:memnames:
     {{mem.inst_name}}     : t_mem_out; --}
     NONE : t_mem_out;
   end record;
 
   type t_memories_{modname}_in is record
-    --{memnames:repeat:memnames:
+    --{context:repeat:memnames:
     {{mem.inst_name}}     : t_mem_in; --}
     NONE : t_mem_in;
   end record;
@@ -196,7 +196,7 @@ package pkg_reg_{modname} is
     NONE : std_logic;
   end record;
 
-  --{regtypes:repeat:regtypes:
+  --{context:repeat:regtypes:
   -----------------------------------------------
   -- register type functions: {{regtype.type_name}}
   -----------------------------------------------
@@ -211,7 +211,7 @@ end package pkg_reg_{modname};
 
 package body pkg_reg_{modname} is
 
-  --{regtypes:repeat:regtypes:
+  --{context:repeat:regtypes:
   -----------------------------------------------
   -- register type: {{regtype.type_name}}
   -----------------------------------------------

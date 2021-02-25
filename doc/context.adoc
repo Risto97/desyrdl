@@ -1,10 +1,13 @@
 = Context for template processing
 
-== common
+== Requirements
+
+=== common
 
 * modname (goes to names of entities and types)
+** also needed below `ifgtzero` so must be part of context
 
-== registers
+=== registers
 
 * for mapfile
 ** regnames
@@ -49,7 +52,7 @@
 *** array size (N, M) is kept in the pkg file
 *** owning_addrmap.inst_name to get the register entity name
 
-== memories
+=== memories
 
 * for mapfile: (!) arrays of memories as separate lines of mapfile
 ** memnames: loop over all instances of a memory
@@ -73,7 +76,7 @@
 *** index
 *** inst_name
 
-== external
+=== external
 
 * for mapfiles:
 ** extnames:
@@ -100,3 +103,19 @@
 ** n_extnames: for ifgtzero
 ** extnames: loop over all instances of a downstream interface
 
+== Layout
+
+* modname: either `node.inst_name` or `node.get_path_segment()`
+* context
+** node -> the AddrmapNode
+** regtypes -> array(?) of RegNode
+*** i
+*** regtype -> RegNode with fields()
+**** fields
+*** type_name
+** memtypes
+** regnames
+** memnames
+** extnames
+** addrmaps
+** n_foo

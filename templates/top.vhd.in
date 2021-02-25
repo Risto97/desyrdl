@@ -106,14 +106,14 @@ begin
   -- memory assignments
   blk_mem_ports : block
   begin
-  --{memnames:repeat:memnames:
+  --{context:repeat:memnames:
     -- TODO implement arrays of memories? DeviceAccess couldn't handle,
     -- rely on separate instances for now.
     po_mem.{{mem.inst_name}} <= adapter_to_dpm({{i}});
     adapter_from_dpm({{i}}) <= pi_mem.{{mem.inst_name}}; --}
   end block;
 
-  --{regnames:repeat:regnames:
+  --{context:repeat:regnames:
   -- regname {{reg.inst_name}} regtype {{reg.type_name}}
   blk_{{i}}_{{reg.inst_name}} : block
     constant l_r : integer := {{i}};

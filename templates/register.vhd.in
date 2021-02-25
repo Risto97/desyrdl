@@ -26,7 +26,7 @@ use work.pkg_types.all;
 use work.pkg_reg_{modname}.all;
 --use work.pkg_registers_common.all;
 
-entity reg_{node.inst_name} is
+entity reg_{modname} is
   generic (
             g_fields : t_field_info_arr
           );
@@ -49,9 +49,9 @@ entity reg_{node.inst_name} is
          po_logic_data : out std_logic_vector(32-1 downto 0);
          po_logic_swmod : out std_logic_vector(32-1 downto 0)
        );
-end entity reg_{node.inst_name};
+end entity reg_{modname};
 
-architecture rtl of reg_{node.inst_name} is
+architecture rtl of reg_{modname} is
 begin
 
   -- on a strobe, write to all fields --> one signal for the register (storage)
@@ -65,7 +65,7 @@ begin
   begin
     -- storage type fields
     gen_storage : if field.ftype = STORAGE generate
-      ins_field_storage : entity work.reg_field_storage_{node.inst_name}
+      ins_field_storage : entity work.reg_field_storage_{modname}
       generic map(
                    g_info => field
                  )
@@ -101,7 +101,7 @@ begin
     -- counter type fields
     gen_counter : if field.ftype = COUNTER generate
     begin
-      ins_field_counter : entity work.reg_field_counter_{node.inst_name}
+      ins_field_counter : entity work.reg_field_counter_{modname}
       generic map(
                    g_info => field
                  )
