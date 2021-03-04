@@ -4,8 +4,9 @@
 
 === common
 
-* modname (goes to names of entities and types)
+* type of addrmap (goes to names of entities and types)
 ** also needed below `ifgtzero` so must be part of context
+* instance name is NOT needed here, just in the higher-level addrmap
 
 === registers
 
@@ -57,7 +58,7 @@
 * for mapfile: (!) arrays of memories as separate lines of mapfile
 ** memnames: loop over all instances of a memory
 *** the BAR number (property of address map just below top)
-*** the direct parent addrmap instance name (e.g. BSP or LLRF_RF)
+*** the direct parent addrmap instance name (e.g. BSP or LLRF_FD)
 *** number of elements (depth of memory), max 32?!
 *** number of elements x4 regardless of the mem width (even an 8-bit element occupies 4 addresses)
 *** width of an element (1-32?) -> memwidth property
@@ -80,8 +81,8 @@
 
 * for mapfiles:
 ** extnames:
-*** the direct parent addrmap instance name (e.g. BSP or LLRF_RF)
-*** inst_name
+*** the direct parent addrmap instance name (e.g. BSP or LLRF_FD)
+*** instance: either `node.inst_name` or `node.get_path_segment()`
 *** total_words: number of 4 byte words
 *** addr: absolute_address minus the offset of the BAR
 *** addresses or ext.size: number of words x4
@@ -93,7 +94,7 @@
 ** extnames: loop over all instances of a downstream interface
 *** index
 *** aw: address bits for 8 bit addressing
-*** inst_name
+*** inst_name (name of record element)
 * for top:
 ** n_extnames: for ifgtzero
 ** extnames: loop over all instances of a downstream interface
@@ -105,9 +106,10 @@
 
 == Layout
 
-* modname: either `node.inst_name` or `node.get_path_segment()`
+* (instance: either `node.inst_name` or `node.get_path_segment()`)
 * context
 ** node -> the AddrmapNode
+** type_name (redundant, accessible as node.type_name)
 ** regtypes -> array(?) of RegNode
 *** i
 *** regtype -> RegNode with fields()
@@ -115,7 +117,10 @@
 *** type_name
 ** memtypes
 ** regnames
+*** reg (add to context of each loop iteration)
 ** memnames
 ** extnames
+*** i
+*** ext (add to context of each loop iteration)
 ** addrmaps
 ** n_foo

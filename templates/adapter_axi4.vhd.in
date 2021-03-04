@@ -11,9 +11,9 @@ use ieee.numeric_std.all;
 library work;
 use work.pkg_types.all;
 use work.pkg_axi.all;
-use work.pkg_reg_{modname}.all; -- maybe rename to sth like pkg_axi4_foocomponent
+use work.pkg_reg_{context[node].type_name}.all; -- maybe rename to sth like pkg_axi4_foocomponent
 
-entity adapter_axi4_{modname} is
+entity adapter_axi4_{context[node].type_name} is
   generic (
     G_ADDR_W : integer := 8;
     G_REGCOUNT : natural := 0
@@ -61,9 +61,9 @@ entity adapter_axi4_{modname} is
     S_AXI_RREADY  : in std_logic;
     S_AXI_RID     : out std_logic_vector(16-1 downto 0)
 );
-end entity adapter_axi4_{modname};
+end entity adapter_axi4_{context[node].type_name};
 
-architecture arch of adapter_axi4_{modname} is
+architecture arch of adapter_axi4_{context[node].type_name} is
 
   type t_target is (NONE, REG, MEM, EXT);
   signal rtarget, wtarget : t_target;

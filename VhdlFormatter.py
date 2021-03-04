@@ -32,7 +32,7 @@ class VhdlFormatter(string.Formatter):
                 raise Exception("Template function ifgtzero detected but the spec seems to be broken")
 
             if value[target] > 0:
-                return self.format(template, value)
+                return self.format(template, context=value)
             else:
                 return ""
 
@@ -100,138 +100,170 @@ class VhdlFormatter(string.Formatter):
                     decrwidth=field.get_property("decrwidth") if (field.get_property("decrwidth") != None) else 1,
                     incrwidth=field.get_property("incrwidth") if (field.get_property("incrwidth") != None) else 1,
                     name=field.type_name)
-                    for i,field in enumerate(value[what].fields())])
+                    for i,field in enumerate(value.fields())])
             elif what == "regnames":
-                #print("repeating regnames with RegNodes in ", value, " and template ", template)
-                # value is a list of tuples (i, RegNode)
+                results = []
 
                 # For indexing of flattened arrays in VHDL port definitions.
                 # Move to a dict() or improve VHDL code.
-                base = [0]
-                for i,x in enumerate(value[what]):
-                    N = x[1].array_dimensions[0] if (x[1].is_array and len(x[1].array_dimensions)==2) else 1
-                    M = x[1].array_dimensions[1] if (x[1].is_array and len(x[1].array_dimensions)==2) else x[1].array_dimensions[0] if (x[1].is_array and len(x[1].array_dimensions)==1) else 1
-                    base.append(base[i]+N*M)
+                base = 0
 
-                addrmap = []
-                bar = []
-                baraddr = []
-                for x in value[what]:
+                for i,x in enumerate(value[what]):
                     if x[1].owning_addrmap.is_array:
-                        addrmap.append(f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}")
+                        addrmap = f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}"
                     else:
-                        addrmap.append(f"{x[1].owning_addrmap.inst_name}.0")
+                        addrmap = f"{x[1].owning_addrmap.inst_name}.0"
 
                     parent = x[1].parent
                     while parent.get_property("BAR") == None:
                         parent = parent.parent
-                    bar.append(parent.get_property("BAR"))
-                    baraddr.append(parent.absolute_address)
+                    bar = parent.get_property("BAR")
+                    baraddr = parent.absolute_address
 
-                # format the template
-                return ''.join([self.format(
-                    template,
-                    i=r[0],
-                    base=base[r[0]],
-                    reg=r[1],
-                    # please don't look at the next two lines. On refactoring I will put it in a dict, promise.
-                    N= r[1].array_dimensions[0] if (r[1].is_array and len(r[1].array_dimensions)==2) else 1,
-                    M= r[1].array_dimensions[1] if (r[1].is_array and len(r[1].array_dimensions)==2) else r[1].array_dimensions[0] if (r[1].is_array and len(r[1].array_dimensions)==1) else 1,
-                    rw = "RW" if r[1].has_sw_writable else "RO",
-                    regwidth = r[1].get_property("regwidth"),
-                    addrmap = addrmap[r[0]],
-                    addr = r[1].absolute_address-baraddr[r[0]],
-                    bar = bar[r[0]])
-                    for r in value[what]])
+                    N = 1
+                    M = 1
+                    if x[1].is_array:
+                        if len(x[1].array_dimensions)==2:
+                            N = x[1].array_dimensions[0]
+                            M = x[1].array_dimensions[1]
+                        else:
+                            N = 1
+                            if len(x[1].array_dimensions)==1:
+                                M = x[1].array_dimensions[0]
+                            else:
+                                M = 1
+
+                    # prevent bugs by putting new data in a separate copy per
+                    # iteration
+                    #newc = value.copy()
+                    newc = dict()
+
+                    newc["i"] = x[0]
+                    newc["reg"] = x[1]
+                    newc["N"] = N
+                    newc["M"] = M
+                    newc["rw"] = "RW" if x[1].has_sw_writable else "RO"
+                    newc["regwidth"] = x[1].get_property("regwidth")
+                    # "base" is needed for indexing of flattened arrays in VHDL
+                    # port definitions. Improve VHDL code to get rid of it.
+                    newc["base"] = base
+                    base = base+N*M
+                    newc["bar"] = bar
+                    newc["addrmap"] = addrmap
+                    newc["addr"] = x[1].absolute_address-baraddr
+
+                    # format the template
+                    results.append(self.format(template, **newc))
+
+                return "".join(results)
             elif what == "memnames":
-                addrmap = []
-                bar = []
-                baraddr = []
+                results = []
+
                 for x in value[what]:
                     if x[1].is_array:
-                        addrmap.append(f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}")
+                        addrmap = f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}"
                     else:
-                        addrmap.append(f"{x[1].owning_addrmap.inst_name}.0")
+                        addrmap = f"{x[1].owning_addrmap.inst_name}.0"
 
                     parent = x[1].parent
                     while parent.get_property("BAR") == None:
                         parent = parent.parent
-                    bar.append(parent.get_property("BAR"))
-                    baraddr.append(parent.absolute_address)
+                    bar = parent.get_property("BAR")
+                    baraddr = parent.absolute_address
+
+                    # prevent bugs by putting new data in a separate copy per
+                    # iteration
+                    #newc = value.copy()
+                    newc = dict()
+
+                    newc["i"] = x[0]
+                    newc["mem"] = x[1]
+                    newc["mementries"] = x[1].get_property("mementries")
+                    newc["memwidth"] = x[1].get_property("memwidth")
+                    newc["addresses"] = x[1].get_property("mementries") * 4
+                    newc["aw"] = ceil(log2(x[1].get_property("mementries") * 4))
+                    newc["bar"] = bar
+                    newc["addrmap"] = addrmap
+                    newc["addr"] = x[1].absolute_address-baraddr
+
+                    # format the template
+                    results.append(self.format(template, **newc))
 
                 # for..in..if filters the list comprehension
                 #memnames = [(i,child) for i,child in enumerate(value.descendants()) if isinstance(child, MemNode)]
                 # TODO: use the current node in here instead of filling memnames once for the top node.
-                return ''.join([self.format(
-                    template,
-                    i=m[0],
-                    mem=m[1],
-                    mementries = m[1].get_property("mementries"),
-                    memwidth = m[1].get_property("memwidth"),
-                    addresses = m[1].get_property("mementries") * 4,
-                    aw = ceil(log2(m[1].get_property("mementries") * 4)),
-                    addrmap = addrmap[m[0]],
-                    addr = m[1].absolute_address-baraddr[m[0]],
-                    bar = bar[m[0]])
-                    for m in value[what]])
+                return "".join(results)
+
             elif what == "extnames":
-                addrmap = []
-                bar = []
-                baraddr = []
+                results = []
+
                 for x in value[what]:
                     if isinstance(x[1], AddrmapNode):
                         if x[1].is_array:
-                            addrmap.append(f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}")
+                            addrmap = f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}"
                         else:
-                            addrmap.append(f"{x[1].owning_addrmap.inst_name}.0")
+                            addrmap = f"{x[1].owning_addrmap.inst_name}.0"
                         parent = x[1]
                     else:
                         if x[1].is_array:
-                            addrmap.append(f"{x[1].parent.inst_name}.{x[1].owning_addrmap.current_idx}")
+                            addrmap = f"{x[1].parent.inst_name}.{x[1].owning_addrmap.current_idx}"
                         else:
-                            addrmap.append(f"{x[1].parent.inst_name}.0")
+                            addrmap = f"{x[1].parent.inst_name}.0"
                         parent = x[1].parent
 
                     while parent.get_property("BAR") == None:
                         parent = parent.parent
-                    bar.append(parent.get_property("BAR"))
-                    baraddr.append(parent.absolute_address)
+                    bar = parent.get_property("BAR")
+                    baraddr = parent.absolute_address
 
-                return ''.join([self.format(
-                    template,
-                    i=ext[0],
-                    ext=ext[1],
-                    total_words = int(ext[1].total_size/4),
-                    aw = ceil(log2(ext[1].size)),
-                    addrmap = addrmap[ext[0]],
-                    addr = ext[1].absolute_address-baraddr[ext[0]],
-                    bar = bar[ext[0]])
-                    for ext in value[what]])
+                    # prevent bugs by putting new data in a separate copy per
+                    # iteration
+                    #newc = value.copy()
+                    newc = dict()
+
+                    newc["i"] = x[0]
+                    newc["ext"] = x[1]
+                    newc["total_words"] = int(x[1].total_size/4)
+                    newc["aw"] = ceil(log2(x[1].size))
+                    newc["bar"] = bar
+                    newc["addrmap"] = addrmap
+                    newc["addr"] = x[1].absolute_address-baraddr
+
+                    # format the template
+                    results.append(self.format(template, **newc))
+
+                return "".join(results)
             elif what == "addrmaps":
-                addrmap = []
-                bar = []
-                baraddr = []
+                results = []
+
                 for x in value[what]:
                     if x[1].is_array:
-                        addrmap.append(f"{x[1].parent.inst_name}.{x[1].owning_addrmap.current_idx}")
+                        addrmap = f"{x[1].parent.inst_name}.{x[1].owning_addrmap.current_idx}"
                     else:
-                        addrmap.append(f"{x[1].parent.inst_name}.0")
+                        addrmap = f"{x[1].parent.inst_name}.0"
 
                     parent = x[1]
                     while parent.get_property("BAR") == None:
                         parent = parent.parent
-                    bar.append(parent.get_property("BAR"))
-                    baraddr.append(parent.absolute_address)
+                    bar = parent.get_property("BAR")
+                    baraddr = parent.absolute_address
 
-                return ''.join([self.format(
-                    template,
-                    i=x[0],
-                    x=x[1],
-                    total_words = int(x[1].total_size/4),
-                    addrmap = addrmap[x[0]],
-                    addr = x[1].absolute_address-baraddr[x[0]],
-                    bar = bar[x[0]])
-                    for x in value[what]])
+                    # prevent bugs by putting new data in a separate copy per
+                    # iteration
+                    #newc = value.copy()
+                    newc = dict()
+
+                    newc["i"] = x[0]
+                    newc["x"] = x[1]
+                    newc["total_words"] = int(x[1].total_size/4)
+                    newc["bar"] = bar
+                    newc["addrmap"] = addrmap
+                    newc["addr"] = x[1].absolute_address-baraddr
+
+                    # format the template
+                    results.append(self.format(template, **newc))
+
+                return "".join(results)
 
             else:
                 return "-- VOID" # this shouldn't happen
@@ -418,13 +450,14 @@ def main():
 
                 print(f"modname = {node.get_path_segment()}")
                 print(f"node.inst_name = {node.inst_name}")
+                print(f"node.type_name = {node.type_name}")
 
                 suffix = "".join(tpl.suffixes) # get the ".vhd.in"
                 out_file = "".join([str(tpl.name).replace(suffix, ""), "_", node.inst_name, suffix[:-3]])
                 out_path = Path(out_dir, out_file)
                 print(out_path)
 
-                hdl = vf.format(s_in, context=context, modname=node.get_path_segment())
+                hdl = vf.format(s_in, context=context)
 
                 with out_path.open('w') as f_out:
                     f_out.write(hdl)

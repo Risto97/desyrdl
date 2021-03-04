@@ -4,8 +4,9 @@ use ieee.numeric_std.all;
 
 library work;
 use work.pkg_types.all;
+use work.pkg_axi.all;
 
-package pkg_reg_{modname} is
+package pkg_reg_{context[node].type_name} is
 
   -----------------------------------------------
   -- below: common declarations
@@ -89,12 +90,12 @@ package pkg_reg_{modname} is
   constant C_EXTNAMES : integer := {context[n_extnames]};
   constant C_EXTCOUNT : integer := C_EXTNAMES;
   constant C_EXT_AW : T_IntegerArray(C_EXTNAMES downto 0) := (
-    --{extnames:repeat:extnames:
+    --{context:repeat:extnames:
     {{i}} => {{aw}}, -- {{ext.inst_name}}}
     C_EXTNAMES => 0 -- dummy
   );
   constant C_EXT_START : T_IntegerArray(C_EXTNAMES downto 0) := (
-    --{extnames:repeat:extnames:
+    --{context:repeat:extnames:
     {{i}} => {{addr}}, -- {{ext.inst_name}}}
     C_EXTNAMES => 0 -- dummy
   );
@@ -157,41 +158,41 @@ package pkg_reg_{modname} is
   --}
 
   -----------------------------------------------
-  -- module I/O types: {modname}
+  -- module I/O types: {context[node].type_name}
   -----------------------------------------------
   -- TODO generate external interface if that attribute is set
-  type t_registers_{modname}_in is record
+  type t_registers_{context[node].type_name}_in is record
     --{context:repeat:regnames:
     {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_in(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
     NONE : std_logic;
   end record;
 
-  type t_registers_{modname}_out is record
+  type t_registers_{context[node].type_name}_out is record
     --{context:repeat:regnames:
     {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_out(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
     NONE : std_logic;
   end record;
 
-  type t_memories_{modname}_out is record
+  type t_memories_{context[node].type_name}_out is record
     --{context:repeat:memnames:
     {{mem.inst_name}}     : t_mem_out; --}
     NONE : t_mem_out;
   end record;
 
-  type t_memories_{modname}_in is record
+  type t_memories_{context[node].type_name}_in is record
     --{context:repeat:memnames:
     {{mem.inst_name}}     : t_mem_in; --}
     NONE : t_mem_in;
   end record;
 
-  type t_externals_{modname}_m2s is record
-    --{extnames:repeat:extnames:
+  type t_externals_{context[node].type_name}_m2s is record
+    --{context:repeat:extnames:
     {{ext.inst_name}} : t_axi4_m2s; --}
     NONE : std_logic;
   end record;
 
-  type t_externals_{modname}_s2m is record
-    --{extnames:repeat:extnames:
+  type t_externals_{context[node].type_name}_s2m is record
+    --{context:repeat:extnames:
     {{ext.inst_name}} : t_axi4_s2m; --}
     NONE : std_logic;
   end record;
@@ -207,9 +208,9 @@ package pkg_reg_{modname} is
   function fun_{{regtype.type_name}}_to_we   (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector;
   --}
 
-end package pkg_reg_{modname};
+end package pkg_reg_{context[node].type_name};
 
-package body pkg_reg_{modname} is
+package body pkg_reg_{context[node].type_name} is
 
   --{context:repeat:regtypes:
   -----------------------------------------------
