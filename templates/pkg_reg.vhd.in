@@ -38,18 +38,18 @@ package pkg_reg_{context[node].type_name} is
   type t_field_info_arr is array (integer range 31 downto 0) of t_field_info;
   constant C_FIELD_NONE : t_field_info := (WIRE, 0, 0, 0, false, C_NA, C_NA, (others => '0'), 0, 0);
 
-  type t_field_signals_in is record
-    data : std_logic_vector; -- VHDL-2008 - check if Vivado can simulate this
-    we : std_logic;
-    incr : std_logic;
-    decr : std_logic;
-  end record;
-
-  type t_field_signals_out is record
-    data : std_logic_vector; -- VHDL-2008 - and if ISE can work with this
-    swacc : std_logic;
-    swmod : std_logic;
-  end record;
+  -- We can't have VHDL-2008 at the moment but maybe at some point we will
+--  type t_field_signals_in is record
+--    data : std_logic_vector; -- VHDL-2008
+--    we : std_logic;
+--    incr : std_logic;
+--    decr : std_logic;
+--  end record;
+--  type t_field_signals_out is record
+--    data : std_logic_vector; -- VHDL-2008
+--    swacc : std_logic;
+--    swmod : std_logic;
+--  end record;
 
   constant C_ADDR_W : integer := 32;
 
@@ -127,7 +127,6 @@ package pkg_reg_{context[node].type_name} is
     {{{{i}}}} => (ftype => {{{{field:ftype}}}}, len => {{{{field.width}}}}, upper => {{{{field.high}}}}, lower => {{{{field.low}}}}, hw_we => {{{{hw_we}}}}, sw_access => C_{{{{sw_access:upper}}}}, hw_access => C_{{{{hw_access:upper}}}},  def_val => {{{{reset}}}}, decrwidth => {{{{decrwidth}}}}, incrwidth => {{{{incrwidth}}}}), -- {{{{field.inst_name}}}} --}}
     others => C_FIELD_NONE
   );
-
   --}
 
   constant C_REGISTER_INFO : t_reg_info_array := (
@@ -136,22 +135,42 @@ package pkg_reg_{context[node].type_name} is
     others => C_REG_NONE
   );
 
+  -----------------------------------------------
+  -- Register types
+  -- Used by dweveloper to access registers in their VHDL code
+  -----------------------------------------------
+  -- We need VDHL-2008 for an unconstrained array "data" in the record type
+  -- that doesn't specify the field width before knowing the actual register
+  -- properties, so each field of each register must have its own type.
   --{context:repeat:regtypes:
   -----------------------------------------------
   -- register type: {{regtype.type_name}}
   -----------------------------------------------
-  -- contains up to 32 data bits plus the other signals (we, incr, ..)
+  -- Field types: up to 32 data bits plus the other signals (we, incr, ..)
+  --{{regtype:repeat:fields:
+  type t_field_signals_{{{{regtype.type_name}}}}_{{{{field.type_name}}}}_in is record
+    data : std_logic_vector(C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).len-1 downto 0);
+    we : std_logic;
+    incr : std_logic;
+    decr : std_logic;
+  end record;
+  type t_field_signals_{{{{regtype.type_name}}}}_{{{{field.type_name}}}}_out is record
+    data : std_logic_vector(C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).len-1 downto 0);
+    swacc : std_logic;
+    swmod : std_logic;
+  end record; --}}
+
+  -- The actual register types
   type t_reg_{{regtype.type_name}}_in is record
     -- fields
     --{{regtype:repeat:fields:
-    {{{{field.type_name}}}} : t_field_signals_in(data(C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).len-1 downto 0)); --}}
+    {{{{field.type_name}}}} : t_field_signals_{{{{regtype.type_name}}}}_{{{{field.type_name}}}}_in; --}}
   end record;
   type t_reg_{{regtype.type_name}}_3d_in is array (integer range <>, integer range <>) of t_reg_{{regtype.type_name}}_in;
-
   type t_reg_{{regtype.type_name}}_out is record
     -- fields
     --{{regtype:repeat:fields:
-    {{{{field.type_name}}}} : t_field_signals_out(data(C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).len-1 downto 0)); --}}
+    {{{{field.type_name}}}} : t_field_signals_{{{{regtype.type_name}}}}_{{{{field.type_name}}}}_out; --}}
   end record;
   type t_reg_{{regtype.type_name}}_3d_out is array (integer range <>, integer range <>) of t_reg_{{regtype.type_name}}_out;
 
@@ -257,11 +276,12 @@ package body pkg_reg_{context[node].type_name} is
   end function;
 
   function fun_{{regtype.type_name}}_to_we (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector is
-    variable v_tmp : std_logic_vector(32-1 downto 0);
+    variable v_tmp : std_logic_vector(32-1 downto 0) := (others => '0');
   begin
     --{{regtype:repeat:fields:
-    v_tmp({{{{i}}}}) := reg.{{{{field.type_name}}}}.we when C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).hw_we else '0'; -- FIXME VHDL-2008? --}}
-
+    if C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).hw_we then
+      v_tmp({{{{i}}}}) := reg.{{{{field.type_name}}}}.we;
+    end if; --}}
     return v_tmp;
   end function;
 

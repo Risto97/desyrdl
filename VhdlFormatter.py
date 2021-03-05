@@ -92,6 +92,7 @@ class VhdlFormatter(string.Formatter):
                 return ''.join([self.format(
                     template,
                     i=i,
+                    regtype=value,
                     field=field,
                     hw_we=field.get_property("we"),
                     sw_access=field.get_property("sw").name,
@@ -453,6 +454,10 @@ def main():
                 print(f"node.type_name = {node.type_name}")
 
                 suffix = "".join(tpl.suffixes) # get the ".vhd.in"
+
+                #
+                # TODO use node.type_name instead of inst_name
+                #
                 out_file = "".join([str(tpl.name).replace(suffix, ""), "_", node.inst_name, suffix[:-3]])
                 out_path = Path(out_dir, out_file)
                 print(out_path)
