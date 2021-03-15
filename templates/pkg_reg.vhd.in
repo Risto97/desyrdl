@@ -1,3 +1,5 @@
+-- Copyright (c) 2020-2021 Deutsches Elektronen-Synchrotron DESY.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;

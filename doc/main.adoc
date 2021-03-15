@@ -1,0 +1,9 @@
+= rdltovhdl
+
+== Concept
+
+* You compile a set of SystemRDL files with a Python script based on systemrdl-compiler.
+
+=== Templates
+
+* Put as much information from the compiled SystemRDL tree into a VHDL pkg file as possible. This way the actual HDL entities stay more or less away from template processing.

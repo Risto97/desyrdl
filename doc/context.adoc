@@ -109,7 +109,6 @@
 * (instance: either `node.inst_name` or `node.get_path_segment()`)
 * context
 ** node -> the AddrmapNode
-** type_name (redundant, accessible as node.type_name)
 ** regtypes -> array(?) of RegNode
 *** i
 *** regtype -> RegNode with fields()

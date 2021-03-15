@@ -76,8 +76,6 @@ begin
     po_mem => mem_a_in
   );
 
-  -- TODO add to top.vhd.in ?
-  po_s_axi4.aclk <= pi_clock;
   -- needed?
   po_s_axi4.rdata(po_s_axi4.rdata'left downto 32) <= (others => '0');
   po_s_axi4.bid <= (others => '0');

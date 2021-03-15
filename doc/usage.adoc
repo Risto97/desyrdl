@@ -1,4 +1,43 @@
-= Usage
+== Usage guide
+
+=== Writing SystemRDL files
+
+You can use the provided script to generate `.rdl` files from `PKG_ADDRESS_SPACE_FOO.vhd` files:
+```
+rdltovhdl/pkg_addr_to_rdl.awk /path/to/PKG_ADDRESS_SPACE_LLRF_CTABLES.vhd > src/mod/llrf/ctables/rdl/ctables.rdl
+```
+If the `.vhd` file was using constants then either pass them as arguments when instantiating the module in you upper-level `.rdl` file or write a SystemVerilog file with `define` statements for them and include it in the generated `.rdl` file.
+
+Otherwise have a look at these examples to write `.rdl` files from scratch:
+https://gitlab.msktools.desy.de/fpgafw/mod/bsp/bsp_sis8300_ku/-/blob/test_hectare/rdl/board.rdl
+https://gitlab.msktools.desy.de/fpgafw/mod/fpga_config_manager/-/blob/systemrdl/rdl/config_manager.rdl
+
+=== Writing templates
+
+The custom template engine is inspired by https://github.com/ebrehault/superformatter.
+Everything within curly braces {} is interpreted as a "replacement field" and replaced by the output of the formatter. This is inherited from Python's `Formatter` class, so its behavior is very similar to a formatted print in Python:
+```
+>>> print("Mein Hut, der hat {n_edges} Ecken.".format(n_edges=3))
+Mein Hut, der hat 3 Ecken.
+```
+This can be extended by a format specifier, separated with a ':', like this ('b' makes it print the value in binary representation):
+```
+>>> print("Mein Hut, der hat {n_edges:b} Ecken.".format(n_edges=3))
+Mein Hut, der hat 11 Ecken.
+```
+The `VhdlFormatter` class implements a custom language for the format specifier that gives access to the compiled SystemRDL tree.
+The format of a replacement field is roughly this: "{value:spec}" where `value` is an object in the Python program and `spec` is one of these custom expressions:
+* 'ftype': value must be a `FieldNode`. Replacement is the field type: either "COUNTER", "INTERRUPT", "STORAGE" or "WIRE". See table 12 of the SystemRDL 2.0 specification.
+* 'ifgtzero:key:string': value must be a dict, e.g. context, and "key" must be in it. String is some text, e.g. VHDL code, that is only returned when `value[key]` is greater than zero.
+* 'upper' and 'lower': expects a string as `value`, returns `value.upper()` or `value.lower()`.
+* 'repeat:rtype:string': the loop functionality of `VhdlFormatter`. Value must be a Python dict (the "context") that must contain the key given by `rtype` (except 'fields', where `value` is a `RegNode`).
+** `rtype==regtypes`
+** `rtype==regnames`
+*** additional context: WIP
+** `rtype==fields`
+** `rtype==addrmaps`
+
+=== Calling the script
 
 All RDL files must be passed to VhdlFormatter.py in the correct order.
 A module which defines an addrmap `timing` would have to be passed before

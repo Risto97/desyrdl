@@ -165,8 +165,6 @@ begin
   RResp <= s2m_axi4_hectare.rresp;
   --RLast <= s2m_axi4_hectare.rlast;
   RValid <= s2m_axi4_hectare.rvalid;
-  -- <= s2m_axi4_hectare.aclk;
-  -- <= s2m_axi4_hectare.areset_n;
 
   ins_dut : entity work.test_hectare_top
   port map (
