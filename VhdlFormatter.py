@@ -458,9 +458,15 @@ def main():
                 #
                 # TODO use node.type_name instead of inst_name
                 #
-                out_file = "".join([str(tpl.name).replace(suffix, ""), "_", node.inst_name, suffix[:-3]])
+                out_file = "".join([str(tpl.name).replace(suffix, ""), "_", node.type_name, suffix[:-3]])
                 out_path = Path(out_dir, out_file)
                 print(out_path)
+                if out_path.is_file():
+                    # two possible reasons:
+                    # (1) old output from previous run
+                    # (2) this is another AddrmapNode instance of the same type
+                    # For now we just overwrite existing files
+                    print("File exists, overwriting: {}".format(out_path))
 
                 hdl = vf.format(s_in, context=context)
 
