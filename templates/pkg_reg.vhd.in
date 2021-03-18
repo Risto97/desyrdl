@@ -101,6 +101,12 @@ package pkg_reg_{context[node].type_name} is
     {{i}} => {{addr}}, -- {{ext.inst_name}}}
     C_EXTNAMES => 0 -- dummy
   );
+  -- size in bytes occupied in the address map
+  constant C_EXT_SIZE : T_IntegerArray(C_EXTNAMES downto 0) := (
+    --{context:repeat:extnames:
+    {{i}} => {{ext.size}}, -- {{ext.inst_name}}}
+    C_EXTNAMES => 0 -- dummy
+  );
 
   -- register types
 

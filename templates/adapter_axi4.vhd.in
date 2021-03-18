@@ -291,7 +291,7 @@ begin
     -- external interfaces (if present) {context:ifgtzero:n_extnames:
     for i in 0 to C_EXTCOUNT-1 loop
       if raddr_q_int-C_EXT_START(i) >= 0
-      and raddr_q_int-(C_EXT_START(i)+2**C_EXT_AW(i)) < 0 then
+      and raddr_q_int-(C_EXT_START(i)+C_EXT_SIZE(i)) < 0 then
         rtarget <= EXT;
         ext_rsel <= i;
       end if;
