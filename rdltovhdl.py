@@ -1,9 +1,9 @@
-from systemrdl import RDLCompileError, RDLCompiler, RDLWalker
-from systemrdl import RDLListener           
-import re
-import os                                   
-import sys                                  
 import copy
+import os
+import re
+import sys
+
+from systemrdl import RDLCompileError, RDLCompiler, RDLListener, RDLWalker
 
 # template file paths
 tpl_top = "templates/top.vhd.in"
@@ -16,9 +16,9 @@ rdlc = RDLCompiler()
 rdlc.compile_file(rdlfile)
 
 try:
-    root=rdlc.elaborate()              
+    root=rdlc.elaborate()
 except RDLCompileError:
-    print("oops")  
+    print("oops")
 
 top_node = root.get_child_by_name("marsupials")
 
@@ -52,7 +52,7 @@ def duplicate_regnames(s):
         else:
             print("Error: duplicate section for regname is empty")
             s_reg = ""
-    
+
         for reg in top_node.registers():
             # top_node.registers() are what I called "regname"s, so one per array
             print(reg.get_property("name"))
@@ -143,4 +143,3 @@ s_out = duplicate_regnames(s_in)
 
 with open('top.vhd', 'w') as f_out:
     f_out.write(s_out)
-
