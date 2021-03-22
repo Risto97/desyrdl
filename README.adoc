@@ -5,7 +5,7 @@ Python 3 is required.
 [source,bash]
 ....
 python -m venv my_venv // <1>
-source venv/bin/activate // <2>
+source my_venv/bin/activate // <2>
 pip install systemrdl-compiler // <3>
 ....
 <1> the `venv` module creates a folder `my_venv` where you can play around as you like without messing with your system setup
