@@ -23,9 +23,9 @@ use ieee.numeric_std.all;
 
 library work;
 use work.pkg_types.all;
-use work.pkg_reg_{context[node].type_name}.all;
+use work.pkg_reg_common.all;
 
-entity reg_field_counter_{context[node].type_name} is
+entity reg_field_counter is
   generic (
             -- contains an array of field info
             g_info : t_field_info
@@ -47,9 +47,9 @@ entity reg_field_counter_{context[node].type_name} is
          pi_hw_decrvalue : in std_logic_vector(g_info.decrwidth-1 downto 0);
          pi_hw_incrvalue : in std_logic_vector(g_info.incrwidth-1 downto 0)
        );
-end entity reg_field_counter_{context[node].type_name};
+end entity reg_field_counter;
 
-architecture rtl of reg_field_counter_{context[node].type_name} is
+architecture rtl of reg_field_counter is
   signal instruction : std_logic_vector(3 downto 0);
   signal counter : unsigned(g_info.len-1 downto 0);
   signal overflow, underflow : std_logic;

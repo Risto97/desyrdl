@@ -23,10 +23,9 @@ use ieee.numeric_std.all;
 
 library work;
 use work.pkg_types.all;
-use work.pkg_reg_{context[node].type_name}.all;
---use work.pkg_registers_common.all;
+use work.pkg_reg_common.all;
 
-entity reg_{context[node].type_name} is
+entity desy_register is
   generic (
             g_fields : t_field_info_arr
           );
@@ -49,9 +48,9 @@ entity reg_{context[node].type_name} is
          po_logic_data : out std_logic_vector(32-1 downto 0);
          po_logic_swmod : out std_logic_vector(32-1 downto 0)
        );
-end entity reg_{context[node].type_name};
+end entity desy_register;
 
-architecture rtl of reg_{context[node].type_name} is
+architecture rtl of desy_register is
 begin
 
   -- on a strobe, write to all fields --> one signal for the register (storage)
@@ -65,7 +64,7 @@ begin
   begin
     -- storage type fields
     gen_storage : if field.ftype = STORAGE generate
-      ins_field_storage : entity work.reg_field_storage_{context[node].type_name}
+      ins_field_storage : entity work.reg_field_storage
       generic map(
                    g_info => field
                  )
@@ -101,7 +100,7 @@ begin
     -- counter type fields
     gen_counter : if field.ftype = COUNTER generate
     begin
-      ins_field_counter : entity work.reg_field_counter_{context[node].type_name}
+      ins_field_counter : entity work.reg_field_counter
       generic map(
                    g_info => field
                  )

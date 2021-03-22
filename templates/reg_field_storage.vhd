@@ -23,9 +23,9 @@ use ieee.numeric_std.all;
 
 library work;
 use work.pkg_types.all;
-use work.pkg_reg_{context[node].type_name}.all;
+use work.pkg_reg_common.all;
 
-entity reg_field_storage_{context[node].type_name} is
+entity reg_field_storage is
   generic (
             -- contains an array of field info
             g_info : t_field_info
@@ -44,9 +44,9 @@ entity reg_field_storage_{context[node].type_name} is
          po_hw_data  : out std_logic_vector(g_info.len-1 downto 0);
          po_hw_swmod : out std_logic
        );
-end entity reg_field_storage_{context[node].type_name};
+end entity reg_field_storage;
 
-architecture rtl of reg_field_storage_{context[node].type_name} is
+architecture rtl of reg_field_storage is
   signal field_reg : std_logic_vector(g_info.len-1 downto 0);
 begin
 

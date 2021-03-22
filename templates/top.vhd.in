@@ -7,6 +7,7 @@ use ieee.numeric_std.all;
 library work;
 use work.pkg_types.all;
 use work.pkg_axi.all;
+use work.pkg_reg_common.all;
 use work.pkg_reg_{context[node].type_name}.all;
 
 entity top_reg_{context[node].type_name} is
@@ -20,7 +21,7 @@ entity top_reg_{context[node].type_name} is
 
     -- logic
     pi_addrmap : in t_addrmap_{context[node].type_name}_in;
-    po_addrmap : out t_addrmap_{context[node].type_name}_out;
+    po_addrmap : out t_addrmap_{context[node].type_name}_out
 
   );
 end entity top_reg_{context[node].type_name};
@@ -41,7 +42,12 @@ architecture arch of top_reg_{context[node].type_name} is
 begin
   ins_adapter: entity work.adapter_axi4_{context[node].type_name}
   generic map (
-                G_ADDR_W    => C_ADDR_W,
+                G_ADDR_W   => C_ADDR_W,
+                G_REGISTER_INFO => C_REGISTER_INFO,
+                G_MEMNAMES => C_MEMNAMES,
+                G_MEM_AW   => C_MEM_AW,
+                G_EXTCOUNT => C_EXTCOUNT,
+                G_REGNAMES => C_REGNAMES,
                 G_REGCOUNT => C_REGCOUNT
               )
   port map (
@@ -137,7 +143,7 @@ begin
         -- TODO implement swacc
         l_reg_swacc <= (others => '0');
 
-        ins_reg: entity work.reg_{{reg.owning_addrmap.type_name}}
+        ins_reg: entity work.desy_register
         generic map (
                       -- contains an array of field info
                       g_fields => l_reg_info.fields
