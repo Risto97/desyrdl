@@ -187,40 +187,23 @@ package pkg_reg_{context[node].type_name} is
   -----------------------------------------------
   -- module I/O types: {context[node].type_name}
   -----------------------------------------------
-  -- TODO generate external interface if that attribute is set
-  type t_registers_{context[node].type_name}_in is record
+  type t_addrmap_{context[node].type_name}_in is record
     --{context:repeat:regnames:
     {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_in(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
-    NONE : std_logic;
-  end record;
-
-  type t_registers_{context[node].type_name}_out is record
-    --{context:repeat:regnames:
-    {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_out(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
-    NONE : std_logic;
-  end record;
-
-  type t_memories_{context[node].type_name}_out is record
     --{context:repeat:memnames:
-    {{mem.inst_name}}     : t_mem_out; --}
-    NONE : t_mem_out;
-  end record;
-
-  type t_memories_{context[node].type_name}_in is record
-    --{context:repeat:memnames:
-    {{mem.inst_name}}     : t_mem_in; --}
-    NONE : t_mem_in;
-  end record;
-
-  type t_externals_{context[node].type_name}_m2s is record
-    --{context:repeat:extnames:
-    {{ext.inst_name}} : t_axi4_m2s; --}
-    NONE : std_logic;
-  end record;
-
-  type t_externals_{context[node].type_name}_s2m is record
+    {{mem.inst_name}} : t_mem_in; --}
     --{context:repeat:extnames:
     {{ext.inst_name}} : t_axi4_s2m; --}
+    NONE : std_logic;
+  end record;
+
+  type t_addrmap_{context[node].type_name}_out is record
+    --{context:repeat:regnames:
+    {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_out(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
+    --{context:repeat:memnames:
+    {{mem.inst_name}}     : t_mem_out; --}
+    --{context:repeat:extnames:
+    {{ext.inst_name}} : t_axi4_m2s; --}
     NONE : std_logic;
   end record;
 
