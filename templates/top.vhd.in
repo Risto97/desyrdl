@@ -40,15 +40,19 @@ architecture arch of top_reg_{context[node].type_name} is
   signal adapter_to_ext : t_axi4_m2s_array(C_EXTCOUNT downto 0);
 
 begin
-  ins_adapter: entity work.adapter_axi4_{context[node].type_name}
+  ins_adapter: entity work.adapter_axi4
   generic map (
-                G_ADDR_W   => C_ADDR_W,
+                G_ADDR_W     => C_ADDR_W,
                 G_REGISTER_INFO => C_REGISTER_INFO,
-                G_MEMNAMES => C_MEMNAMES,
-                G_MEM_AW   => C_MEM_AW,
-                G_EXTCOUNT => C_EXTCOUNT,
-                G_REGNAMES => C_REGNAMES,
-                G_REGCOUNT => C_REGCOUNT
+                G_MEMNAMES   => C_MEMNAMES,
+                G_MEM_START  => C_MEM_AW,
+                G_MEM_AW     => C_MEM_AW,
+                G_EXTCOUNT   => C_EXTCOUNT,
+                G_EXT_START  => C_EXT_AW,
+                G_EXT_SIZE   => C_EXT_AW,
+                G_EXT_AW     => C_EXT_AW,
+                G_REGNAMES   => C_REGNAMES,
+                G_REGCOUNT   => C_REGCOUNT
               )
   port map (
              pi_regs       => adapter_rdata,
@@ -62,10 +66,8 @@ begin
              po_mem        => adapter_to_dpm,
              pi_mem        => adapter_from_dpm,
 
-             -- external interfaces (if present) {context:ifgtzero:n_extnames:
-             po_ext        => adapter_to_ext(C_EXTCOUNT-1 downto 0),
-             pi_ext        => adapter_from_ext(C_EXTCOUNT-1 downto 0),
-             --}
+             po_ext        => adapter_to_ext(C_EXTCOUNT downto 0),
+             pi_ext        => adapter_from_ext(C_EXTCOUNT downto 0),
 
              S_AXI_AWADDR  => pi_s_axi4.awaddr(C_ADDR_W-1 downto 0),
              S_AXI_AWPROT  => (others => '0'),

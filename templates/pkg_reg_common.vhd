@@ -46,6 +46,12 @@ package pkg_reg_common is
   end record;
   constant C_REG_NONE : t_reg_info := (0, 0, (others => C_FIELD_NONE), 1, 1);
 
+  -- Maybe better to constrain t_reg_info_array. Vivado shows weird indices when unconstrained.
+  -- Must be the number of distinct register names, not one for each 2D/3D array element!
+  --type t_reg_info_array is array (0 to C_REGNAMES) of t_reg_info;
+  type t_reg_info_array is array (natural range <>) of t_reg_info;
+
+
   -- We can't have VHDL-2008 at the moment but maybe at some point we will
 --  type t_field_signals_in is record
 --    data : std_logic_vector; -- VHDL-2008

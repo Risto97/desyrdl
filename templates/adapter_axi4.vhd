@@ -12,17 +12,20 @@ library work;
 use work.pkg_types.all;
 use work.pkg_axi.all;
 use work.pkg_reg_common.all;
-use work.pkg_reg_{context[node].type_name}.all;
 
-entity adapter_axi4_{context[node].type_name} is
+entity adapter_axi4 is
   generic (
-    G_ADDR_W : integer := 8;
+    G_ADDR_W    : integer := 8;
     G_REGISTER_INFO : t_reg_info_array;
-    G_MEMNAMES : integer := 1;
-    G_MEM_AW   : T_IntegerArray;
-    G_EXTCOUNT : integer := 1;
-    G_REGNAMES : integer := 1;
-    G_REGCOUNT : natural := 1
+    G_MEMNAMES  : integer := 1;
+    G_MEM_START : T_IntegerArray;
+    G_MEM_AW    : T_IntegerArray;
+    G_EXTCOUNT  : integer := 1;
+    G_EXT_START : T_IntegerArray;
+    G_EXT_SIZE  : T_IntegerArray;
+    G_EXT_AW    : T_IntegerArray;
+    G_REGNAMES  : integer := 1;
+    G_REGCOUNT  : natural := 1
   );
   port (
     -- one element for each register, so N elements for a 2D register with length N
@@ -36,10 +39,8 @@ entity adapter_axi4_{context[node].type_name} is
     pi_mem : in t_mem_out_arr(G_MEMNAMES downto 0);
     po_mem : out t_mem_in_arr(G_MEMNAMES downto 0);
 
-    -- external interfaces (if present) {context:ifgtzero:n_extnames:
-    pi_ext : in t_axi4_s2m_array(G_EXTCOUNT-1 downto 0);
-    po_ext : out t_axi4_m2s_array(G_EXTCOUNT-1 downto 0);
-    --}
+    pi_ext : in t_axi4_s2m_array(G_EXTCOUNT downto 0);
+    po_ext : out t_axi4_m2s_array(G_EXTCOUNT downto 0);
 
     clk           : in std_logic;
     reset         : in std_logic;
@@ -67,9 +68,9 @@ entity adapter_axi4_{context[node].type_name} is
     S_AXI_RREADY  : in std_logic;
     S_AXI_RID     : out std_logic_vector(16-1 downto 0)
 );
-end entity adapter_axi4_{context[node].type_name};
+end entity adapter_axi4;
 
-architecture arch of adapter_axi4_{context[node].type_name} is
+architecture arch of adapter_axi4 is
 
   type t_target is (NONE, REG, MEM, EXT);
   signal rtarget, wtarget : t_target;
@@ -143,21 +144,19 @@ architecture arch of adapter_axi4_{context[node].type_name} is
 
 begin
 
-  -- external interfaces (if present) {context:ifgtzero:n_extnames:
   gen_ext_if : for i in G_EXTCOUNT-1 downto 0 generate
     po_ext(i).arvalid <= ext_arvalid(i);
-    po_ext(i).araddr(C_EXT_AW(i)-1 downto 0) <= ext_araddr(i)(C_EXT_AW(i)-1 downto 0);
-    po_ext(i).araddr(po_ext(i).araddr'left downto C_EXT_AW(i)) <= (others => '0');
+    po_ext(i).araddr(G_EXT_AW(i)-1 downto 0) <= ext_araddr(i)(G_EXT_AW(i)-1 downto 0);
+    po_ext(i).araddr(po_ext(i).araddr'left downto G_EXT_AW(i)) <= (others => '0');
     po_ext(i).rready <= ext_rready(i);
     po_ext(i).awvalid <= ext_awvalid(i);
     po_ext(i).wvalid <= ext_wvalid(i);
     po_ext(i).bready <= ext_bready(i);
-    po_ext(i).awaddr(C_EXT_AW(i)-1 downto 0) <= ext_awaddr(i)(C_EXT_AW(i)-1 downto 0);
-    po_ext(i).awaddr(po_ext(i).awaddr'left downto C_EXT_AW(i)) <= (others => '0');
+    po_ext(i).awaddr(G_EXT_AW(i)-1 downto 0) <= ext_awaddr(i)(G_EXT_AW(i)-1 downto 0);
+    po_ext(i).awaddr(po_ext(i).awaddr'left downto G_EXT_AW(i)) <= (others => '0');
     po_ext(i).wdata(31 downto 0) <= ext_wdata(i);
     po_ext(i).wstrb(3 downto 0) <= ext_wstrb(i);
   end generate;
-  --}
 
   -- ### read logic
 
@@ -197,14 +196,12 @@ begin
               state_read <= ST_READ_MEM_BUSY;
               mem_rsel_q <= mem_rsel;
               mem_ren(mem_rsel) <= '1';
-            -- external interfaces (if present) {context:ifgtzero:n_extnames:
             elsif rtarget = EXT then
               state_read <= ST_READ_EXT_BUSY;
               ext_rsel_q <= ext_rsel;
               ext_arvalid(ext_rsel) <= '1';
               ext_araddr(ext_rsel) <= raddr_q;
               ext_rready(ext_rsel) <= '1';
-              --}
             end if;
 
           when ST_READ_REG_BUSY =>
@@ -217,7 +214,6 @@ begin
               mem_ren <= (others => '0');
             end if;
 
-          -- external interfaces (if present) {context:ifgtzero:n_extnames:
           when ST_READ_EXT_BUSY =>
             -- This state begins with ext_arvalid=1, so once we see a
             -- ready signal the addr or data was accepted.
@@ -232,7 +228,7 @@ begin
 
               -- might be redundant
               ext_arvalid(ext_rsel_q) <= '0';
-            end if; --}
+            end if;
 
           when ST_READ_VALID =>
             if S_AXI_RREADY = '1' then
@@ -281,27 +277,29 @@ begin
     ext_rsel <= 0;
 
     -- TODO: optimize: do the comparisons during ST_READ_IDLE
-    -- and put in raddr_is_mem_x[C_MEMCOUNT]
-    -- TODO must be C_MEMCOUNT
+    -- and put in raddr_is_mem_x[G_MEMCOUNT]
+    -- TODO must be G_MEMCOUNT
     -- TODO optimize. Also see:
     -- https://zipcpu.com/blog/2019/07/17/crossbar.html#examining-the-arbitration-code
 
     for i in 0 to G_MEMNAMES-1 loop
-      if raddr_q_int-C_MEM_START(i) >= 0
-      and raddr_q_int-(C_MEM_START(i)+2**G_MEM_AW(i)) < 0 then
+      if raddr_q_int-G_MEM_START(i) >= 0
+      and raddr_q_int-(G_MEM_START(i)+2**G_MEM_AW(i)) < 0 then
         rtarget <= MEM;
         mem_rsel <= i;
       end if;
     end loop;
 
-    -- external interfaces (if present) {context:ifgtzero:n_extnames:
     for i in 0 to G_EXTCOUNT-1 loop
-      if raddr_q_int-C_EXT_START(i) >= 0
-      and raddr_q_int-(C_EXT_START(i)+C_EXT_SIZE(i)) < 0 then
-        rtarget <= EXT;
-        ext_rsel <= i;
+      -- external interfaces are not always present
+      if G_EXTCOUNT > 1 then
+        if raddr_q_int-G_EXT_START(i) >= 0
+        and raddr_q_int-(G_EXT_START(i)+G_EXT_SIZE(i)) < 0 then
+          rtarget <= EXT;
+          ext_rsel <= i;
+        end if;
       end if;
-    end loop; --}
+    end loop;
 
     for i in 0 to G_REGNAMES-1 loop
       for j in 0 to G_REGISTER_INFO(i).N-1 loop
@@ -454,7 +452,6 @@ begin
               state_write <= ST_WriteMemBusy;
               mem_wsel_q <= mem_wsel;
               mem_wen(mem_wsel) <= '1';
-            -- external interfaces (if present) {context:ifgtzero:n_extnames:
             elsif wtarget = EXT then
               state_write <= ST_WriteExtBusy;
               ext_wsel_q <= ext_wsel;
@@ -463,7 +460,7 @@ begin
               ext_wvalid(ext_wsel) <= '1';
               ext_wdata(ext_wsel) <= wdata_q;
               ext_wstrb(ext_wsel) <= wstrb_q;
-              ext_bready(ext_wsel) <= '1'; --}
+              ext_bready(ext_wsel) <= '1';
             else
               state_write <= ST_WriteIdle;
             end if;
@@ -474,7 +471,6 @@ begin
               mem_wen <= (others => '0');
             end if;
 
-          -- external interfaces (if present) {context:ifgtzero:n_extnames:
           when ST_WriteExtBusy =>
             -- This state begins with ext_awvalid=1 and ext_wvalid=1, so once we see a
             -- ready signal the addr or data was accepted.
@@ -492,7 +488,7 @@ begin
               -- might be redundant
               ext_awvalid(ext_wsel_q) <= '0';
               ext_wvalid(ext_wsel_q) <= '0';
-            end if; --}
+            end if;
 
           when ST_WriteResp =>
             po_we <= '0';
@@ -525,23 +521,24 @@ begin
     -- TODO this is a copy of the read address decoder, just a few renames.
     -- Move to a procedure or so... right?
 
-
     for i in 0 to G_MEMNAMES-1 loop
-      if waddr_q_int-C_MEM_START(i) >= 0
-      and waddr_q_int-(C_MEM_START(i)+2**G_MEM_AW(i)) < 0 then
+      if waddr_q_int-G_MEM_START(i) >= 0
+      and waddr_q_int-(G_MEM_START(i)+2**G_MEM_AW(i)) < 0 then
         wtarget <= MEM;
         mem_wsel <= i;
       end if;
     end loop;
 
-    -- external interfaces (if present) {context:ifgtzero:n_extnames:
     for i in 0 to G_EXTCOUNT-1 loop
-      if waddr_q_int-C_EXT_START(i) >= 0
-      and waddr_q_int-(C_EXT_START(i)+2**C_EXT_AW(i)) < 0 then
-        wtarget <= EXT;
-        ext_wsel <= i;
+      -- external interfaces are not always present
+      if G_EXTCOUNT > 1 then
+        if waddr_q_int-G_EXT_START(i) >= 0
+        and waddr_q_int-(G_EXT_START(i)+2**G_EXT_AW(i)) < 0 then
+          wtarget <= EXT;
+          ext_wsel <= i;
+        end if;
       end if;
-    end loop; --}
+    end loop;
 
     for i in 0 to G_REGNAMES-1 loop
       for j in 0 to G_REGISTER_INFO(i).N-1 loop
