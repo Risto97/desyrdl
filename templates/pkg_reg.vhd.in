@@ -7,68 +7,12 @@ use ieee.numeric_std.all;
 library work;
 use work.pkg_types.all;
 use work.pkg_axi.all;
+use work.pkg_reg_common.all;
 
 package pkg_reg_{context[node].type_name} is
 
   -----------------------------------------------
-  -- below: common declarations
-  -----------------------------------------------
-
-  --type t_field_access is (R, W, RW, NA);
-  subtype t_field_access is integer;
-  constant C_RW  : integer := 2;
-  constant C_RW1 : integer := 5;
-  constant C_R   : integer := 3;
-  constant C_W   : integer := 4;
-  constant C_W1  : integer := 6;
-  constant C_NA  : integer := 1;
-
-  type t_field_type is (STORAGE, WIRE, COUNTER, INTERRUPT);
-
-  type t_field_info is record
-    ftype : t_field_type;
-    len   : integer;
-    upper : integer;
-    lower : integer;
-    hw_we : boolean;
-    sw_access : t_field_access;
-    hw_access : t_field_access;
-    def_val : std_logic_vector(32-1 downto 0);
-    incrwidth : integer;
-    decrwidth : integer;
-  end record;
-  type t_field_info_arr is array (integer range 31 downto 0) of t_field_info;
-  constant C_FIELD_NONE : t_field_info := (WIRE, 0, 0, 0, false, C_NA, C_NA, (others => '0'), 0, 0);
-
-  -- We can't have VHDL-2008 at the moment but maybe at some point we will
---  type t_field_signals_in is record
---    data : std_logic_vector; -- VHDL-2008
---    we : std_logic;
---    incr : std_logic;
---    decr : std_logic;
---  end record;
---  type t_field_signals_out is record
---    data : std_logic_vector; -- VHDL-2008
---    swacc : std_logic;
---    swmod : std_logic;
---  end record;
-
-  constant C_ADDR_W : integer := 32;
-
-  type t_mem_in is record
-    ena  : std_logic;
-    wr   : std_logic;
-    addr : std_logic_vector(C_ADDR_W-2-1 downto 0);
-    data : std_logic_vector(32-1 downto 0);
-  end record t_mem_in;
-  type t_mem_in_arr is array (natural range <>) of t_mem_in;
-
-  -- TODO make this a record as well just to stay consistent
-  subtype t_mem_out is std_logic_vector(32-1 downto 0);
-  type t_mem_out_arr is array (natural range <>) of t_mem_out;
-
-  -----------------------------------------------
-  -- below: per regfile / module !
+  -- per addrmap / module
   -----------------------------------------------
 
   -- must be calculated by register tool
@@ -108,27 +52,6 @@ package pkg_reg_{context[node].type_name} is
     C_EXTNAMES => 0 -- dummy
   );
 
-  -- register types
-
-  type t_regtype is (
-    --{context:repeat:regtypes:
-    {{regtype.type_name}}, --}
-    NONE -- dummy
-  );
-
-  type t_reg_info is record
-    addr    : integer;
-    base    : integer;
-    regtype : t_regtype;
-    fields  : t_field_info_arr;
-    N       : positive;
-    M       : positive;
-  end record;
-  -- Maybe better to constrain t_reg_info_array. Vivado shows weird indices when unconstrained.
-  -- Must be the number of distinct register names, not one for each 2D/3D array element!
-  type t_reg_info_array is array (0 to C_REGNAMES) of t_reg_info;
-  constant C_REG_NONE : t_reg_info := (0, 0, NONE, (others => C_FIELD_NONE), 1, 1);
-
   --{context:repeat:regtypes:
   constant C_{{regtype.type_name:upper}}_FIELDS : t_field_info_arr := (
     --{{regtype:repeat:fields:
@@ -137,9 +60,9 @@ package pkg_reg_{context[node].type_name} is
   );
   --}
 
-  constant C_REGISTER_INFO : t_reg_info_array := (
+  constant C_REGISTER_INFO : t_reg_info_array(0 to C_REGNAMES) := (
     --{context:repeat:regnames:
-    {{i}} => (addr => {{addr}}, base => {{base}}, regtype => {{reg.type_name}}, fields => C_{{reg.type_name:upper}}_FIELDS, N => {{N}}, M => {{M}}), --}
+    {{i}} => (addr => {{addr}}, base => {{base}}, fields => C_{{reg.type_name:upper}}_FIELDS, N => {{N}}, M => {{M}}), --}
     others => C_REG_NONE
   );
 
@@ -149,7 +72,8 @@ package pkg_reg_{context[node].type_name} is
   -----------------------------------------------
   -- We need VDHL-2008 for an unconstrained array "data" in the record type
   -- that doesn't specify the field width before knowing the actual register
-  -- properties, so each field of each register must have its own type.
+  -- properties. We want to avoid VHDL-2008 so for now each field of each
+  -- register must have its own type.
   --{context:repeat:regtypes:
   -----------------------------------------------
   -- register type: {{regtype.type_name}}
@@ -184,43 +108,38 @@ package pkg_reg_{context[node].type_name} is
 
   --}
 
+  -- Memory types (to get variable address and data widths that don't have to
+  -- show up in the module HDL code)
+  --{context:repeat:memtypes:
+  type t_mem_{{mem.type_name}}_in is record
+    ena  : std_logic;
+    wr   : std_logic;
+    addr : std_logic_vector({{aw}}-1 downto 0);
+    data : std_logic_vector({{memwidth}}-1 downto 0);
+  end record t_mem_{{mem.type_name}}_in;
+  subtype t_mem_{{mem.type_name}}_out is std_logic_vector({{memwidth}}-1 downto 0);
+  --}
+
   -----------------------------------------------
   -- module I/O types: {context[node].type_name}
   -----------------------------------------------
-  -- TODO generate external interface if that attribute is set
-  type t_registers_{context[node].type_name}_in is record
+  type t_addrmap_{context[node].type_name}_in is record
     --{context:repeat:regnames:
     {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_in(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
-    NONE : std_logic;
-  end record;
-
-  type t_registers_{context[node].type_name}_out is record
-    --{context:repeat:regnames:
-    {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_out(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
-    NONE : std_logic;
-  end record;
-
-  type t_memories_{context[node].type_name}_out is record
     --{context:repeat:memnames:
-    {{mem.inst_name}}     : t_mem_out; --}
-    NONE : t_mem_out;
-  end record;
-
-  type t_memories_{context[node].type_name}_in is record
-    --{context:repeat:memnames:
-    {{mem.inst_name}}     : t_mem_in; --}
-    NONE : t_mem_in;
-  end record;
-
-  type t_externals_{context[node].type_name}_m2s is record
-    --{context:repeat:extnames:
-    {{ext.inst_name}} : t_axi4_m2s; --}
-    NONE : std_logic;
-  end record;
-
-  type t_externals_{context[node].type_name}_s2m is record
+    {{mem.inst_name}} : t_mem_{{mem.type_name}}_out; --}
     --{context:repeat:extnames:
     {{ext.inst_name}} : t_axi4_s2m; --}
+    NONE : std_logic;
+  end record;
+
+  type t_addrmap_{context[node].type_name}_out is record
+    --{context:repeat:regnames:
+    {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_out(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
+    --{context:repeat:memnames:
+    {{mem.inst_name}} : t_mem_{{mem.type_name}}_in; --}
+    --{context:repeat:extnames:
+    {{ext.inst_name}} : t_axi4_m2s; --}
     NONE : std_logic;
   end record;
 

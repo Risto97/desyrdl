@@ -7,6 +7,7 @@ use ieee.numeric_std.all;
 library work;
 use work.pkg_types.all;
 use work.pkg_axi.all;
+use work.pkg_reg_common.all;
 use work.pkg_reg_{context[node].type_name}.all;
 
 entity top_reg_{context[node].type_name} is
@@ -19,15 +20,9 @@ entity top_reg_{context[node].type_name} is
     po_s_axi4 : out t_axi4_s2m;
 
     -- logic
-    pi_logic_regs : in t_registers_{context[node].type_name}_in;
-    po_logic_regs : out t_registers_{context[node].type_name}_out;
+    pi_addrmap : in t_addrmap_{context[node].type_name}_in;
+    po_addrmap : out t_addrmap_{context[node].type_name}_out
 
-    -- external interfaces (if present) {context:ifgtzero:n_extnames:
-    pi_ext : in t_externals_{{context[node].type_name}}_s2m;
-    po_ext : out t_externals_{{context[node].type_name}}_m2s; --}
-
-    pi_mem : in t_memories_{context[node].type_name}_out;
-    po_mem : out t_memories_{context[node].type_name}_in
   );
 end entity top_reg_{context[node].type_name};
 
@@ -45,10 +40,19 @@ architecture arch of top_reg_{context[node].type_name} is
   signal adapter_to_ext : t_axi4_m2s_array(C_EXTCOUNT downto 0);
 
 begin
-  ins_adapter: entity work.adapter_axi4_{context[node].type_name}
+  ins_adapter: entity work.adapter_axi4
   generic map (
-                G_ADDR_W    => C_ADDR_W,
-                G_REGCOUNT => C_REGCOUNT
+                G_ADDR_W     => C_ADDR_W,
+                G_REGISTER_INFO => C_REGISTER_INFO,
+                G_MEMNAMES   => C_MEMNAMES,
+                G_MEM_START  => C_MEM_AW,
+                G_MEM_AW     => C_MEM_AW,
+                G_EXTCOUNT   => C_EXTCOUNT,
+                G_EXT_START  => C_EXT_AW,
+                G_EXT_SIZE   => C_EXT_AW,
+                G_EXT_AW     => C_EXT_AW,
+                G_REGNAMES   => C_REGNAMES,
+                G_REGCOUNT   => C_REGCOUNT
               )
   port map (
              pi_regs       => adapter_rdata,
@@ -62,10 +66,8 @@ begin
              po_mem        => adapter_to_dpm,
              pi_mem        => adapter_from_dpm,
 
-             -- external interfaces (if present) {context:ifgtzero:n_extnames:
-             po_ext        => adapter_to_ext(C_EXTCOUNT-1 downto 0),
-             pi_ext        => adapter_from_ext(C_EXTCOUNT-1 downto 0),
-             --}
+             po_ext        => adapter_to_ext(C_EXTCOUNT downto 0),
+             pi_ext        => adapter_from_ext(C_EXTCOUNT downto 0),
 
              S_AXI_AWADDR  => pi_s_axi4.awaddr(C_ADDR_W-1 downto 0),
              S_AXI_AWPROT  => (others => '0'),
@@ -97,8 +99,8 @@ begin
   blk_ext_ports : block
   begin
   --{{context:repeat:extnames:
-    po_ext.{{{{ext.inst_name}}}} <= adapter_to_ext({{{{i}}}});
-    adapter_from_ext({{{{i}}}}) <= pi_ext.{{{{ext.inst_name}}}}; --}}
+    po_addrmap.{{{{ext.inst_name}}}} <= adapter_to_ext({{{{i}}}});
+    adapter_from_ext({{{{i}}}}) <= pi_addrmap.{{{{ext.inst_name}}}}; --}}
   end block;
   --}
 
@@ -106,13 +108,17 @@ begin
   po_s_axi4.rlast <= '1';
 
   -- memory assignments
+  --
+  -- TODO implement arrays of memories? DeviceAccess couldn't handle,
+  -- rely on separate instances for now.
   blk_mem_ports : block
   begin
   --{context:repeat:memnames:
-    -- TODO implement arrays of memories? DeviceAccess couldn't handle,
-    -- rely on separate instances for now.
-    po_mem.{{mem.inst_name}} <= adapter_to_dpm({{i}});
-    adapter_from_dpm({{i}}) <= pi_mem.{{mem.inst_name}}; --}
+    po_addrmap.{{mem.inst_name}}.ena  <= adapter_to_dpm({{i}}).ena;
+    po_addrmap.{{mem.inst_name}}.wr   <= adapter_to_dpm({{i}}).wr;
+    po_addrmap.{{mem.inst_name}}.addr <= adapter_to_dpm({{i}}).addr({{aw}}-1 downto 0);
+    po_addrmap.{{mem.inst_name}}.data <= adapter_to_dpm({{i}}).data({{memwidth}}-1 downto 0);
+    adapter_from_dpm({{i}})({{memwidth}}-1 downto 0) <= pi_addrmap.{{mem.inst_name}}; --}
   end block;
 
   --{context:repeat:regnames:
@@ -134,16 +140,16 @@ begin
       begin
 
         -- signal assignments have to be done with generated functions
-        l_reg_incr    <= fun_{{reg.type_name}}_to_incr(pi_logic_regs.{{reg.inst_name}}(i,j));
-        l_reg_decr    <= fun_{{reg.type_name}}_to_decr(pi_logic_regs.{{reg.inst_name}}(i,j));
-        l_reg_we      <= fun_{{reg.type_name}}_to_we(  pi_logic_regs.{{reg.inst_name}}(i,j));
-        l_reg_data_in <= fun_{{reg.type_name}}_to_data(pi_logic_regs.{{reg.inst_name}}(i,j));
-        po_logic_regs.{{reg.inst_name}}(i,j) <= fun_slv_to_{{reg.type_name}}(l_reg_data_out, l_reg_swmod, l_reg_swacc);
+        l_reg_incr    <= fun_{{reg.type_name}}_to_incr(pi_addrmap.{{reg.inst_name}}(i,j));
+        l_reg_decr    <= fun_{{reg.type_name}}_to_decr(pi_addrmap.{{reg.inst_name}}(i,j));
+        l_reg_we      <= fun_{{reg.type_name}}_to_we(  pi_addrmap.{{reg.inst_name}}(i,j));
+        l_reg_data_in <= fun_{{reg.type_name}}_to_data(pi_addrmap.{{reg.inst_name}}(i,j));
+        po_addrmap.{{reg.inst_name}}(i,j) <= fun_slv_to_{{reg.type_name}}(l_reg_data_out, l_reg_swmod, l_reg_swacc);
 
         -- TODO implement swacc
         l_reg_swacc <= (others => '0');
 
-        ins_reg: entity work.reg_{{reg.owning_addrmap.type_name}}
+        ins_reg: entity work.desy_register
         generic map (
                       -- contains an array of field info
                       g_fields => l_reg_info.fields
