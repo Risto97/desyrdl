@@ -108,6 +108,18 @@ package pkg_reg_{context[node].type_name} is
 
   --}
 
+  -- Memory types (to get variable address and data widths that don't have to
+  -- show up in the module HDL code)
+  --{context:repeat:memtypes:
+  type t_mem_{{mem.type_name}}_in is record
+    ena  : std_logic;
+    wr   : std_logic;
+    addr : std_logic_vector({{aw}}-1 downto 0);
+    data : std_logic_vector({{memwidth}}-1 downto 0);
+  end record t_mem_{{mem.type_name}}_in;
+  subtype t_mem_{{mem.type_name}}_out is std_logic_vector({{memwidth}}-1 downto 0);
+  --}
+
   -----------------------------------------------
   -- module I/O types: {context[node].type_name}
   -----------------------------------------------
@@ -115,7 +127,7 @@ package pkg_reg_{context[node].type_name} is
     --{context:repeat:regnames:
     {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_in(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
     --{context:repeat:memnames:
-    {{mem.inst_name}} : t_mem_out; --}
+    {{mem.inst_name}} : t_mem_{{mem.type_name}}_out; --}
     --{context:repeat:extnames:
     {{ext.inst_name}} : t_axi4_s2m; --}
     NONE : std_logic;
@@ -125,7 +137,7 @@ package pkg_reg_{context[node].type_name} is
     --{context:repeat:regnames:
     {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_out(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
     --{context:repeat:memnames:
-    {{mem.inst_name}} : t_mem_in; --}
+    {{mem.inst_name}} : t_mem_{{mem.type_name}}_in; --}
     --{context:repeat:extnames:
     {{ext.inst_name}} : t_axi4_m2s; --}
     NONE : std_logic;

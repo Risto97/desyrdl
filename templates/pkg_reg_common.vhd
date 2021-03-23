@@ -67,6 +67,7 @@ package pkg_reg_common is
 
   constant C_ADDR_W : integer := 32;
 
+  -- TODO remove, superceded by t_mem__mem.type_name__in/out
   type t_mem_in is record
     ena  : std_logic;
     wr   : std_logic;

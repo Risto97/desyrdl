@@ -79,7 +79,31 @@ class VhdlFormatter(string.Formatter):
                     regtype=regtype,
                     name=regtype.type_name)
                     for i, regtype in enumerate(value[what])])
+
             if what == "memtypes":
+                results = []
+
+                for x in value[what]:
+
+                    # prevent bugs by putting new data in a separate copy per
+                    # iteration
+                    # newc = value.copy()
+                    newc = dict()
+
+                    newc["mem"] = x
+                    newc["mementries"] = x.get_property("mementries")
+                    newc["memwidth"] = x.get_property("memwidth")
+                    newc["addresses"] = x.get_property("mementries") * 4
+                    newc["aw"] = ceil(log2(x.get_property("mementries") * 4))
+
+                    # format the template
+                    results.append(self.format(template, **newc))
+
+                # for..in..if filters the list comprehension
+                # memnames = [(i,child) for i,child in enumerate(value.descendants()) if isinstance(child, MemNode)]
+                # TODO: use the current node in here instead of filling memnames once for the top node.
+                return "".join(results)
+
                 return ''.join([self.format(
                     template,
                     i=i,
@@ -285,16 +309,6 @@ class RegtypeListener(RDLListener):
             if node.type_name not in self.regtypes:
                 self.regtypes[node.type_name] = node
 
-
-class MemtypeListener(RDLListener):
-
-    def __init__(self, memtypes):
-        self.memtypes = memtypes
-
-    def enter_Component(self, node):
-        if isinstance(node, MemNode):
-            if node.type_name not in self.memtypes:
-                self.memtypes[node.type_name] = node
 
 
 class VhdlListener(RDLListener):

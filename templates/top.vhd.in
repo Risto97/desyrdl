@@ -108,13 +108,17 @@ begin
   po_s_axi4.rlast <= '1';
 
   -- memory assignments
+  --
+  -- TODO implement arrays of memories? DeviceAccess couldn't handle,
+  -- rely on separate instances for now.
   blk_mem_ports : block
   begin
   --{context:repeat:memnames:
-    -- TODO implement arrays of memories? DeviceAccess couldn't handle,
-    -- rely on separate instances for now.
-    po_addrmap.{{mem.inst_name}} <= adapter_to_dpm({{i}});
-    adapter_from_dpm({{i}}) <= pi_addrmap.{{mem.inst_name}}; --}
+    po_addrmap.{{mem.inst_name}}.ena  <= adapter_to_dpm({{i}}).ena;
+    po_addrmap.{{mem.inst_name}}.wr   <= adapter_to_dpm({{i}}).wr;
+    po_addrmap.{{mem.inst_name}}.addr <= adapter_to_dpm({{i}}).addr({{aw}}-1 downto 0);
+    po_addrmap.{{mem.inst_name}}.data <= adapter_to_dpm({{i}}).data({{memwidth}}-1 downto 0);
+    adapter_from_dpm({{i}})({{memwidth}}-1 downto 0) <= pi_addrmap.{{mem.inst_name}}; --}
   end block;
 
   --{context:repeat:regnames:
