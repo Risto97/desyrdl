@@ -4,7 +4,6 @@ import sys
 from math import ceil, log2
 from pathlib import Path  # get filenames
 
-from peakrdl.html import HTMLExporter
 from systemrdl import RDLCompileError, RDLCompiler, RDLListener, RDLWalker
 from systemrdl.node import (AddrmapNode, FieldNode,  # AddressableNode,
                             MemNode, RegfileNode, RegNode, RootNode)
@@ -407,9 +406,6 @@ def main():
 
     out_dir = Path("HECTARE")
     out_dir.mkdir(exist_ok=True)
-
-    exporter = HTMLExporter()
-    exporter.export(root, str(out_dir))
 
     # component type name, either definitive or anonymous: systemrdl.component.Component.type_name
     # The instantiated element is Component.inst_name, right?!
