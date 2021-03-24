@@ -132,10 +132,10 @@ class VhdlFormatter(string.Formatter):
                 base = 0
 
                 for i, x in enumerate(value[what]):
-                    if x[1].owning_addrmap.is_array:
-                        addrmap = f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}"
+                    if x[1].parent.is_array:
+                        addrmap = f"{x[1].parent.inst_name}.{x[1].parent.current_idx}"
                     else:
-                        addrmap = f"{x[1].owning_addrmap.inst_name}.0"
+                        addrmap = f"{x[1].parent.inst_name}.0"
 
                     parent = x[1].parent
                     if not isinstance(parent.parent, RootNode):
@@ -193,10 +193,10 @@ class VhdlFormatter(string.Formatter):
                 results = []
 
                 for x in value[what]:
-                    if x[1].is_array:
-                        addrmap = f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}"
+                    if x[1].parent.is_array:
+                        addrmap = f"{x[1].parent.inst_name}.{x[1].parent.current_idx}"
                     else:
-                        addrmap = f"{x[1].owning_addrmap.inst_name}.0"
+                        addrmap = f"{x[1].parent.inst_name}.0"
 
                     parent = x[1].parent
                     if not isinstance(parent.parent, RootNode):
@@ -241,17 +241,14 @@ class VhdlFormatter(string.Formatter):
                 results = []
 
                 for x in value[what]:
+                    if x[1].parent.is_array:
+                        addrmap = f"{x[1].parent.inst_name}.{x[1].parent.current_idx}"
+                    else:
+                        addrmap = f"{x[1].parent.inst_name}.0"
+
                     if isinstance(x[1], AddrmapNode):
-                        if x[1].is_array:
-                            addrmap = f"{x[1].parent.inst_name}.{x[1].owning_addrmap.current_idx}"
-                        else:
-                            addrmap = f"{x[1].parent.inst_name}.0"
                         parent = x[1]
                     else:
-                        if x[1].is_array:
-                            addrmap = f"{x[1].parent.inst_name}.{x[1].owning_addrmap.current_idx}"
-                        else:
-                            addrmap = f"{x[1].parent.inst_name}.0"
                         parent = x[1].parent
 
                     if not isinstance(parent.parent, RootNode):
