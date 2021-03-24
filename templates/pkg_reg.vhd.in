@@ -29,7 +29,7 @@ package pkg_reg_{context[node].type_name} is
   );
   constant C_MEM_START : T_IntegerArray(C_MEMNAMES downto 0) := (
     --{context:repeat:memnames:
-    {{i}} => {{addr}}, -- {{mem.inst_name}}}
+    {{i}} => {{baraddr}}, -- {{mem.inst_name}}}
     C_MEMNAMES => 0 -- dummy
   );
 
@@ -42,7 +42,7 @@ package pkg_reg_{context[node].type_name} is
   );
   constant C_EXT_START : T_IntegerArray(C_EXTNAMES downto 0) := (
     --{context:repeat:extnames:
-    {{i}} => {{addr}}, -- {{ext.inst_name}}}
+    {{i}} => {{baraddr}}, -- {{ext.inst_name}}}
     C_EXTNAMES => 0 -- dummy
   );
   -- size in bytes occupied in the address map
@@ -62,7 +62,7 @@ package pkg_reg_{context[node].type_name} is
 
   constant C_REGISTER_INFO : t_reg_info_array(0 to C_REGNAMES) := (
     --{context:repeat:regnames:
-    {{i}} => (addr => {{addr}}, base => {{base}}, fields => C_{{reg.type_name:upper}}_FIELDS, N => {{N}}, M => {{M}}), --}
+    {{i}} => (addr => {{baraddr}}, base => {{base}}, fields => C_{{reg.type_name:upper}}_FIELDS, N => {{N}}, M => {{M}}), --}
     others => C_REG_NONE
   );
 

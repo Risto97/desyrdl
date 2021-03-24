@@ -138,10 +138,15 @@ class VhdlFormatter(string.Formatter):
                         addrmap = f"{x[1].owning_addrmap.inst_name}.0"
 
                     parent = x[1].parent
-                    while parent.get_property("BAR") is None:
+                    while parent.inst_name != "top":
                         parent = parent.parent
-                    bar = parent.get_property("BAR")
-                    baraddr = parent.absolute_address
+                    try:
+                        bar = parent.get_property("BAR")
+                    except LookupError:
+                        # this should cause an error
+                        pass
+                    finally:
+                        bar_start = parent.absolute_address
 
                     N = 1
                     M = 1
@@ -173,7 +178,9 @@ class VhdlFormatter(string.Formatter):
                     base = base+N*M
                     newc["bar"] = bar
                     newc["addrmap"] = addrmap
-                    newc["addr"] = x[1].absolute_address-baraddr
+                    newc["reladdr"] = x[1].address_offset
+                    newc["absaddr"] = x[1].absolute_address
+                    newc["baraddr"] = x[1].absolute_address-bar_start
 
                     # format the template
                     results.append(self.format(template, **newc))
@@ -189,10 +196,15 @@ class VhdlFormatter(string.Formatter):
                         addrmap = f"{x[1].owning_addrmap.inst_name}.0"
 
                     parent = x[1].parent
-                    while parent.get_property("BAR") is None:
+                    while parent.inst_name != "top":
                         parent = parent.parent
-                    bar = parent.get_property("BAR")
-                    baraddr = parent.absolute_address
+                    try:
+                        bar = parent.get_property("BAR")
+                    except LookupError:
+                        # this should cause an error
+                        pass
+                    finally:
+                        bar_start = parent.absolute_address
 
                     # prevent bugs by putting new data in a separate copy per
                     # iteration
@@ -207,7 +219,9 @@ class VhdlFormatter(string.Formatter):
                     newc["aw"] = ceil(log2(x[1].get_property("mementries") * 4))
                     newc["bar"] = bar
                     newc["addrmap"] = addrmap
-                    newc["addr"] = x[1].absolute_address-baraddr
+                    newc["reladdr"] = x[1].address_offset
+                    newc["absaddr"] = x[1].absolute_address
+                    newc["baraddr"] = x[1].absolute_address-bar_start
 
                     # format the template
                     results.append(self.format(template, **newc))
@@ -234,10 +248,15 @@ class VhdlFormatter(string.Formatter):
                             addrmap = f"{x[1].parent.inst_name}.0"
                         parent = x[1].parent
 
-                    while parent.get_property("BAR") is None:
+                    while parent.inst_name != "top":
                         parent = parent.parent
-                    bar = parent.get_property("BAR")
-                    baraddr = parent.absolute_address
+                    try:
+                        bar = parent.get_property("BAR")
+                    except LookupError:
+                        # this should cause an error
+                        pass
+                    finally:
+                        bar_start = parent.absolute_address
 
                     # prevent bugs by putting new data in a separate copy per
                     # iteration
@@ -250,7 +269,9 @@ class VhdlFormatter(string.Formatter):
                     newc["aw"] = ceil(log2(x[1].size))
                     newc["bar"] = bar
                     newc["addrmap"] = addrmap
-                    newc["addr"] = x[1].absolute_address-baraddr
+                    newc["reladdr"] = x[1].address_offset
+                    newc["absaddr"] = x[1].absolute_address
+                    newc["baraddr"] = x[1].absolute_address-bar_start
 
                     # format the template
                     results.append(self.format(template, **newc))
@@ -266,10 +287,15 @@ class VhdlFormatter(string.Formatter):
                         addrmap = f"{x[1].parent.inst_name}.0"
 
                     parent = x[1]
-                    while parent.get_property("BAR") is None:
+                    while parent.inst_name != "top":
                         parent = parent.parent
-                    bar = parent.get_property("BAR")
-                    baraddr = parent.absolute_address
+                    try:
+                        bar = parent.get_property("BAR")
+                    except LookupError:
+                        # this should cause an error
+                        pass
+                    finally:
+                        bar_start = parent.absolute_address
 
                     # prevent bugs by putting new data in a separate copy per
                     # iteration
@@ -281,7 +307,9 @@ class VhdlFormatter(string.Formatter):
                     newc["total_words"] = int(x[1].total_size/4)
                     newc["bar"] = bar
                     newc["addrmap"] = addrmap
-                    newc["addr"] = x[1].absolute_address-baraddr
+                    newc["reladdr"] = x[1].address_offset
+                    newc["absaddr"] = x[1].absolute_address
+                    newc["baraddr"] = x[1].absolute_address-bar_start
 
                     # format the template
                     results.append(self.format(template, **newc))
@@ -391,7 +419,8 @@ def main():
     if isinstance(root, RootNode):
         top_node = root.top
     else:
-        top_node = root
+        #top_node = root
+        raise Error("root is not a RootNode")
 
     # no need to unroll arrays since non-homogenous arrays are not supported anyways
     walker = RDLWalker(unroll=True)
