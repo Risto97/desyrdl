@@ -138,12 +138,15 @@ class VhdlFormatter(string.Formatter):
                         addrmap = f"{x[1].owning_addrmap.inst_name}.0"
 
                     parent = x[1].parent
-                    while parent.inst_name != "top":
-                        parent = parent.parent
+                    if not isinstance(parent.parent, RootNode):
+                        while not isinstance(parent.parent.parent, RootNode):
+                            parent = parent.parent
+
                     try:
                         bar = parent.get_property("BAR")
                     except LookupError:
-                        # this should cause an error
+                        # handle standalone modules in a temporary way
+                        bar = 0
                         pass
                     finally:
                         bar_start = parent.absolute_address
@@ -196,12 +199,15 @@ class VhdlFormatter(string.Formatter):
                         addrmap = f"{x[1].owning_addrmap.inst_name}.0"
 
                     parent = x[1].parent
-                    while parent.inst_name != "top":
-                        parent = parent.parent
+                    if not isinstance(parent.parent, RootNode):
+                        while not isinstance(parent.parent.parent, RootNode):
+                            parent = parent.parent
+
                     try:
                         bar = parent.get_property("BAR")
                     except LookupError:
-                        # this should cause an error
+                        # handle standalone modules in a temporary way
+                        bar = 0
                         pass
                     finally:
                         bar_start = parent.absolute_address
@@ -237,9 +243,9 @@ class VhdlFormatter(string.Formatter):
                 for x in value[what]:
                     if isinstance(x[1], AddrmapNode):
                         if x[1].is_array:
-                            addrmap = f"{x[1].owning_addrmap.inst_name}.{x[1].owning_addrmap.current_idx}"
+                            addrmap = f"{x[1].parent.inst_name}.{x[1].owning_addrmap.current_idx}"
                         else:
-                            addrmap = f"{x[1].owning_addrmap.inst_name}.0"
+                            addrmap = f"{x[1].parent.inst_name}.0"
                         parent = x[1]
                     else:
                         if x[1].is_array:
@@ -248,12 +254,16 @@ class VhdlFormatter(string.Formatter):
                             addrmap = f"{x[1].parent.inst_name}.0"
                         parent = x[1].parent
 
-                    while parent.inst_name != "top":
-                        parent = parent.parent
+                    if not isinstance(parent.parent, RootNode):
+                        while not isinstance(parent.parent.parent, RootNode):
+                            parent = parent.parent
+
                     try:
                         bar = parent.get_property("BAR")
+                        print(f"{x[1].inst_name} gets BAR {bar} from {parent.inst_name}")
                     except LookupError:
-                        # this should cause an error
+                        # handle standalone modules in a temporary way
+                        bar = 0
                         pass
                     finally:
                         bar_start = parent.absolute_address
