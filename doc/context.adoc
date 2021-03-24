@@ -118,8 +118,7 @@
 ** regnames
 *** reg (add to context of each loop iteration)
 ** memnames
-** extnames
+** extnames -> AddrmapNodes or external Nodes except memory
 *** i
 *** ext (add to context of each loop iteration)
-** addrmaps
 ** n_foo

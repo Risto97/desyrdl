@@ -277,44 +277,6 @@ class VhdlFormatter(string.Formatter):
                     results.append(self.format(template, **newc))
 
                 return "".join(results)
-            elif what == "addrmaps":
-                results = []
-
-                for x in value[what]:
-                    if x[1].is_array:
-                        addrmap = f"{x[1].parent.inst_name}.{x[1].owning_addrmap.current_idx}"
-                    else:
-                        addrmap = f"{x[1].parent.inst_name}.0"
-
-                    parent = x[1]
-                    while parent.inst_name != "top":
-                        parent = parent.parent
-                    try:
-                        bar = parent.get_property("BAR")
-                    except LookupError:
-                        # this should cause an error
-                        pass
-                    finally:
-                        bar_start = parent.absolute_address
-
-                    # prevent bugs by putting new data in a separate copy per
-                    # iteration
-                    # newc = value.copy()
-                    newc = dict()
-
-                    newc["i"] = x[0]
-                    newc["x"] = x[1]
-                    newc["total_words"] = int(x[1].total_size/4)
-                    newc["bar"] = bar
-                    newc["addrmap"] = addrmap
-                    newc["reladdr"] = x[1].address_offset
-                    newc["absaddr"] = x[1].absolute_address
-                    newc["baraddr"] = x[1].absolute_address-bar_start
-
-                    # format the template
-                    results.append(self.format(template, **newc))
-
-                return "".join(results)
 
             else:
                 return "-- VOID"  # this shouldn't happen
@@ -455,7 +417,6 @@ def main():
             extnames = [x for x in gen_ext_names(node, first_only=False)]
             # print([extname[1].inst_name for extname in extnames])
             print([extname for extname in extnames])
-            addrmaps = [x for x in gen_node_names(node, AddrmapNode, first_only=False)]
             regcount = get_regcount(node, RegNode)
             print("regcount = {}".format(regcount))
 
@@ -482,7 +443,6 @@ def main():
                         regnames=regnames,
                         memnames=memnames,
                         extnames=extnames,
-                        addrmaps=addrmaps,
                         n_regtypes=len(regtypes),  # sigh..
                         n_regnames=len(regnames),
                         n_regcount=regcount,
