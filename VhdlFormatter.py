@@ -72,12 +72,23 @@ class VhdlFormatter(string.Formatter):
             # remove "repeat:what:" prefix from spec to obtain the actual template
             template = spec.partition(":")[2].partition(":")[2]
             if what == "regtypes":
-                return ''.join([self.format(
-                    template,
-                    i=i,
-                    regtype=regtype,
-                    name=regtype.type_name)
-                    for i, regtype in enumerate(value[what])])
+                results = []
+                for i, regtype in enumerate(value[what]):
+                    x = [i,regtype]
+
+                    # prevent bugs by putting new data in a separate copy per
+                    # iteration
+                    # newc = value.copy()
+                    newc = dict()
+
+                    newc["i"] = x[0]
+                    newc["regtype"] = x[1]
+                    newc["fields"] = x[1].fields()
+
+                    # format the template
+                    results.append(self.format(template, **newc))
+
+                return "".join(results)
 
             if what == "memtypes":
                 results = []
@@ -103,27 +114,33 @@ class VhdlFormatter(string.Formatter):
                 # TODO: use the current node in here instead of filling memnames once for the top node.
                 return "".join(results)
 
-                return ''.join([self.format(
-                    template,
-                    i=i,
-                    memtype=memtype,
-                    name=memtype.type_name)
-                    for i, memtype in enumerate(value[what])])
             elif what == "fields":
+                results = []
 
-                return ''.join([self.format(
-                    template,
-                    i=i,
-                    regtype=value,
-                    field=field,
-                    hw_we=field.get_property("we"),
-                    sw_access=field.get_property("sw").name,
-                    hw_access=field.get_property("hw").name,
-                    reset=self.parse_reset(field.get_property("reset"), field.width),
-                    decrwidth=field.get_property("decrwidth") if (field.get_property("decrwidth") is not None) else 1,
-                    incrwidth=field.get_property("incrwidth") if (field.get_property("incrwidth") is not None) else 1,
-                    name=field.type_name)
-                    for i, field in enumerate(value.fields())])
+                for i, f in enumerate(value):
+
+                    # prevent bugs by putting new data in a separate copy per
+                    # iteration
+                    # newc = value.copy()
+                    newc = dict()
+
+                    x = [i,f]
+
+                    newc["i"] = x[0]
+                    newc["regtype"] = x[1].parent
+                    newc["field"] = x[1]
+                    newc["hw_we"] = x[1].get_property("we")
+                    newc["sw_access"] = x[1].get_property("sw").name
+                    newc["hw_access"] = x[1].get_property("hw").name
+                    newc["reset"] = self.parse_reset(x[1].get_property("reset"), x[1].width)
+                    newc["decrwidth"] = x[1].get_property("decrwidth") if x[1].get_property("decrwidth") is not None else 1
+                    newc["incrwidth"] = x[1].get_property("incrwidth") if x[1].get_property("incrwidth") is not None else 1
+                    newc["name"] = x[1].type_name
+
+                    results.append(self.format(template, **newc))
+
+                return "".join(results)
+
             elif what == "regnames":
                 results = []
 
@@ -131,7 +148,7 @@ class VhdlFormatter(string.Formatter):
                 # Move to a dict() or improve VHDL code.
                 base = 0
 
-                for i, x in enumerate(value[what]):
+                for x in value[what]:
                     if x[1].parent.is_array:
                         addrmap = f"{x[1].parent.inst_name}.{x[1].parent.current_idx}"
                     else:
@@ -144,6 +161,7 @@ class VhdlFormatter(string.Formatter):
 
                     try:
                         bar = parent.get_property("BAR")
+                        print(f"{x[1].inst_name} gets BAR {bar} from {parent.inst_name}")
                     except LookupError:
                         # handle standalone modules in a temporary way
                         bar = 0
@@ -170,6 +188,12 @@ class VhdlFormatter(string.Formatter):
                     newc = dict()
 
                     newc["i"] = x[0]
+                    newc["bar"] = bar
+                    newc["addrmap"] = addrmap
+                    newc["reladdr"] = x[1].address_offset
+                    newc["absaddr"] = x[1].absolute_address
+                    newc["baraddr"] = x[1].absolute_address-bar_start
+
                     newc["reg"] = x[1]
                     newc["N"] = N
                     newc["M"] = M
@@ -179,12 +203,6 @@ class VhdlFormatter(string.Formatter):
                     # port definitions. Improve VHDL code to get rid of it.
                     newc["base"] = base
                     base = base+N*M
-                    newc["bar"] = bar
-                    newc["addrmap"] = addrmap
-                    newc["reladdr"] = x[1].address_offset
-                    newc["absaddr"] = x[1].absolute_address
-                    newc["baraddr"] = x[1].absolute_address-bar_start
-
                     # format the template
                     results.append(self.format(template, **newc))
 
@@ -205,6 +223,7 @@ class VhdlFormatter(string.Formatter):
 
                     try:
                         bar = parent.get_property("BAR")
+                        print(f"{x[1].inst_name} gets BAR {bar} from {parent.inst_name}")
                     except LookupError:
                         # handle standalone modules in a temporary way
                         bar = 0
@@ -218,16 +237,17 @@ class VhdlFormatter(string.Formatter):
                     newc = dict()
 
                     newc["i"] = x[0]
-                    newc["mem"] = x[1]
-                    newc["mementries"] = x[1].get_property("mementries")
-                    newc["memwidth"] = x[1].get_property("memwidth")
-                    newc["addresses"] = x[1].get_property("mementries") * 4
-                    newc["aw"] = ceil(log2(x[1].get_property("mementries") * 4))
                     newc["bar"] = bar
                     newc["addrmap"] = addrmap
                     newc["reladdr"] = x[1].address_offset
                     newc["absaddr"] = x[1].absolute_address
                     newc["baraddr"] = x[1].absolute_address-bar_start
+
+                    newc["mem"] = x[1]
+                    newc["mementries"] = x[1].get_property("mementries")
+                    newc["memwidth"] = x[1].get_property("memwidth")
+                    newc["addresses"] = x[1].get_property("mementries") * 4
+                    newc["aw"] = ceil(log2(x[1].get_property("mementries") * 4))
 
                     # format the template
                     results.append(self.format(template, **newc))
@@ -271,14 +291,15 @@ class VhdlFormatter(string.Formatter):
                     newc = dict()
 
                     newc["i"] = x[0]
-                    newc["ext"] = x[1]
-                    newc["total_words"] = int(x[1].total_size/4)
-                    newc["aw"] = ceil(log2(x[1].size))
                     newc["bar"] = bar
                     newc["addrmap"] = addrmap
                     newc["reladdr"] = x[1].address_offset
                     newc["absaddr"] = x[1].absolute_address
                     newc["baraddr"] = x[1].absolute_address-bar_start
+
+                    newc["ext"] = x[1]
+                    newc["total_words"] = int(x[1].total_size/4)
+                    newc["aw"] = ceil(log2(x[1].size))
 
                     # format the template
                     results.append(self.format(template, **newc))
@@ -433,16 +454,16 @@ def main():
                 with tpl.open('r') as f_in:
                     s_in = f_in.read()
                 # creating "views" on dictionaries: d.keys(), d.values() or d.items()
-                # modname should be unique wthin the top addrmap so the pkg name is unique, too
                 ip_folder_path = ''.join(["modules/", node.type_name, "/hdl"])  # where the user logic lies
                 print("ip_folder_path =", ip_folder_path)
+
                 # what needs to be passed?
-                # modname: name of each IP module
+                # FIXME Some of this could be done in a VhdlFormatter.format() function
                 # regtypes: list of RegNodes -> type_name only
-                # regnames: longer list of RegNodes -> both type_name, inst_name
-                # registers: count of individual registers including those in arrays
+                # regnames: longer list of RegNodes -> all inst_names
+                # regcount: count of individual registers including those in arrays
                 # memtypes: list of MemNodes -> type_name only
-                # memnames: longer list of MemNodes -> both type_name, inst_name
+                # memnames: longer list of MemNodes -> all inst_names
                 context = dict(
                         node=node,
                         regtypes=regtypes.values(),
@@ -457,15 +478,12 @@ def main():
                         n_memnames=len(memnames),
                         n_extnames=len(extnames))
 
-                print(f"modname = {node.get_path_segment()}")
+                print(f"path_segment = {node.get_path_segment()}")
                 print(f"node.inst_name = {node.inst_name}")
                 print(f"node.type_name = {node.type_name}")
 
                 suffix = "".join(tpl.suffixes)  # get the ".vhd.in"
 
-                #
-                # TODO use node.type_name instead of inst_name
-                #
                 out_file = "".join([str(tpl.name).replace(suffix, ""), "_", node.type_name, suffix[:-3]])
                 out_path = Path(out_dir, out_file)
                 print(out_path)

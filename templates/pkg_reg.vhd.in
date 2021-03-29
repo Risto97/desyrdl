@@ -54,7 +54,7 @@ package pkg_reg_{context[node].type_name} is
 
   --{context:repeat:regtypes:
   constant C_{{regtype.type_name:upper}}_FIELDS : t_field_info_arr := (
-    --{{regtype:repeat:fields:
+    --{{fields:repeat:fields:
     {{{{i}}}} => (ftype => {{{{field:ftype}}}}, len => {{{{field.width}}}}, upper => {{{{field.high}}}}, lower => {{{{field.low}}}}, hw_we => {{{{hw_we}}}}, sw_access => C_{{{{sw_access:upper}}}}, hw_access => C_{{{{hw_access:upper}}}},  def_val => {{{{reset}}}}, decrwidth => {{{{decrwidth}}}}, incrwidth => {{{{incrwidth}}}}), -- {{{{field.inst_name}}}} --}}
     others => C_FIELD_NONE
   );
@@ -79,7 +79,7 @@ package pkg_reg_{context[node].type_name} is
   -- register type: {{regtype.type_name}}
   -----------------------------------------------
   -- Field types: up to 32 data bits plus the other signals (we, incr, ..)
-  --{{regtype:repeat:fields:
+  --{{fields:repeat:fields:
   type t_field_signals_{{{{regtype.type_name}}}}_{{{{field.type_name}}}}_in is record
     data : std_logic_vector(C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).len-1 downto 0);
     we : std_logic;
@@ -95,13 +95,13 @@ package pkg_reg_{context[node].type_name} is
   -- The actual register types
   type t_reg_{{regtype.type_name}}_in is record
     -- fields
-    --{{regtype:repeat:fields:
+    --{{fields:repeat:fields:
     {{{{field.type_name}}}} : t_field_signals_{{{{regtype.type_name}}}}_{{{{field.type_name}}}}_in; --}}
   end record;
   type t_reg_{{regtype.type_name}}_3d_in is array (integer range <>, integer range <>) of t_reg_{{regtype.type_name}}_in;
   type t_reg_{{regtype.type_name}}_out is record
     -- fields
-    --{{regtype:repeat:fields:
+    --{{fields:repeat:fields:
     {{{{field.type_name}}}} : t_field_signals_{{{{regtype.type_name}}}}_{{{{field.type_name}}}}_out; --}}
   end record;
   type t_reg_{{regtype.type_name}}_3d_out is array (integer range <>, integer range <>) of t_reg_{{regtype.type_name}}_out;
@@ -166,7 +166,7 @@ package body pkg_reg_{context[node].type_name} is
   function fun_slv_to_{{regtype.type_name}} (slv : std_logic_vector(32-1 downto 0); swmod : std_logic_vector(32-1 downto 0); swacc : std_logic_vector(32-1 downto 0)) return t_reg_{{regtype.type_name}}_out is
     variable v_tmp : t_reg_{{regtype.type_name}}_out;
   begin
-    --{{regtype:repeat:fields:
+    --{{fields:repeat:fields:
     v_tmp.{{{{field.type_name}}}}.data := slv(C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).upper downto C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).lower);
     v_tmp.{{{{field.type_name}}}}.swmod := swmod({{{{i}}}});
     v_tmp.{{{{field.type_name}}}}.swacc := swacc({{{{i}}}}); --}}
@@ -178,7 +178,7 @@ package body pkg_reg_{context[node].type_name} is
   function fun_{{regtype.type_name}}_to_data (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
-    --{{regtype:repeat:fields:
+    --{{fields:repeat:fields:
     v_tmp(C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).upper downto C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).lower) := reg.{{{{field.type_name}}}}.data; --}}
 
     return v_tmp;
@@ -187,7 +187,7 @@ package body pkg_reg_{context[node].type_name} is
   function fun_{{regtype.type_name}}_to_decr (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
-    --{{regtype:repeat:fields:
+    --{{fields:repeat:fields:
     v_tmp({{{{i}}}}) := reg.{{{{field.type_name}}}}.decr ; -- FIXME? --}}
 
     return v_tmp;
@@ -196,7 +196,7 @@ package body pkg_reg_{context[node].type_name} is
   function fun_{{regtype.type_name}}_to_incr (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
-    --{{regtype:repeat:fields:
+    --{{fields:repeat:fields:
     v_tmp({{{{i}}}}) := reg.{{{{field.type_name}}}}.incr; --}}
 
     return v_tmp;
@@ -205,7 +205,7 @@ package body pkg_reg_{context[node].type_name} is
   function fun_{{regtype.type_name}}_to_we (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector is
     variable v_tmp : std_logic_vector(32-1 downto 0) := (others => '0');
   begin
-    --{{regtype:repeat:fields:
+    --{{fields:repeat:fields:
     if C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).hw_we then
       v_tmp({{{{i}}}}) := reg.{{{{field.type_name}}}}.we;
     end if; --}}
