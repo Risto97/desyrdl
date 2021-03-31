@@ -9,17 +9,10 @@ from systemrdl.node import (AddrmapNode, FieldNode,  # AddressableNode,
                             MemNode, RegfileNode, RegNode, RootNode)
 
 
-class VhdlFormatter(string.Formatter):
+class RdlFormatter(string.Formatter):
     #    def __init__(self, top_node):
-    #        super(VhdlFormatter, self).__init__()
+    #        super(RdlFormatter, self).__init__()
     #        top_node = top_node
-    # the 'reset' property of a field can be 'None'
-    def parse_reset(self, reset, width):
-        if reset is None:
-            # return ''.join(['"', '0'*width, '"'])
-            return "(32-1 downto 0 => '0')"
-        else:
-            return "std_logic_vector(to_signed({reset}, {width}))".format(reset=reset, width=32)
 
     def format_field(self, value, spec):
 
@@ -67,7 +60,7 @@ class VhdlFormatter(string.Formatter):
             # Expects different types for value depending on what to repeat
             # alternatives:
             # - check isinstance(value, systemrdl.node.RegNode) etc
-            # - initialize VhdlFormatter with the root node object and traverse it in here
+            # - initialize RdlFormatter with the root node object and traverse it in here
             what = spec.split(":")[1]  # what to repeat?
             # remove "repeat:what:" prefix from spec to obtain the actual template
             template = spec.partition(":")[2].partition(":")[2]
@@ -130,7 +123,7 @@ class VhdlFormatter(string.Formatter):
                     newc["hw_we"] = x[1].get_property("we")
                     newc["sw_access"] = x[1].get_property("sw").name
                     newc["hw_access"] = x[1].get_property("hw").name
-                    newc["reset"] = self.parse_reset(x[1].get_property("reset"), x[1].width)
+                    newc["reset"] = 0 if x[1].get_property("reset") is None else x[1].get_property("reset")
                     newc["decrwidth"] = x[1].get_property("decrwidth") if x[1].get_property("decrwidth") is not None else 1
                     newc["incrwidth"] = x[1].get_property("incrwidth") if x[1].get_property("incrwidth") is not None else 1
                     newc["name"] = x[1].type_name
@@ -307,7 +300,7 @@ class VhdlFormatter(string.Formatter):
             else:
                 return "-- VOID"  # this shouldn't happen
         else:
-            return super(VhdlFormatter, self).format_field(value, spec)
+            return super(RdlFormatter, self).format_field(value, spec)
 
 
 class AddrmapListener(RDLListener):
@@ -357,7 +350,7 @@ class AddrmapListener(RDLListener):
         print("regcount = {}".format(regcount))
 
         # what needs to be passed?
-        # FIXME Some of this could be done in a VhdlFormatter.format() function
+        # FIXME Some of this could be done in a RdlFormatter.format() function
         # regtypes: list of RegNodes -> type_name only
         # regnames: longer list of RegNodes -> all inst_names
         # regcount: count of individual registers including those in arrays
@@ -478,7 +471,7 @@ def main():
         #top_node = root
         raise Error("root is not a RootNode")
 
-    vf = VhdlFormatter()
+    vf = RdlFormatter()
 
     out_dir = Path("HECTARE")
     out_dir.mkdir(exist_ok=True)
