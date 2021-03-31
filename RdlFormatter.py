@@ -27,7 +27,7 @@ class RdlFormatter(string.Formatter):
 
         try:
             bar = ancestor.get_property("BAR")
-            print(f"{node.inst_name} gets BAR {bar} from {ancestor.inst_name}")
+            #print(f"{node.inst_name} gets BAR {bar} from {ancestor.inst_name}")
         except LookupError:
             # handle standalone modules in a temporary way
             bar = 0
