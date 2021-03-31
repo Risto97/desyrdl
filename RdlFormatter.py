@@ -14,6 +14,33 @@ class RdlFormatter(string.Formatter):
     #        super(RdlFormatter, self).__init__()
     #        top_node = top_node
 
+    def context_add_bar(self, context, node):
+
+        # Starting point for finding the top node
+        if isinstance(node, AddrmapNode):
+            ancestor = node
+        else:
+            ancestor = node.parent
+
+        # ancestor might be the top node already, so check for that
+        if not isinstance(ancestor.parent, RootNode):
+            while not isinstance(ancestor.parent.parent, RootNode):
+                ancestor = ancestor.parent
+
+        try:
+            bar = ancestor.get_property("BAR")
+            print(f"{node.inst_name} gets BAR {bar} from {ancestor.inst_name}")
+        except LookupError:
+            # handle standalone modules in a temporary way
+            bar = 0
+            pass
+        finally:
+            bar_start = ancestor.absolute_address
+
+
+        context["bar"] = bar
+        context["baraddr"] = node.absolute_address-bar_start
+
     def format_field(self, value, spec):
 
         if spec.startswith("ifgtzero"):
@@ -43,8 +70,8 @@ class RdlFormatter(string.Formatter):
                 return "WIRE"
 
         if spec == "comma":
-            # value signals if it's the last repetition of a {:repeat:}
-            # TODO not actually implemented in the format() calls
+            # 'value' signals if it's the last repetition of a {:repeat:}
+            # TODO unfinished, not actually implemented in the format() calls
             if value:
                 return ""
             else:
@@ -145,21 +172,6 @@ class RdlFormatter(string.Formatter):
                     else:
                         addrmap = f"{x[1].parent.inst_name}.0"
 
-                    parent = x[1].parent
-                    if not isinstance(parent.parent, RootNode):
-                        while not isinstance(parent.parent.parent, RootNode):
-                            parent = parent.parent
-
-                    try:
-                        bar = parent.get_property("BAR")
-                        print(f"{x[1].inst_name} gets BAR {bar} from {parent.inst_name}")
-                    except LookupError:
-                        # handle standalone modules in a temporary way
-                        bar = 0
-                        pass
-                    finally:
-                        bar_start = parent.absolute_address
-
                     N = 1
                     M = 1
                     if x[1].is_array:
@@ -179,11 +191,9 @@ class RdlFormatter(string.Formatter):
                     newc = dict()
 
                     newc["i"] = x[0]
-                    newc["bar"] = bar
                     newc["addrmap"] = addrmap
                     newc["reladdr"] = x[1].address_offset
                     newc["absaddr"] = x[1].absolute_address
-                    newc["baraddr"] = x[1].absolute_address-bar_start
 
                     newc["reg"] = x[1]
                     newc["N"] = N
@@ -194,10 +204,15 @@ class RdlFormatter(string.Formatter):
                     # port definitions. Improve VHDL code to get rid of it.
                     newc["base"] = base
                     base = base+N*M
+
+                    # custom context
+                    self.context_add_bar(newc, x[1])
+
                     # format the template
                     results.append(self.format(template, **newc))
 
                 return "".join(results)
+
             elif what == "memnames":
                 results = []
 
@@ -207,38 +222,24 @@ class RdlFormatter(string.Formatter):
                     else:
                         addrmap = f"{x[1].parent.inst_name}.0"
 
-                    parent = x[1].parent
-                    if not isinstance(parent.parent, RootNode):
-                        while not isinstance(parent.parent.parent, RootNode):
-                            parent = parent.parent
-
-                    try:
-                        bar = parent.get_property("BAR")
-                        print(f"{x[1].inst_name} gets BAR {bar} from {parent.inst_name}")
-                    except LookupError:
-                        # handle standalone modules in a temporary way
-                        bar = 0
-                        pass
-                    finally:
-                        bar_start = parent.absolute_address
-
                     # prevent bugs by putting new data in a separate copy per
                     # iteration
                     # newc = value.copy()
                     newc = dict()
 
                     newc["i"] = x[0]
-                    newc["bar"] = bar
                     newc["addrmap"] = addrmap
                     newc["reladdr"] = x[1].address_offset
                     newc["absaddr"] = x[1].absolute_address
-                    newc["baraddr"] = x[1].absolute_address-bar_start
 
                     newc["mem"] = x[1]
                     newc["mementries"] = x[1].get_property("mementries")
                     newc["memwidth"] = x[1].get_property("memwidth")
                     newc["addresses"] = x[1].get_property("mementries") * 4
                     newc["aw"] = ceil(log2(x[1].get_property("mementries") * 4))
+
+                    # custom context
+                    self.context_add_bar(newc, x[1])
 
                     # format the template
                     results.append(self.format(template, **newc))
@@ -257,40 +258,22 @@ class RdlFormatter(string.Formatter):
                     else:
                         addrmap = f"{x[1].parent.inst_name}.0"
 
-                    if isinstance(x[1], AddrmapNode):
-                        parent = x[1]
-                    else:
-                        parent = x[1].parent
-
-                    if not isinstance(parent.parent, RootNode):
-                        while not isinstance(parent.parent.parent, RootNode):
-                            parent = parent.parent
-
-                    try:
-                        bar = parent.get_property("BAR")
-                        print(f"{x[1].inst_name} gets BAR {bar} from {parent.inst_name}")
-                    except LookupError:
-                        # handle standalone modules in a temporary way
-                        bar = 0
-                        pass
-                    finally:
-                        bar_start = parent.absolute_address
-
                     # prevent bugs by putting new data in a separate copy per
                     # iteration
                     # newc = value.copy()
                     newc = dict()
 
                     newc["i"] = x[0]
-                    newc["bar"] = bar
                     newc["addrmap"] = addrmap
                     newc["reladdr"] = x[1].address_offset
                     newc["absaddr"] = x[1].absolute_address
-                    newc["baraddr"] = x[1].absolute_address-bar_start
 
                     newc["ext"] = x[1]
                     newc["total_words"] = int(x[1].total_size/4)
                     newc["aw"] = ceil(log2(x[1].size))
+
+                    # custom context
+                    self.context_add_bar(newc, x[1])
 
                     # format the template
                     results.append(self.format(template, **newc))
