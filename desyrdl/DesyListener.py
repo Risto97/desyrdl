@@ -1,9 +1,10 @@
-import string
+
+# import string
 import sys
 from pathlib import Path  # get filenames
 
 from systemrdl import RDLListener
-from systemrdl.node import AddrmapNode, FieldNode  #, AddressableNode
+from systemrdl.node import AddrmapNode  # FieldNode ,AddressableNode
 from systemrdl.node import MemNode, RegfileNode, RegNode, RootNode
 
 
@@ -43,7 +44,7 @@ class DesyListener(RDLListener):
         # FIXME not so clean
         out_file = "".join([str(self.tpl.name).replace(suffix, ""), "_", node.type_name, suffix[:-3]])
         out_path = Path(self.out_dir, out_file)
-        print(out_path)
+        print('Output file: ' + str(out_path))
         if out_path.is_file():
             # two possible reasons:
             # (1) old output from previous run
@@ -151,15 +152,11 @@ class VhdlListener(DesyListener):
     def exit_Addrmap(self, node):
         super().exit_Addrmap(node)
 
-        # TODO this is for the future
-        # creating "views" on dictionaries: d.keys(), d.values() or d.items()
-        ip_folder_path = ''.join(["modules/", node.type_name, "/hdl"])  # where the user logic lies
-        print("ip_folder_path =", ip_folder_path)
-
         self.process_template(node)
 
         # Context must be cleared on addrmap boundaries
         self.init_context()
+
 
 # Names are needed. Collect until exiting the top Addrmap
 class MapfileListener(DesyListener):
