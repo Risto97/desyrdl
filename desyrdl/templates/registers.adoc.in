@@ -1,0 +1,29 @@
+== Register Descriptions
+
+[cols="3,3,3,3,9"]
+|===
+|Name |Register Width |Number of Elements | RO/RW | Description
+
+{context:repeat:regnames:
+|{{reg.inst_name}}
+|{{regwidth}}
+|{{M}}
+|{{rw}}
+|TODO
+}
+
+{context:repeat:memnames:
+|{{mem.inst_name}}
+|{{memwidth}}
+|{{mementries}}
+|RW? (TODO: find out via SystemRDL)
+|TODO
+}
+
+{context:repeat:extnames:
+|{{ext.inst_name}}
+|32 (always for external components)
+|{{total_words}}
+|RW?
+|TODO
+}

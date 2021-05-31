@@ -36,7 +36,7 @@ def main():
                            metavar='FORMAT',
                            required=True,
                            nargs='+',  # allow multiple values
-                           choices=['vhdl', 'map', 'h'],
+                           choices=['vhdl', 'map', 'h', 'adoc'],
                            help='output format: vhdl, map, h')
     argParser.add_argument('-o', '--output-dir',
                            dest="out_dir",
@@ -111,6 +111,15 @@ def main():
             print('Generating map file')
             print('======================')
             tpl = tpl_dir / "mapfile.mapp.in"
+            listener = MapfileListener(vf, tpl, out_dir)
+            tpl_walker = RDLWalker(unroll=True)
+            tpl_walker.walk(top_node, listener)
+        elif out_format == 'adoc':
+            # Generate register descriptions from template
+            print('======================')
+            print('Generating AsciiDoc file')
+            print('======================')
+            tpl = tpl_dir / "registers.adoc.in"
             listener = MapfileListener(vf, tpl, out_dir)
             tpl_walker = RDLWalker(unroll=True)
             tpl_walker.walk(top_node, listener)

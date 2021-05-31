@@ -11,12 +11,8 @@ from systemrdl.node import MemNode, RegfileNode, RegNode, RootNode
 class DesyListener(RDLListener):
 
     def __init__(self, formatter, tpl, out_dir):
-        if not isinstance(tpl, Path):
-            print(f"Wrong type passed to {type(self).__name__}")
-            sys.exit(1)
-        if not isinstance(out_dir, Path):
-            print(f"Wrong type passed to {type(self).__name__}")
-            sys.exit(1)
+        assert isinstance(tpl, Path)
+        assert isinstance(out_dir, Path)
 
         self.tpl = tpl
         self.out_dir = out_dir
