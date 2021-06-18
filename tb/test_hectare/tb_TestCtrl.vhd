@@ -20,13 +20,11 @@ entity TestCtrl is
 
     -- Transaction Interfaces
     AxiSuperTransRec    : inout AddressBusTransactionRecType ;
-    AxiMinionTransRec   : inout AddressBusTransactionRecType ;
+    AxiMinionTransRec_spi_ad9510_a : inout AddressBusTransactionRecType ;
 
     -- Register interface
-    ModuleRegistersIn : out t_registers_test_hectare_in;
-    ModuleRegistersOut : in t_registers_test_hectare_out;
-    ModuleMemoriesIn : out t_memories_test_hectare_in;
-    ModuleMemoriesOut : in t_memories_test_hectare_out
+    ModuleAddrmapIn : out t_addrmap_test_hectare_in;
+    ModuleAddrmapOut : in t_addrmap_test_hectare_out
 
   ) ;
     constant AXI_ADDR_WIDTH : integer := AxiSuperTransRec.Address'length ; 
@@ -60,8 +58,8 @@ begin
     ClearAlerts ;
 
     -- Initialize register values
-    ModuleRegistersIn.iitoh(0,0).data.data <= X"1BEEF4A1";
-    ModuleRegistersIn.iitoh(0,0).data.we <= '1';
+    ModuleAddrmapIn.iitoh(0,0).data.data <= X"1BEEF4A1";
+    ModuleAddrmapIn.iitoh(0,0).data.we <= '1';
 
     -- test ID 1
     -- WORD_HECTARE(0,0)
@@ -69,7 +67,7 @@ begin
     MasterWrite(    AxiSuperTransRec, std_logic_vector(to_unsigned(C_REGISTER_INFO(0).addr, AXI_ADDR_WIDTH)), X"5555_BEEF");
     WaitForClock(   AxiSuperTransRec, 2);
     MasterReadCheck(AxiSuperTransRec, std_logic_vector(to_unsigned(C_REGISTER_INFO(0).addr, AXI_ADDR_WIDTH)), X"5555_BEEF");
-    assert ModuleRegistersOut.hectare(0,0).data.data = X"5555_BEEF" report "Wrong data on hectare.data.data (TODO make me a transcation!)" severity note;
+    assert ModuleAddrmapOut.hectare(0,0).data.data = X"5555_BEEF" report "Wrong data on hectare.data.data (TODO make me a transcation!)" severity note;
 
     -- test ID 0
     -- iitoh(0,0)
@@ -79,13 +77,13 @@ begin
     -- memory test 1: write from user logic, read from AXI
     WaitForClock(   AxiSuperTransRec, 2);
     -- let the module put something at offset 12 and try reading that from AXI4
-    ModuleMemoriesIn.coolmem.ena <= '1';
-    ModuleMemoriesIn.coolmem.wr  <= '1';
-    ModuleMemoriesIn.coolmem.addr(C_MEM_AW(0)-1 downto 0) <= std_logic_vector(to_unsigned(12, C_MEM_AW(0)));
-    ModuleMemoriesIn.coolmem.data(7 downto 0) <= x"AA";
+    --ModuleAddrmapIn.coolmem.ena <= '1';
+    --ModuleAddrmapIn.coolmem.wr  <= '1';
+    --ModuleAddrmapIn.coolmem.addr(C_MEM_AW(0)-1 downto 0) <= std_logic_vector(to_unsigned(12, C_MEM_AW(0)));
+    --ModuleAddrmapIn.coolmem.data(7 downto 0) <= x"AA";
     WaitForClock(   AxiSuperTransRec, 1);
-    ModuleMemoriesIn.coolmem.ena <= '0';
-    ModuleMemoriesIn.coolmem.wr  <= '0';
+    --ModuleAddrmapIn.coolmem.ena <= '0';
+    --ModuleAddrmapIn.coolmem.wr  <= '0';
     WaitForClock(   AxiSuperTransRec, 1);
     MasterReadCheck(AxiSuperTransRec, std_logic_vector(to_unsigned(C_MEM_START(0)+12*4, AXI_ADDR_WIDTH)), X"AA");
 
@@ -95,13 +93,13 @@ begin
     MasterWrite(AxiSuperTransRec, std_logic_vector(to_unsigned(C_MEM_START(0)+3*4, AXI_ADDR_WIDTH)), X"BB");
     -- read from user logic
     WaitForClock(   AxiSuperTransRec, 2);
-    ModuleMemoriesIn.coolmem.ena <= '1';
-    ModuleMemoriesIn.coolmem.wr  <= '0';
-    ModuleMemoriesIn.coolmem.addr(C_MEM_AW(0)-1 downto 0) <= std_logic_vector(to_unsigned(3, C_MEM_AW(0)));
+    --ModuleAddrmapIn.coolmem.ena <= '1';
+    --ModuleAddrmapIn.coolmem.wr  <= '0';
+    --ModuleAddrmapIn.coolmem.addr(C_MEM_AW(0)-1 downto 0) <= std_logic_vector(to_unsigned(3, C_MEM_AW(0)));
     WaitForClock(   AxiSuperTransRec, 1);
-    ModuleMemoriesIn.coolmem.ena <= '0';
+    --ModuleAddrmapIn.coolmem.ena <= '0';
     WaitForClock(   AxiSuperTransRec, 1);
-    assert ModuleMemoriesOut.coolmem(7 downto 0) = X"BB" report "Wrong data on memory (TODO make me a transcation!)" severity note;
+    --assert ModuleAddrmapOut.coolmem(7 downto 0) = X"BB" report "Wrong data on memory (TODO make me a transcation!)" severity note;
 
 
     -- Wait for test to finish
