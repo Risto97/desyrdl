@@ -21,6 +21,7 @@ entity TestCtrl is
     -- Transaction Interfaces
     AxiSuperTransRec    : inout AddressBusTransactionRecType ;
     AxiMinionTransRec_spi_ad9510_a : inout AddressBusTransactionRecType ;
+    DpmTransRec_coolmem : inout AddressBusTransactionRecType;
 
     -- Register interface
     ModuleAddrmapIn : out t_addrmap_test_hectare_in;
@@ -33,7 +34,7 @@ end entity TestCtrl ;
 
 architecture BasicReadWrite of TestCtrl is
 
-  signal TestDone : integer_barrier := 1 ;
+  signal Sync, TestDone : integer_barrier := 1 ;
  
 begin
 
@@ -74,32 +75,17 @@ begin
     WaitForClock(   AxiSuperTransRec, 2);
     MasterReadCheck(AxiSuperTransRec, std_logic_vector(to_unsigned(C_REGISTER_INFO(2).addr, AXI_ADDR_WIDTH)), X"1BEE_F4A1");
 
-    -- memory test 1: write from user logic, read from AXI
-    WaitForClock(   AxiSuperTransRec, 2);
-    -- let the module put something at offset 12 and try reading that from AXI4
-    --ModuleAddrmapIn.coolmem.ena <= '1';
-    --ModuleAddrmapIn.coolmem.wr  <= '1';
-    --ModuleAddrmapIn.coolmem.addr(C_MEM_AW(0)-1 downto 0) <= std_logic_vector(to_unsigned(12, C_MEM_AW(0)));
-    --ModuleAddrmapIn.coolmem.data(7 downto 0) <= x"AA";
-    WaitForClock(   AxiSuperTransRec, 1);
-    --ModuleAddrmapIn.coolmem.ena <= '0';
-    --ModuleAddrmapIn.coolmem.wr  <= '0';
-    WaitForClock(   AxiSuperTransRec, 1);
-    MasterReadCheck(AxiSuperTransRec, std_logic_vector(to_unsigned(C_MEM_START(0)+12*4, AXI_ADDR_WIDTH)), X"AA");
-
     -- memory test 2: write from AXI, read from user logic
     -- write mem from AXI
+    WaitForBarrier(Sync);
     WaitForClock(   AxiSuperTransRec, 2);
     MasterWrite(AxiSuperTransRec, std_logic_vector(to_unsigned(C_MEM_START(0)+3*4, AXI_ADDR_WIDTH)), X"BB");
-    -- read from user logic
-    WaitForClock(   AxiSuperTransRec, 2);
-    --ModuleAddrmapIn.coolmem.ena <= '1';
-    --ModuleAddrmapIn.coolmem.wr  <= '0';
-    --ModuleAddrmapIn.coolmem.addr(C_MEM_AW(0)-1 downto 0) <= std_logic_vector(to_unsigned(3, C_MEM_AW(0)));
-    WaitForClock(   AxiSuperTransRec, 1);
-    --ModuleAddrmapIn.coolmem.ena <= '0';
-    WaitForClock(   AxiSuperTransRec, 1);
-    --assert ModuleAddrmapOut.coolmem(7 downto 0) = X"BB" report "Wrong data on memory (TODO make me a transcation!)" severity note;
+
+    -- memory test 1: write from user logic, read from AXI
+    -- put something at offset 12 and try reading that from AXI4
+    WaitForBarrier(Sync);
+    WaitForClock(AxiSuperTransRec, 4);
+    MasterReadCheck(AxiSuperTransRec, std_logic_vector(to_unsigned(C_MEM_START(0)+12*4, AXI_ADDR_WIDTH)), X"AA");
 
 
     -- Wait for test to finish
@@ -118,5 +104,31 @@ begin
     std.env.stop ; 
     wait ; 
   end process ControlProc ; 
+
+  DpmProc : process
+    variable ReadAddr_coolmem    : std_logic_vector(C_MEM_AW(0)-1 downto 0);
+    variable WrittenAddr_coolmem : std_logic_vector(C_MEM_AW(0)-1 downto 0);
+    variable WrittenData_coolmem : std_logic_vector(32-1 downto 0);
+  begin
+    WaitForClock(DpmTransRec_coolmem, 2);
+
+    -- memory test 2
+    -- Have the DPM transaction model expect a write
+    WaitForBarrier(Sync);
+    GetWrite(DpmTransRec_coolmem, WrittenAddr_coolmem, WrittenData_coolmem);
+    AffirmIfEqual(WrittenData_coolmem(8-1 downto 0), x"BB");
+
+    -- memory test 1
+    -- make DPM model respond with the expected data
+    WaitForBarrier(Sync);
+    WaitForClock(DpmTransRec_coolmem, 2);
+    SendRead(DpmTransRec_coolmem, ReadAddr_coolmem, x"AA");
+    AffirmIfEqual(ReadAddr_coolmem, std_logic_vector(to_unsigned(12, C_MEM_AW(0))));
+
+    -- Wait for test to finish
+    WaitForBarrier(TestDone, 35 ms) ;
+
+    wait;
+  end process;
 
 end architecture;

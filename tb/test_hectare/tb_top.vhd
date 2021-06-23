@@ -15,6 +15,10 @@ library osvvm ;
 library osvvm_Axi4 ;
   context osvvm_Axi4.Axi4LiteContext ;
 
+library osvvm_dpm;
+use osvvm_dpm.DpmInterfacePkg.all;
+use osvvm_dpm.DpmResponderComponentPkg.all;
+
 entity tb_top is
 end entity;
 
@@ -32,7 +36,7 @@ architecture sim of tb_top is
   signal nReset      : std_logic ;
 
   -- Testbench Transaction Interface
-  signal AxiSuperTransRec  : AddressBusTransactionRecType(
+  signal AxiSuperTransRec  : AddressBusRecType(
           Address(AXI_ADDR_WIDTH-1 downto 0),
           DataToModel(AXI_DATA_WIDTH-1 downto 0),
           DataFromModel(AXI_DATA_WIDTH-1 downto 0)
@@ -47,7 +51,7 @@ architecture sim of tb_top is
   ) ;
 
 
-  signal AxiMinionTransRec_spi_ad9510_a  : AddressBusTransactionRecType(
+  signal AxiMinionTransRec_spi_ad9510_a  : AddressBusRecType(
           Address(AXI_ADDR_WIDTH-1 downto 0),
           DataToModel(AXI_DATA_WIDTH-1 downto 0),
           DataFromModel(AXI_DATA_WIDTH-1 downto 0)
@@ -60,6 +64,19 @@ architecture sim of tb_top is
     ReadAddress ( Addr(AXI_ADDR_WIDTH-1 downto 0) ),
     ReadData    ( Data (AXI_DATA_WIDTH-1 downto 0) )
   ) ;
+
+  -- DPM Responder transaction interface
+  signal DpmTransRec_coolmem : AddressBusRecType(
+    Address(C_MEM_AW(0)-1 downto 0), -- TODO get C_MEM_AW(coolmem)
+    DataToModel(32-1 downto 0),
+    DataFromModel(32-1 downto 0)
+  );
+
+  -- DPM Responder functional interface
+  signal DpmInterface_coolmem : DpmRecType(
+    DpmIn(Addr(C_MEM_AW(0)-1 downto 0), Data(32-1 downto 0)),
+    DpmOut(Data(32-1 downto 0))
+  );
 
   -- Aliases to make access to record elements convenient
   -- This is only needed for model use them
@@ -99,8 +116,9 @@ architecture sim of tb_top is
       nReset              : In    std_logic ;
 
       -- Transaction Interfaces
-      AxiSuperTransRec    : inout AddressBusTransactionRecType ;
-      AxiMinionTransRec_spi_ad9510_a   : inout AddressBusTransactionRecType ;
+      AxiSuperTransRec               : inout AddressBusRecType ;
+      AxiMinionTransRec_spi_ad9510_a : inout AddressBusRecType ;
+      DpmTransRec_coolmem            : inout AddressBusRecType ;
 
       -- Register interface
       ModuleAddrmapIn : out t_addrmap_test_hectare_in;
@@ -232,6 +250,13 @@ begin
   --RLast <= addrmap_in.spi_ad9510_a.rlast;
   addrmap_in.spi_ad9510_a.rvalid <= AxiBus_spi_ad9510_a.ReadData.Valid;
 
+  -- DPM coolmem
+  DpmInterface_coolmem.DpmIn.Addr <= addrmap_out.coolmem.addr;
+  DpmInterface_coolmem.DpmIn.Data <= addrmap_out.coolmem.data;
+  DpmInterface_coolmem.DpmIn.Ena  <= addrmap_out.coolmem.ena;
+  DpmInterface_coolmem.DpmIn.WR   <= addrmap_out.coolmem.wr;
+  addrmap_in.coolmem <= DpmInterface_coolmem.DpmOut.Data;
+
   Axi4Super_1 : Axi4LiteMaster
   port map (
     -- Globals
@@ -269,6 +294,16 @@ begin
     AxiBus     => AxiBus
   ) ;
 
+  DpmResponder_coolmem : entity osvvm_dpm.DpmResponder(TransactorResponder)
+  port map(
+    Clk => Clk,
+    nReset => nReset,
+
+    TransRec => DpmTransRec_coolmem,
+
+    DpmInterface => DpmInterface_coolmem
+  );
+
   -- TestCtrl
   TestCtrl_1 : TestCtrl
   port map (
@@ -279,6 +314,7 @@ begin
     -- Testbench Transaction Interfaces
     AxiSuperTransRec   => AxiSuperTransRec,
     AxiMinionTransRec_spi_ad9510_a  => AxiMinionTransRec_spi_ad9510_a,
+    DpmTransRec_coolmem => DpmTransRec_coolmem,
 
     -- DPM interface
 

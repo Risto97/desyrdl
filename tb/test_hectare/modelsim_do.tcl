@@ -1,13 +1,17 @@
 
 # OSVVM
 source OsvvmLibraries/Scripts/StartUp.tcl
-build OsvvmLibraries/AXI4/Axi4/Axi4.pro
+## don't just build everything
 #build OsvvmLibraries/OsvvmLibraries.pro
+## build what is needed
+build OsvvmLibraries/osvvm/osvvm.pro
+build OsvvmLibraries/Common/Common.pro
+build OsvvmLibraries/AXI4/AXI4.pro
+build Dpm.pro
 
 set modname test_hectare
 
 library osvvm_my_tb
-analyze dual_port_memory.vhd
 analyze ../../templates/pkg_reg_common.vhd
 analyze ../../templates/PKG_AXI.vhd
 analyze ../../templates/reg_field_storage.vhd
@@ -21,8 +25,3 @@ analyze tb_TestCtrl.vhd
 analyze tb_top.vhd
 
 simulate tb_top
-
-add wave /tb_top/*
-add wave /tb_top/ins_dut/*
-add wave /tb_top/ins_dut/ins_top_reg_test_hectare/*
-add wave /tb_top/ins_dut/ins_top_reg_test_hectare/ins_adapter/*
