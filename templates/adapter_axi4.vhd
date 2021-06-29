@@ -291,13 +291,10 @@ begin
     end loop;
 
     for i in 0 to G_EXTCOUNT-1 loop
-      -- external interfaces are not always present
-      if G_EXTCOUNT > 1 then
-        if raddr_q_int-G_EXT_START(i) >= 0
-        and raddr_q_int-(G_EXT_START(i)+G_EXT_SIZE(i)) < 0 then
-          rtarget <= EXT;
-          ext_rsel <= i;
-        end if;
+      if raddr_q_int-G_EXT_START(i) >= 0
+      and raddr_q_int-(G_EXT_START(i)+G_EXT_SIZE(i)) < 0 then
+        rtarget <= EXT;
+        ext_rsel <= i;
       end if;
     end loop;
 
@@ -530,13 +527,10 @@ begin
     end loop;
 
     for i in 0 to G_EXTCOUNT-1 loop
-      -- external interfaces are not always present
-      if G_EXTCOUNT > 1 then
-        if waddr_q_int-G_EXT_START(i) >= 0
-        and waddr_q_int-(G_EXT_START(i)+2**G_EXT_AW(i)) < 0 then
-          wtarget <= EXT;
-          ext_wsel <= i;
-        end if;
+      if waddr_q_int-G_EXT_START(i) >= 0
+      and waddr_q_int-(G_EXT_START(i)+G_EXT_SIZE(i)) < 0 then
+        wtarget <= EXT;
+        ext_wsel <= i;
       end if;
     end loop;
 
