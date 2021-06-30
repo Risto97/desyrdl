@@ -87,6 +87,14 @@ begin
     WaitForClock(AxiSuperTransRec, 4);
     MasterReadCheck(AxiSuperTransRec, std_logic_vector(to_unsigned(C_MEM_START(0)+12*4, AXI_ADDR_WIDTH)), X"AA");
 
+    -- Downstream AXI4-Lite test
+    -- Write to offset 0x5A on the downstream adapter, assumed to be axi4_spi
+    WaitForBarrier(Sync);
+    WaitForClock(AxiSuperTransRec, 4);
+    -- The axi4_spi component maps the address of the request directly to the
+    -- SPI interface, so don't multiply the address by 4 in the request.
+    Write(AxiSuperTransRec, std_logic_vector(to_unsigned(C_EXT_START(0)+16#40#, AXI_ADDR_WIDTH)), X"01010101");
+
 
     -- Wait for test to finish
     WaitForBarrier(TestDone, 35 ms) ;
@@ -105,10 +113,14 @@ begin
     wait ; 
   end process ControlProc ; 
 
-  DpmProc : process
+  ResponderProc : process
     variable ReadAddr_coolmem    : std_logic_vector(C_MEM_AW(0)-1 downto 0);
     variable WrittenAddr_coolmem : std_logic_vector(C_MEM_AW(0)-1 downto 0);
     variable WrittenData_coolmem : std_logic_vector(32-1 downto 0);
+
+    variable ReadAddr_spi_ad9510_a : std_logic_vector(C_EXT_AW(0)-1 downto 0);
+    variable WrittenAddr_spi_ad9510_a : std_logic_vector(C_EXT_AW(0)-1 downto 0);
+    variable WrittenData_spi_ad9510_a : std_logic_vector(32-1 downto 0);
   begin
     WaitForClock(DpmTransRec_coolmem, 2);
 
@@ -124,6 +136,14 @@ begin
     WaitForClock(DpmTransRec_coolmem, 2);
     SendRead(DpmTransRec_coolmem, ReadAddr_coolmem, x"AA");
     AffirmIfEqual(ReadAddr_coolmem, std_logic_vector(to_unsigned(12, C_MEM_AW(0))));
+
+    -- Downstream AXI4-Lite test
+    -- Write to offset 0x5A on the downstream adapter
+    WaitForBarrier(Sync);
+    WaitForClock(AxiMinionTransRec_spi_ad9510_a, 1);
+    GetWrite(AxiMinionTransRec_spi_ad9510_a, WrittenAddr_spi_ad9510_a, WrittenData_spi_ad9510_a);
+    AffirmIfEqual(WrittenAddr_spi_ad9510_a, std_logic_vector(to_unsigned(16#40#, C_EXT_AW(0))));
+    AffirmIfEqual(WrittenData_spi_ad9510_a(8-1 downto 0), x"01");
 
     -- Wait for test to finish
     WaitForBarrier(TestDone, 35 ms) ;

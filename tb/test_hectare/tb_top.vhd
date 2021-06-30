@@ -52,16 +52,16 @@ architecture sim of tb_top is
 
 
   signal AxiMinionTransRec_spi_ad9510_a  : AddressBusRecType(
-          Address(AXI_ADDR_WIDTH-1 downto 0),
+          Address(C_EXT_AW(0)-1 downto 0),
           DataToModel(AXI_DATA_WIDTH-1 downto 0),
           DataFromModel(AXI_DATA_WIDTH-1 downto 0)
         ) ;
 
   -- AXI Minion Functional Interface
   signal AxiBus_spi_ad9510_a : Axi4LiteRecType(
-    WriteAddress( Addr(AXI_ADDR_WIDTH-1 downto 0) ),
+    WriteAddress( Addr(C_EXT_AW(0)-1 downto 0) ),
     WriteData   ( Data (AXI_DATA_WIDTH-1 downto 0),   Strb(AXI_STRB_WIDTH-1 downto 0) ),
-    ReadAddress ( Addr(AXI_ADDR_WIDTH-1 downto 0) ),
+    ReadAddress ( Addr(C_EXT_AW(0)-1 downto 0) ),
     ReadData    ( Data (AXI_DATA_WIDTH-1 downto 0) )
   ) ;
 
@@ -204,7 +204,7 @@ begin
 
   -- M2S
   --addrmap_out.spi_ad9510_a.awid 
-  AxiBus_spi_ad9510_a.WriteAddress.Addr <= addrmap_out.spi_ad9510_a.awaddr(C_ADDR_W-1 downto 0);
+  AxiBus_spi_ad9510_a.WriteAddress.Addr <= addrmap_out.spi_ad9510_a.awaddr(C_EXT_AW(0)-1 downto 0);
   --addrmap_out.spi_ad9510_a.awlen;
   --addrmap_out.spi_ad9510_a.awsize;
   --addrmap_out.spi_ad9510_a.awburst;
@@ -222,7 +222,7 @@ begin
   AxiBus_spi_ad9510_a.WriteResponse.Ready <= addrmap_out.spi_ad9510_a.bready;
 
   --addrmap_out.spi_ad9510_a.arid;
-  AxiBus_spi_ad9510_a.ReadAddress.Addr <= addrmap_out.spi_ad9510_a.araddr(C_ADDR_W-1 downto 0);
+  AxiBus_spi_ad9510_a.ReadAddress.Addr <= addrmap_out.spi_ad9510_a.araddr(C_EXT_AW(0)-1 downto 0);
   --addrmap_out.spi_ad9510_a.arlen;
   --addrmap_out.spi_ad9510_a.arsize;
   --addrmap_out.spi_ad9510_a.arburst;
@@ -270,8 +270,7 @@ begin
     AxiBus      => AxiBus
   ) ;
 
-  -- Behavioral model.  Replaces DUT for labs
-  Responder_1 : Axi4LiteResponder
+  Responder_spi_ad9510_a : Axi4LiteResponder
   port map (
     -- Globals
     Clk         => Clk,
@@ -294,7 +293,7 @@ begin
     AxiBus     => AxiBus
   ) ;
 
-  DpmResponder_coolmem : entity osvvm_dpm.DpmResponder(TransactorResponder)
+  Responder_coolmem : entity osvvm_dpm.DpmResponder(TransactorResponder)
   port map(
     Clk => Clk,
     nReset => nReset,
@@ -315,8 +314,6 @@ begin
     AxiSuperTransRec   => AxiSuperTransRec,
     AxiMinionTransRec_spi_ad9510_a  => AxiMinionTransRec_spi_ad9510_a,
     DpmTransRec_coolmem => DpmTransRec_coolmem,
-
-    -- DPM interface
 
     -- Register interface
     ModuleAddrmapIn => addrmap_in,

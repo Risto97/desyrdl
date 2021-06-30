@@ -6,15 +6,26 @@ Python 3 is required.
 ....
 python -m venv my_venv // <1>
 source my_venv/bin/activate // <2>
-pip install systemrdl-compiler // <3>
+pip install [-e] <path to this folder> // <3>
 ....
 <1> the `venv` module creates a folder `my_venv` where you can play around as you like without messing with your system setup
 <2> enable the `venv` (call `deactivate` to leave it)
-<3> install systemrdl-compiler inside `my_venv`
+<3> install desyrdl inside `my_venv`
 
 == Running
 
+See `desyrdl -h` for options. Below is an example for the test_hectare module which also comes with a testbench:
+
 ....
-python VHdlFormatter.py hdl/iq_slide.rdl hdl/llrf_fd_top.rdl marsupials.rdl top.rdl
+desyrdl -o out -i examples/spi_ad9510.rdl examples/test_hectare.rdl -f vhdl
 ....
-This will compile each `.rdl` file, put together a register model and create one `.vhd` file in `./HECTARE/` for each `addrmap` in the model and for each template in `./templates/`.
+This will compile each `.rdl` file, put together a register model and create one `.vhd` in `./out/` for each `addrmap` in the model and for each VHDL template in `./desyrdl/templates/`.
+
+== Tests
+
+The example above can be simulated in a self-checking testbench. It requires OSVVM and the ModelSim HDL Simulator.
+
+....
+cd tb/test_hectare/
+vsim -c -do modelsim_do.tcl
+....
