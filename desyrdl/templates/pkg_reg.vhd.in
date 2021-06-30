@@ -7,13 +7,17 @@ use ieee.numeric_std.all;
 library work;
 use work.pkg_types.all;
 use work.pkg_axi.all;
-use work.pkg_reg_common.all;
+
+library desyrdl;
+use desyrdl.pkg_reg_common.all;
 
 package pkg_reg_{context[node].type_name} is
 
   -----------------------------------------------
   -- per addrmap / module
   -----------------------------------------------
+
+  constant C_ADDR_W : integer := 32;
 
   -- must be calculated by register tool
   -- always add +1 for the dummy
@@ -153,6 +157,26 @@ package pkg_reg_{context[node].type_name} is
   function fun_{{regtype.type_name}}_to_incr (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector;
   function fun_{{regtype.type_name}}_to_we   (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector;
   --}
+
+  -----------------------------------------------
+  -- top level component declaration
+  -- must come after defining the interfaces
+  -----------------------------------------------
+  component top_reg_{context[node].type_name} is
+    port (
+      pi_clock : in std_logic;
+      pi_reset : in std_logic;
+
+      -- AXI4
+      pi_s_axi4 : in  t_axi4_m2s;
+      po_s_axi4 : out t_axi4_s2m;
+
+      -- logic
+      pi_addrmap : in t_addrmap_{context[node].type_name}_in;
+      po_addrmap : out t_addrmap_{context[node].type_name}_out
+
+    );
+  end component top_reg_{context[node].type_name};
 
 end package pkg_reg_{context[node].type_name};
 

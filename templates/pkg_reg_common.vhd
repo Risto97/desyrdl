@@ -4,20 +4,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-library work;
-
-package pkg_types is
-  type T_4BitArray  is array (natural range<>) of std_logic_vector( 3 downto 0) ;
-  type T_32BitArray is array (natural range<>) of std_logic_vector(31 downto 0) ;
-  type T_IntegerArray  is array (natural range<>) of integer ;
-end package pkg_types;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-
-library work;
-
 package pkg_reg_common is
   -----------------------------------------------
   -- below: common declarations
@@ -77,13 +63,10 @@ package pkg_reg_common is
 --    swmod : std_logic;
 --  end record;
 
-  constant C_ADDR_W : integer := 32;
-
-  -- TODO remove, superceded by t_mem__mem.type_name__in/out
   type t_mem_in is record
     ena  : std_logic;
     wr   : std_logic;
-    addr : std_logic_vector(C_ADDR_W-2-1 downto 0);
+    addr : std_logic_vector(32-1 downto 0);
     data : std_logic_vector(32-1 downto 0);
   end record t_mem_in;
   type t_mem_in_arr is array (natural range <>) of t_mem_in;

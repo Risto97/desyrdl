@@ -11,16 +11,20 @@ build Dpm.pro
 
 set modname test_hectare
 
-library osvvm_my_tb
-analyze ../../templates/pkg_reg_common.vhd
+library desyrdl
+# these are necessary to make desyrdl self-contained
+analyze ../../templates/pkg_types.vhd
 analyze ../../templates/PKG_AXI.vhd
+#
+analyze ../../templates/pkg_reg_common.vhd
 analyze ../../templates/reg_field_storage.vhd
 analyze ../../templates/reg_field_counter.vhd
 analyze ../../templates/register.vhd
 analyze ../../templates/adapter_axi4.vhd
 analyze ../../out/pkg_reg_$modname.vhd
 analyze ../../out/top_$modname.vhd
-#analyze test_hectare_top.vhd
+
+library osvvm_my_tb
 analyze tb_TestCtrl.vhd
 analyze tb_top.vhd
 

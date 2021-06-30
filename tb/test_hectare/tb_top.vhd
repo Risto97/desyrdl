@@ -5,11 +5,11 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use ieee.numeric_std_unsigned.all ;
 
-library work;
-use work.pkg_types.all;
-use work.pkg_reg_common.all; -- maybe rename to sth like pkg_axi4_<foocomponent>
-use work.pkg_reg_test_hectare.all; -- maybe rename to sth like pkg_axi4_<foocomponent>
-use work.pkg_axi.all;
+library desyrdl;
+--use desyrdl.pkg_types.all;
+use desyrdl.pkg_axi.all;
+--use desyrdl.pkg_reg_common.all;
+use desyrdl.pkg_reg_test_hectare.all;
 
 library osvvm ;
   context osvvm.OsvvmContext ;
@@ -190,7 +190,7 @@ begin
   --RLast <= s2m_axi4_hectare.rlast;
   RValid <= s2m_axi4_hectare.rvalid;
 
-  ins_dut : entity work.top_reg_test_hectare
+  ins_dut : top_reg_test_hectare
   port map (
     pi_clock => Clk,
     pi_reset => not nReset,

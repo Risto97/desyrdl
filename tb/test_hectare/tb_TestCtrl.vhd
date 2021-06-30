@@ -11,8 +11,8 @@ library OSVVM ;
 library osvvm_Axi4 ;
   context osvvm_Axi4.Axi4LiteContext ; 
 
-library work ;
-  use work.pkg_reg_test_hectare.all;
+library desyrdl ;
+  use desyrdl.pkg_reg_test_hectare.all;
 
 entity TestCtrl is
   port (
