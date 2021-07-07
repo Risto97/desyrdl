@@ -1,3 +1,7 @@
+-- Copyright (c) 2020-2021 Deutsches Elektronen-Synchrotron DESY.
+
+-- Based on OSVVM's Axi4LiteResponderComponentPkg.vhd
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
