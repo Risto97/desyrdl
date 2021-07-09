@@ -25,20 +25,20 @@ This can be extended by a format specifier, separated with a ':', like this ('b'
 >>> print("Mein Hut, der hat {n_edges:b} Ecken.".format(n_edges=3))
 Mein Hut, der hat 11 Ecken.
 ```
-The `VhdlFormatter` class implements a custom language for the format specifier that gives access to the compiled SystemRDL tree.
+The `RdlFormatter` class implements a custom language for the format specifier that gives access to the compiled SystemRDL tree.
 The format of a replacement field is roughly this: "{value:spec}" where `value` is an object in the Python program and `spec` is one of these custom expressions:
 * 'ftype': value must be a `FieldNode`. Replacement is the field type: either "COUNTER", "INTERRUPT", "STORAGE" or "WIRE". See table 12 of the SystemRDL 2.0 specification.
 * 'ifgtzero:key:string': value must be a dict, e.g. context, and "key" must be in it. String is some text, e.g. VHDL code, that is only returned when `value[key]` is greater than zero.
 * 'upper' and 'lower': expects a string as `value`, returns `value.upper()` or `value.lower()`.
-* 'repeat:rtype:string': the loop functionality of `VhdlFormatter`. Value must be a Python dict (the "context") that must contain the key given by `rtype` (except 'fields', where `value` is a `RegNode`).
+* 'repeat:rtype:string': the loop functionality of `RdlFormatter`. Value must be a Python dict (the "context") that must contain the key given by `rtype` (except 'fields', where `value` is a `RegNode`).
 ** `rtype==regtypes`
 ** `rtype==regnames`
 *** additional context: WIP
 ** `rtype==fields`
-** `rtype==addrmaps`
+** `rtype==extnames`
 
 === Calling the script
 
-All RDL files must be passed to VhdlFormatter.py in the correct order.
+All RDL files must be passed to RdlFormatter.py in the correct order.
 A module which defines an addrmap `timing` would have to be passed before
 another module that instantiates it with `timing TIMING ;`.

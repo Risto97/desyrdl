@@ -6,6 +6,18 @@ use ieee.numeric_std.all;
 
 library work;
 
+package pkg_types is
+  type T_4BitArray  is array (natural range<>) of std_logic_vector( 3 downto 0) ;
+  type T_32BitArray is array (natural range<>) of std_logic_vector(31 downto 0) ;
+  type T_IntegerArray  is array (natural range<>) of integer ;
+end package pkg_types;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+library work;
+
 package pkg_reg_common is
   -----------------------------------------------
   -- below: common declarations
