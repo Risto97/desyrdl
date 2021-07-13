@@ -41,18 +41,18 @@ package pkg_reg_{context[node].type_name} is
   constant C_EXTCOUNT : integer := C_EXTNAMES;
   constant C_EXT_AW : T_IntegerArray(C_EXTNAMES downto 0) := (
     --{context:repeat:extnames:
-    {{i}} => {{aw}}, -- {{ext.inst_name}}}
+    {{context[i]}} => {{context[aw]}}, -- {{context[ext].inst_name}}}
     C_EXTNAMES => 0 -- dummy
   );
   constant C_EXT_START : T_IntegerArray(C_EXTNAMES downto 0) := (
     --{context:repeat:extnames:
-    {{i}} => {{baraddr}}, -- {{ext.inst_name}}}
+    {{context[i]}} => {{context[baraddr]}}, -- {{context[ext].inst_name}}}
     C_EXTNAMES => 0 -- dummy
   );
   -- size in bytes occupied in the address map
   constant C_EXT_SIZE : T_IntegerArray(C_EXTNAMES downto 0) := (
     --{context:repeat:extnames:
-    {{i}} => {{ext.size}}, -- {{ext.inst_name}}}
+    {{context[i]}} => {{context[ext].size}}, -- {{context[ext].inst_name}}}
     C_EXTNAMES => 0 -- dummy
   );
 
@@ -133,7 +133,7 @@ package pkg_reg_{context[node].type_name} is
     --{context:repeat:memnames:
     {{mem.inst_name}} : t_mem_{{mem.type_name}}_out; --}
     --{context:repeat:extnames:
-    {{ext.inst_name}} : t_axi4_s2m; --}
+    {{context[ext].inst_name}} : t_axi4_s2m; --}
     NONE : std_logic;
   end record;
 
@@ -143,7 +143,7 @@ package pkg_reg_{context[node].type_name} is
     --{context:repeat:memnames:
     {{mem.inst_name}} : t_mem_{{mem.type_name}}_in; --}
     --{context:repeat:extnames:
-    {{ext.inst_name}} : t_axi4_m2s; --}
+    {{context[ext].inst_name}} : t_axi4_m2s; --}
     NONE : std_logic;
   end record;
 

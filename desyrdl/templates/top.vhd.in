@@ -99,8 +99,8 @@ begin
   blk_ext_ports : block
   begin
   --{{context:repeat:extnames:
-    po_addrmap.{{{{ext.inst_name}}}} <= adapter_to_ext({{{{i}}}});
-    adapter_from_ext({{{{i}}}}) <= pi_addrmap.{{{{ext.inst_name}}}}; --}}
+    po_addrmap.{{{{context[ext].inst_name}}}} <= adapter_to_ext({{{{context[i]}}}});
+    adapter_from_ext({{{{context[i]}}}}) <= pi_addrmap.{{{{context[ext].inst_name}}}}; --}}
   end block;
   --}
 

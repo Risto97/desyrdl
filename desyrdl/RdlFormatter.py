@@ -274,7 +274,7 @@ class RdlFormatter(string.Formatter):
                     self.context_add_bar(newc, x[1])
 
                     # format the template
-                    results.append(self.format(template, **newc))
+                    results.append(self.format(template, context=newc))
 
                 return "".join(results)
 

@@ -6,4 +6,4 @@
 {{addrmap}}.{{mem.inst_name}} {{mementries}} {{baraddr}} {{addresses}} {{bar}} {{memwidth}} 0 0 RW}
 
 {context:repeat:extnames:
-{{addrmap}}.{{ext.inst_name}} {{total_words}} {{baraddr}} {{ext.size}} {{bar}} 32 0 0 RW}
+{{context[addrmap]}}.{{context[ext].inst_name}} {{context[total_words]}} {{context[baraddr]}} {{context[ext].size}} {{context[bar]}} 32 0 0 RW}
