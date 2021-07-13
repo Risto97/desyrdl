@@ -12,6 +12,16 @@ class RdlFormatter(string.Formatter):
     #        super(RdlFormatter, self).__init__()
     #        top_node = top_node
 
+    def context_add_interface(self, context, node):
+        try:
+            interface = node.get_property("interface")
+        except LookupError:
+            # handle standalone modules in a temporary way
+            interface = "NONE"
+            pass
+
+        context["interface"] = interface
+
     def context_add_bar(self, context, node):
 
         # Starting point for finding the top node
@@ -271,6 +281,7 @@ class RdlFormatter(string.Formatter):
                     newc["aw"] = ceil(log2(x[1].size))
 
                     # custom context
+                    self.context_add_interface(newc, x[1])
                     self.context_add_bar(newc, x[1])
 
                     # format the template

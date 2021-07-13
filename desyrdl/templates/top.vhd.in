@@ -99,8 +99,15 @@ begin
   blk_ext_ports : block
   begin
   --{{context:repeat:extnames:
-    po_addrmap.{{{{context[ext].inst_name}}}} <= adapter_to_ext({{{{context[i]}}}});
-    adapter_from_ext({{{{context[i]}}}}) <= pi_addrmap.{{{{context[ext].inst_name}}}}; --}}
+    ins_{{{{context[i]}}}}_{{{{context[ext].inst_name}}}} : entity work.axi4_to_{{{{context[interface]}}}}
+      port map (
+        pi_clock => pi_clock,
+        pi_reset => pi_reset,
+        pi_adapter_m2s => adapter_to_ext({{{{context[i]}}}}),
+        po_adapter_s2m => adapter_from_ext({{{{context[i]}}}}),
+        po_ext_m2s => po_addrmap.{{{{context[ext].inst_name}}}},
+        pi_ext_s2m => pi_addrmap.{{{{context[ext].inst_name}}}}
+      ); --}}
   end block;
   --}
 

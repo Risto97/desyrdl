@@ -75,6 +75,10 @@ package pkg_reg_common is
   subtype t_mem_out is std_logic_vector(32-1 downto 0);
   type t_mem_out_arr is array (natural range <>) of t_mem_out;
 
+  -- interface types
+  type t_if_type Is (DPM, AXI4, IBUS, WISHBONE, AVALON, NONE);
+  type t_if_type_array is array (natural range <>) of t_if_type;
+
 end package pkg_reg_common;
 
 package body pkg_reg_common is

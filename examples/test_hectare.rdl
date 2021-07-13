@@ -1,3 +1,4 @@
+
 addrmap test_hectare {
   reg {
     field {sw=rw; hw=r; swmod; } data[31:0];
@@ -15,6 +16,12 @@ addrmap test_hectare {
     memwidth = 32;
     mementries = 1024;
   } coolmem;
+  coolmem->interface = "DPM";
 
   external spi_ad9510 spi_ad9510_a @0x10000;
+  spi_ad9510_a->interface = "AXI4";
+
+  external spi_ad9510 spi_ad9510_b;
+  spi_ad9510_b->interface = "IBUS";
+
 };

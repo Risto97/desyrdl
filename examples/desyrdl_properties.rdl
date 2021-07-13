@@ -1,0 +1,3 @@
+property interface { type = string; component = addrmap | regfile | reg | mem; };
+property fracbits {type = longint unsigned; component = reg | mem; };
+property dataformat {type = string; component = reg | mem; };

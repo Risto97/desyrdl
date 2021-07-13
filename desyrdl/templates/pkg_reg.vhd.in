@@ -7,6 +7,7 @@ use ieee.numeric_std.all;
 library work;
 use work.pkg_types.all;
 use work.pkg_axi.all;
+use work.pkg_ii.all;
 
 library desyrdl;
 use desyrdl.pkg_reg_common.all;
@@ -54,6 +55,12 @@ package pkg_reg_{context[node].type_name} is
     --{context:repeat:extnames:
     {{context[i]}} => {{context[ext].size}}, -- {{context[ext].inst_name}}}
     C_EXTNAMES => 0 -- dummy
+  );
+  -- interface type
+  constant C_EXT_IF : t_if_type_array(C_EXTNAMES downto 0) := (
+    --{context:repeat:extnames:
+    {{context[i]}} => {{context[interface]}}, -- {{context[ext].inst_name}}}
+    C_EXTNAMES => NONE -- dummy
   );
 
   --{context:repeat:regtypes:
@@ -133,7 +140,7 @@ package pkg_reg_{context[node].type_name} is
     --{context:repeat:memnames:
     {{mem.inst_name}} : t_mem_{{mem.type_name}}_out; --}
     --{context:repeat:extnames:
-    {{context[ext].inst_name}} : t_axi4_s2m; --}
+    {{context[ext].inst_name}} : t_{{context[interface]}}_s2m; --}
     NONE : std_logic;
   end record;
 
@@ -143,7 +150,7 @@ package pkg_reg_{context[node].type_name} is
     --{context:repeat:memnames:
     {{mem.inst_name}} : t_mem_{{mem.type_name}}_in; --}
     --{context:repeat:extnames:
-    {{context[ext].inst_name}} : t_axi4_m2s; --}
+    {{context[ext].inst_name}} : t_{{context[interface]}}_m2s; --}
     NONE : std_logic;
   end record;
 
