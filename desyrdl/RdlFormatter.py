@@ -51,17 +51,6 @@ class RdlFormatter(string.Formatter):
 
     def format_field(self, value, spec):
 
-        if spec.startswith("ifgtzero"):
-            (checkme, colon, foo) = spec.partition(":")
-            (target, colon, template) = foo.partition(":")
-            if checkme != "ifgtzero":
-                raise Exception("Template function ifgtzero detected but the spec seems to be broken")
-
-            if value[target] > 0:
-                return self.format(template, context=value)
-            else:
-                return ""
-
         if spec == "ftype" and isinstance(value, FieldNode):
             # Expects FieldNode type as value
             if value.get_property("counter"):
@@ -76,14 +65,6 @@ class RdlFormatter(string.Formatter):
                 # error (TODO: handle as such)
                 print("error: can't make out the type of field for {}".format(value.get_path()))
                 return "WIRE"
-
-        if spec == "comma":
-            # 'value' signals if it's the last repetition of a {:repeat:}
-            # TODO unfinished, not actually implemented in the format() calls
-            if value:
-                return ""
-            else:
-                return ","
 
         if spec == "upper":
             return value.upper()

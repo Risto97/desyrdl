@@ -92,22 +92,20 @@ begin
              S_AXI_RID     => po_s_axi4.rid
            );
 
-  -- external interfaces (if present) {context:ifgtzero:n_extnames:
   -- downstream interface assignments
   blk_ext_ports : block
   begin
-  --{{context:repeat:extnames:
-    ins_{{{{context[i]}}}}_{{{{context[ext].inst_name}}}} : entity work.axi4_to_{{{{context[interface]}}}}
+  --{context:repeat:extnames:
+    ins_{{context[i]}}_{{context[ext].inst_name}} : entity work.axi4_to_{{context[interface]}}
       port map (
         pi_clock => pi_clock,
         pi_reset => pi_reset,
-        pi_adapter_m2s => adapter_to_ext({{{{context[i]}}}}),
-        po_adapter_s2m => adapter_from_ext({{{{context[i]}}}}),
-        po_ext_m2s => po_addrmap.{{{{context[ext].inst_name}}}},
-        pi_ext_s2m => pi_addrmap.{{{{context[ext].inst_name}}}}
-      ); --}}
+        pi_adapter_m2s => adapter_to_ext({{context[i]}}),
+        po_adapter_s2m => adapter_from_ext({{context[i]}}),
+        po_ext_m2s => po_addrmap.{{context[ext].inst_name}},
+        pi_ext_s2m => pi_addrmap.{{context[ext].inst_name}}
+      ); --}
   end block;
-  --}
 
   po_s_axi4.aclk <= pi_clock;
   po_s_axi4.rlast <= '1';
