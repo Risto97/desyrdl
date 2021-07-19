@@ -61,7 +61,7 @@ package pkg_reg_{context[node].type_name} is
   --{context:repeat:regtypes:
   constant C_{{regtype.type_name:upper}}_FIELDS : t_field_info_arr := (
     --{{fields:repeat:fields:
-    {{{{i}}}} => (ftype => {{{{field:ftype}}}}, len => {{{{field.width}}}}, upper => {{{{field.high}}}}, lower => {{{{field.low}}}}, hw_we => {{{{hw_we}}}}, sw_access => C_{{{{sw_access:upper}}}}, hw_access => C_{{{{hw_access:upper}}}},  def_val => std_logic_vector(to_unsigned({{{{reset}}}}, 32)), decrwidth => {{{{decrwidth}}}}, incrwidth => {{{{incrwidth}}}}), -- {{{{field.inst_name}}}} --}}
+    {{{{i}}}} => (ftype => {{{{ftype}}}}, len => {{{{field.width}}}}, upper => {{{{field.high}}}}, lower => {{{{field.low}}}}, hw_we => {{{{hw_we}}}}, sw_access => C_{{{{sw_access:upper}}}}, hw_access => C_{{{{hw_access:upper}}}},  def_val => std_logic_vector(to_unsigned({{{{reset}}}}, 32)), decrwidth => {{{{decrwidth}}}}, incrwidth => {{{{incrwidth}}}}), -- {{{{field.inst_name}}}} --}}
     others => C_FIELD_NONE
   );
   --}
