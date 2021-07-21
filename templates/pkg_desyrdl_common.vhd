@@ -4,7 +4,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-package pkg_reg_common is
+package common is
 
   ---------------------------------------------------------------------------
   -- common type definitions
@@ -277,7 +277,7 @@ package pkg_reg_common is
   type t_if_type Is (DPM, AXI4, IBUS, WISHBONE, AVALON, NONE);
   type t_if_type_array is array (natural range <>) of t_if_type;
 
-end package pkg_reg_common;
+end package common;
 
-package body pkg_reg_common is
+package body common is
 end package body;

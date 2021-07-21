@@ -22,7 +22,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library work;
-use work.pkg_reg_common.all;
+use work.common.all;
 
 entity reg_field_counter is
   generic (
