@@ -17,7 +17,7 @@ pip install [-e] <path to this folder> // <3>
 See `desyrdl -h` for options. Below is an example for the test_hectare module which also comes with a testbench:
 
 ....
-desyrdl -o out -i examples/spi_ad9510.rdl examples/test_hectare.rdl -f vhdl
+desyrdl -o out -i examples/desyrdl_properties.rdl examples/generic_ibus.rdl examples/spi_ad9510.rdl examples/test_hectare.rdl -f vhdl
 ....
 This will compile each `.rdl` file, put together a register model and create one `.vhd` in `./out/` for each `addrmap` in the model and for each VHDL template in `./desyrdl/templates/`.
 
