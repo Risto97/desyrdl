@@ -12,14 +12,11 @@ build Dpm.pro
 set modname test_hectare
 
 library desyrdl
+analyze ../../templates/pkg_reg_common.vhd
 # these are necessary to make desyrdl self-contained
-analyze ../../templates/pkg_types.vhd
-analyze ../../templates/PKG_AXI.vhd
 analyze ../../templates/axi4_to_axi4.vhd
-analyze ../../templates/PKG_II.vhd
 analyze ../../templates/axi4_to_ibus.vhd
 #
-analyze ../../templates/pkg_reg_common.vhd
 analyze ../../templates/reg_field_storage.vhd
 analyze ../../templates/reg_field_counter.vhd
 analyze ../../templates/register.vhd

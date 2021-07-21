@@ -23,8 +23,7 @@ use IEEE.STD_LOGIC_1164.all;
 use IEEE.STD_LOGIC_MISC.all;
 use IEEE.numeric_std.all;
 ------------------------------------------------------------------------------
-use work.PKG_II.all;
-use work.PKG_AXI.all;
+use work.pkg_reg_common.all;
 
 ------------------------------------------------------------------------------
 --! @brief AXI4 to II translation  

@@ -22,7 +22,6 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library work;
-use work.pkg_types.all;
 use work.pkg_reg_common.all;
 
 entity desy_register is
