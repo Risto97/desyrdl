@@ -3,6 +3,7 @@
 import argparse
 import sys
 from pathlib import Path
+from shutil import copy
 
 from systemrdl import RDLCompileError, RDLCompiler, RDLWalker  # RDLListener
 from systemrdl.node import (AddrmapNode, FieldNode, MemNode,  # AddressableNode
@@ -58,7 +59,12 @@ def main():
         print('INFO: Using default templates directory: ' + str(tpl_dir))
     else:
         tpl_dir = Path(args.tpl_dir).resolve()
-        print('INFO: Using custom templates directory' + str(tpl_dir))
+        print('INFO: Using custom templates directory ' + str(tpl_dir))
+
+    # location of libraries that are provided per output format
+    lib_dir = Path(__file__).parent.parent.resolve() / "./libraries"
+    print('INFO: Taking common libraries from ' + str(lib_dir))
+
 
     out_dir = Path(args.out_dir).resolve()
     out_dir.mkdir(exist_ok=True)
@@ -84,7 +90,7 @@ def main():
     if isinstance(root, RootNode):
         top_node = root.top
     else:
-        print('#\nERROR: root it not a RootNode')
+        print('#\nERROR: root is not a RootNode')
         sys.exit(2)
 
     # ----------------------------------
@@ -96,6 +102,10 @@ def main():
     # ----------------------------------
     # select format-action dependently on for type, iterate over the list
     for out_format in args.out_format:
+        # copy all common files of the selected format into the out folder
+        for lib in Path(lib_dir / out_format).glob('*'):
+            copy(lib, out_dir)
+
         if out_format == 'vhdl':
             # Generate from VHDL templates
             print('======================')
