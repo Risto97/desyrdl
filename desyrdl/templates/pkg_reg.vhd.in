@@ -54,7 +54,7 @@ package pkg_reg_{node.type_name} is
   -- interface type
   constant C_EXT_IF : t_if_type_array(C_EXTNAMES downto 0) := (
     --{extnames:repeat:extnames:
-    {{i}} => {{interface}}, -- {{ext.inst_name}}}
+    {{i}} => {{desyrdl_interface}}, -- {{ext.inst_name}}}
     C_EXTNAMES => NONE -- dummy
   );
 
@@ -135,7 +135,7 @@ package pkg_reg_{node.type_name} is
     --{memnames:repeat:memnames:
     {{mem.inst_name}} : t_mem_{{mem.type_name}}_out; --}
     --{extnames:repeat:extnames:
-    {{ext.inst_name}} : t_{{interface}}_s2m; --}
+    {{ext.inst_name}} : t_{{desyrdl_interface}}_s2m; --}
     NONE : std_logic;
   end record;
 
@@ -145,7 +145,7 @@ package pkg_reg_{node.type_name} is
     --{memnames:repeat:memnames:
     {{mem.inst_name}} : t_mem_{{mem.type_name}}_in; --}
     --{extnames:repeat:extnames:
-    {{ext.inst_name}} : t_{{interface}}_m2s; --}
+    {{ext.inst_name}} : t_{{desyrdl_interface}}_m2s; --}
     NONE : std_logic;
   end record;
 

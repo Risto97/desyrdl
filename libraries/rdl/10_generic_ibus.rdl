@@ -1,6 +1,6 @@
 regfile generic_ibus #(longint unsigned SIZE) {
 
-  interface = "IBUS";
+  desyrdl_interface = "IBUS";
 
   reg {
     //field {fieldwidth = 8*REALSIZE/SIZE;} data;
