@@ -26,6 +26,6 @@ addrmap test_hectare {
 
   // test_hectare.sv holds size and address information for downstream IBUS
   // modules
-  external generic_ibus #(.SIZE(`C_SIZE_LLRF_CTABLES), .REALSIZE(4*`C_SIZE_LLRF_CTABLES)) llrf_ctables @`C_ADDR_LLRF_CTABLES;
+  external generic_ibus #(.SIZE(`C_SIZE_LLRF_CTABLES)) llrf_ctables @`C_ADDR_LLRF_CTABLES;
 
 };

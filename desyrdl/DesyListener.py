@@ -92,6 +92,12 @@ class DesyListener(RDLListener):
                 n_memnames=len(self.memnames),
                 n_extnames=len(self.extnames))
 
+        # add all non-native explicitly set properties
+        for p in node.list_properties(include_native=False):
+            assert not p in self.context
+            print(f"exit_Addrmap {node.inst_name}: Adding non-native property {p}")
+            self.context[p] = node.get_property(p)
+
         print(f"path_segment = {node.get_path_segment()}")
         print(f"node.inst_name = {node.inst_name}")
         print(f"node.type_name = {node.type_name}")
@@ -300,7 +306,9 @@ class VhdlListener(DesyListener):
     def exit_Addrmap(self, node):
         super().exit_Addrmap(node)
 
-        self.process_template(node)
+        # only generate something if the custom property is set
+        if node.get_property('desyrdl_generate_hdl'):
+            self.process_template(node)
 
         # Context must be cleared on addrmap boundaries
         self.init_context()
