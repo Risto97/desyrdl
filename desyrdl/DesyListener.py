@@ -34,7 +34,7 @@ class DesyListener(RDLListener):
         with self.tpl.open('r') as f_in:
             s_in = f_in.read()
 
-        s_out = self.formatter.format(s_in, context=self.context)
+        s_out = self.formatter.format(s_in, **self.context)
 
         suffix = "".join(self.tpl.suffixes)  # get the ".vhd.in"
 
@@ -197,8 +197,8 @@ class DesyListener(RDLListener):
             context["total_words"] = int(x.total_size/4)
             context["aw"] = ceil(log2(x.size))
 
-            context["interface"] = context_get_interface(node)
-            context["bar"]       = context_get_bar(node)
+            context["interface"] = self.context_get_interface(node)
+            context["bar"]       = self.context_get_bar(node)
 
             yield context
 

@@ -29,7 +29,7 @@ class RdlFormatter(string.Formatter):
             template = spec.partition(":")[2].partition(":")[2]
 
             results = []
-            for x in value[what]:
+            for x in value:
                 results.append(self.format(template, **x))
 
             return "".join(results)
