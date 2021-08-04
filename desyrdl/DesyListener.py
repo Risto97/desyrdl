@@ -127,10 +127,6 @@ class DesyListener(RDLListener):
         base = 0
 
         for i,x in self.gen_node_names(node, [RegNode], False):
-            if x.parent.is_array:
-                addrmap = f"{x.parent.inst_name}.{x.parent.current_idx}"
-            else:
-                addrmap = f"{x.parent.inst_name}.0"
 
             N = 1
             M = 1
@@ -147,8 +143,12 @@ class DesyListener(RDLListener):
 
             context = dict()
 
+            addrmap = x.owning_addrmap.get_path_segment(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap_full = x.owning_addrmap.get_path(array_suffix='.{index:d}', empty_array_suffix='')
+
             context["i"] = i
             context["addrmap"] = addrmap
+            context["addrmap_full"] = addrmap_full
             context["reladdr"] = x.address_offset
             context["absaddr"] = x.absolute_address
 
@@ -173,15 +173,15 @@ class DesyListener(RDLListener):
 
     def gen_memnames(self, node):
         for i,x in self.gen_node_names(node, [MemNode], True, first_only=False):
-            if x.parent.is_array:
-                addrmap = f"{x.parent.inst_name}.{x.parent.current_idx}"
-            else:
-                addrmap = f"{x.parent.inst_name}.0"
 
             context = dict()
 
+            addrmap = x.owning_addrmap.get_path_segment(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap_full = x.owning_addrmap.get_path(array_suffix='.{index:d}', empty_array_suffix='')
+
             context["i"] = i
             context["addrmap"] = addrmap
+            context["addrmap_full"] = addrmap_full
             context["reladdr"] = x.address_offset
             context["absaddr"] = x.absolute_address
 
@@ -202,15 +202,15 @@ class DesyListener(RDLListener):
 
     def gen_extnames(self, node):
         for i,x in self.gen_node_names(node, [AddrmapNode, RegfileNode, RegNode], True, first_only=False):
-            if x.parent.is_array:
-                addrmap = f"{x.parent.inst_name}.{x.parent.current_idx}"
-            else:
-                addrmap = f"{x.parent.inst_name}.0"
 
             context = dict()
 
+            addrmap = x.parent.get_path_segment(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap_full = x.parent.get_path(array_suffix='.{index:d}', empty_array_suffix='')
+
             context["i"] = i
             context["addrmap"] = addrmap
+            context["addrmap_full"] = addrmap_full
             context["reladdr"] = x.address_offset
             context["absaddr"] = x.absolute_address
 

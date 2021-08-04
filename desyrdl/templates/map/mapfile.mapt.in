@@ -1,0 +1,8 @@
+{regnames:repeat:regnames:
+{{addrmap_full}}.{{reg.inst_name}} {{M}} {{reg.absolute_address}} {{reg.total_size}} {{desyrdl_access_channel}} {{regwidth}} 0 0 {{rw}}}
+
+{memnames:repeat:memnames:
+{{addrmap_full}}.{{mem.inst_name}} {{mementries}} {{mem.absolute_address}} {{addresses}} {{desyrdl_access_channel}} {{memwidth}} 0 0 RW}
+
+{extnames:repeat:extnames:
+{{addrmap_full}}.{{ext.inst_name}} {{total_words}} {{ext.absolute_address}} {{ext.size}} {{desyrdl_access_channel}} 32 0 0 RW}

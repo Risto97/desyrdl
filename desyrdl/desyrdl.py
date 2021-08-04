@@ -109,6 +109,7 @@ def main():
         for lib in Path(lib_dir / out_format).glob('*'):
             copy(lib, out_dir)
 
+        # attention: this will include hidden files, e.g. .my_tpl.vhd.swp
         tpl_files = Path(tpl_dir / out_format).glob('*')
 
         if out_format == 'vhdl':
