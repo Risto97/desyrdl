@@ -9,8 +9,8 @@ from systemrdl import RDLCompileError, RDLCompiler, RDLWalker  # RDLListener
 from systemrdl.node import (AddrmapNode, FieldNode, MemNode,  # AddressableNode
                             RegfileNode, RegNode, RootNode)
 
-from .DesyListener import MapfileListener, VhdlListener
-from .RdlFormatter import RdlFormatter
+from desyrdl.DesyListener import MapfileListener, VhdlListener
+from desyrdl.RdlFormatter import RdlFormatter
 
 
 def main():
