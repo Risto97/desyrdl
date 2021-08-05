@@ -40,11 +40,8 @@ entity test_hectare_top is
     pi_s_axi4 : in  t_axi4_m2s;
     po_s_axi4 : out t_axi4_s2m;
     -- external ports
-    pi_regs : in t_registers_test_hectare_in;
-    po_regs : out t_registers_test_hectare_out;
-
-    pi_mem : in t_memories_test_hectare_in;
-    po_mem : out t_memories_test_hectare_out
+    pi_addrmap : in t_addrmap_test_hectare_in;
+    po_addrmap : out t_addrmap_test_hectare_out
   );
 end test_hectare_top;
 
@@ -52,13 +49,13 @@ architecture arch of test_hectare_top is
   signal s_axi4_m2s : t_axi4_m2s;
   signal s_axi4_s2m : t_axi4_s2m;
 
-  signal regs_in : t_registers_test_hectare_in;
-  signal regs_out : t_registers_test_hectare_out;
+  signal addrmap_in : t_addrmap_test_hectare_in;   -- into register core
+  signal addrmap_out : t_addrmap_test_hectare_out; -- out of register core
 
-  signal mem_a_in : t_memories_test_hectare_in;
-  signal mem_a_out : t_memories_test_hectare_out;
-  signal mem_b_in : t_memories_test_hectare_in;
-  signal mem_b_out : t_memories_test_hectare_out;
+  signal mem_a_in : t_mem_test_hectare_in;
+  signal mem_a_out : t_mem_test_hectare_out;
+  signal mem_b_in : t_mem_test_hectare_in;
+  signal mem_b_out : t_mem_test_hectare_out;
 begin
 
   ins_top_reg_test_hectare : entity work.top_reg_test_hectare
@@ -69,11 +66,8 @@ begin
     pi_s_axi4     => pi_s_axi4,
     po_s_axi4     => po_s_axi4,
 
-    pi_logic_regs => regs_in,
-    po_logic_regs => regs_out,
-
-    pi_mem => mem_a_out,
-    po_mem => mem_a_in
+    pi_addrmap => addrmap_in,
+    po_addrmap => addrmap_out
   );
 
   -- needed?
