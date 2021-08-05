@@ -6,9 +6,7 @@ use ieee.numeric_std.all;
 use ieee.numeric_std_unsigned.all ;
 
 library desyrdl;
---use desyrdl.pkg_types.all;
-use desyrdl.pkg_axi.all;
---use desyrdl.pkg_reg_common.all;
+use desyrdl.common.all;
 use desyrdl.pkg_reg_test_hectare.all;
 
 library osvvm ;

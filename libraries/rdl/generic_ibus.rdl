@@ -1,0 +1,10 @@
+regfile generic_ibus #(longint unsigned SIZE, longint unsigned REALSIZE) {
+
+  // TODO find out how to tell DesyRDL not to generate any HDL from this
+
+  interface = "IBUS";
+
+  reg {
+    field {fieldwidth = 8*REALSIZE/SIZE;} data;
+  } generic_reg[SIZE] += 4; // make sure each element always takes four bytes
+};

@@ -1,0 +1,4 @@
+property interface { type = string; component = addrmap | regfile | reg | mem; };
+property dataformat {type = string; component = field; };
+property fracbits {type = longint unsigned; component = field; };
+property acc_channel {type = longint unsigned; component = addrmap; };

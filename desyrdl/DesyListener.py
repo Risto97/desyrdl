@@ -65,13 +65,13 @@ class DesyListener(RDLListener):
 
         # Only get the immediate children. Otherwise a higher-level AddrmapNode would
         # "see" the arrays of registers/memories below.
-        for x in self.gen_node_names(node, RegNode):
+        for x in self.gen_node_names(node, [RegNode], False):
             self.regnames.append(x)
-        for x in self.gen_node_names(node, MemNode, first_only=False):
+        for x in self.gen_node_names(node, [MemNode], True, first_only=False):
             self.memnames.append(x)
-        for x in self.gen_ext_names(node, first_only=False):
+        for x in self.gen_node_names(node, [AddrmapNode, RegfileNode, RegNode], True, first_only=False):
             self.extnames.append(x)
-        self.regcount += self.get_regcount(node, RegNode)
+        self.regcount += len([x for x in self.gen_node_names(node, [RegNode], False)])
 
         # what needs to be passed?
         # regtypes: list of RegNodes -> type_name only
@@ -97,49 +97,23 @@ class DesyListener(RDLListener):
         print(f"node.inst_name = {node.inst_name}")
         print(f"node.type_name = {node.type_name}")
 
-    # yields a tuple (i, node) for each downstream component
-    # (Addrmap or external Regfile)
-    def gen_ext_names(self, node, first_only=True):
-        i = 0
-        for child in node.children(unroll=True):
-            if isinstance(child, AddrmapNode) or (isinstance(child, RegfileNode) and child.external):
-                # if the child is an array, only take
-                # the first element, otherwise return
-                if child.is_array and first_only is True:
-                    if any(k != 0 for k in child.current_idx):
-                        continue
-                yield (i, child)
-                i += 1
+    # yields a tuple (i, node) for each child of node that matches a list of
+    # types and is either external or internal
+    def gen_node_names(self, node, types, external, first_only=True):
+        # filter children according to arguments; result is an iterable
+        def is_wanted_child(child):
+            return type(child) in types and child.external is external
+        children = filter(is_wanted_child, node.children(unroll=True))
 
-    # yields a tuple (i, node) for each child of node that matches type
-    def gen_node_names(self, node, type, first_only=True):
         i = 0
-        for child in node.children(unroll=True):
-            if isinstance(child, type):
-                # if the child is an array, only take
-                # the first element, otherwise return
-                if child.is_array and first_only is True:
-                    if any(k != 0 for k in child.current_idx):
-                        continue
-                yield (i, child)
-                i += 1
-
-    def get_regcount(self, node, type):
-        i = 0
-        for child in node.children(unroll=True):
-            # TODO exclude external registers
-            if isinstance(child, type):
-                # if the child is an array, get its dimensions from the
-                # first element
-                if child.is_array:
-                    if all(k == 0 for k in child.current_idx):
-                        p = 1
-                        for dim in child.array_dimensions:
-                            p *= dim
-                        i += p
-                else:
-                    i += 1
-        return i
+        for child in children:
+            # if the child is an array, only take
+            # the first element, otherwise return
+            if child.is_array and first_only is True:
+                if any(k != 0 for k in child.current_idx):
+                    continue
+            yield (i, child)
+            i += 1
 
 
 # Types, names and counts are needed. Clear after each exit_Addrmap
