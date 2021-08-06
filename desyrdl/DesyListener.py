@@ -191,6 +191,9 @@ class DesyListener(RDLListener):
             context["addresses"] = x.get_property("mementries") * 4
             context["aw"] = ceil(log2(x.get_property("mementries") * 4))
 
+            # virtual registers, e.g. for DMA regions
+            context["vregs"] = [x for x in self.gen_regnames(x)]
+
             context["desyrdl_access_channel"] = self.get_access_channel(x)
 
             # add all non-native explicitly set properties
