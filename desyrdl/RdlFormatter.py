@@ -13,13 +13,23 @@ class RdlFormatter(string.Formatter):
 
     def format_field(self, value, spec):
 
-        if spec == "upper":
+        # parse the custom template engine spec
+        (func,sep,args) = spec.partition(":")
+
+        if func == "upper":
             return value.upper()
 
-        if spec == "lower":
+        if func == "lower":
             return value.lower()
 
-        if spec.startswith("repeat"):
+        if func == "removeprefix":
+            # "args" is the prefix
+            if value.startswith(args):
+                return value[len(args):]
+            else:
+                return value
+
+        if func == "repeat":
             # Expects different types for value depending on what to repeat
             # alternatives:
             # - check isinstance(value, systemrdl.node.RegNode) etc
