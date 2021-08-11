@@ -96,7 +96,7 @@ begin
   blk_ext_ports : block
   begin
   --{extnames:repeat:extnames:
-    ins_{{i}}_{{ext.inst_name}} : entity work.axi4_to_{{interface}}
+    ins_{{i}}_{{ext.inst_name}} : entity work.axi4_to_{{desyrdl_interface}}
       port map (
         pi_clock => pi_clock,
         pi_reset => pi_reset,

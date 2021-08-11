@@ -53,6 +53,7 @@ class DesyListener(RDLListener):
             f_out.write(s_out)
 
     # types
+    # TODO might have to be cleared on enter_Addrmap
     def enter_Component(self, node):
         if isinstance(node, MemNode):
             if node.type_name not in self.memtypes:
@@ -91,6 +92,12 @@ class DesyListener(RDLListener):
                 n_memtypes=len(self.memtypes),
                 n_memnames=len(self.memnames),
                 n_extnames=len(self.extnames))
+
+        # add all non-native explicitly set properties
+        for p in node.list_properties(include_native=False):
+            assert not p in self.context
+            print(f"exit_Addrmap {node.inst_name}: Adding non-native property {p}")
+            self.context[p] = node.get_property(p)
 
         print(f"path_segment = {node.get_path_segment()}")
         print(f"node.inst_name = {node.inst_name}")
@@ -155,6 +162,13 @@ class DesyListener(RDLListener):
             context["base"] = base
             base = base+N*M
 
+            context["desyrdl_access_channel"] = self.get_access_channel(x)
+
+            # add all non-native explicitly set properties
+            for p in x.list_properties(include_native=False):
+                assert not p in context
+                context[p] = x.get_property(p)
+
             yield context
 
     def gen_memnames(self, node):
@@ -177,6 +191,13 @@ class DesyListener(RDLListener):
             context["addresses"] = x.get_property("mementries") * 4
             context["aw"] = ceil(log2(x.get_property("mementries") * 4))
 
+            context["desyrdl_access_channel"] = self.get_access_channel(x)
+
+            # add all non-native explicitly set properties
+            for p in x.list_properties(include_native=False):
+                assert not p in context
+                context[p] = x.get_property(p)
+
             yield context
 
     def gen_extnames(self, node):
@@ -197,8 +218,12 @@ class DesyListener(RDLListener):
             context["total_words"] = int(x.total_size/4)
             context["aw"] = ceil(log2(x.size))
 
-            context["interface"] = self.context_get_interface(node)
-            context["bar"]       = self.context_get_bar(node)
+            context["desyrdl_access_channel"] = self.get_access_channel(x)
+
+            # add all non-native explicitly set properties
+            for p in x.list_properties(include_native=False):
+                if not p in context:
+                    context[p] = x.get_property(p)
 
             yield context
 
@@ -209,6 +234,13 @@ class DesyListener(RDLListener):
             context["i"] = i
             context["regtype"] = x
             context["fields"] = [f for f in self.gen_fields(x)]
+
+            context["desyrdl_access_channel"] = self.get_access_channel(x)
+
+            # add all non-native explicitly set properties
+            for p in x.list_properties(include_native=False):
+                assert not p in context
+                context[p] = x.get_property(p)
 
             yield context
 
@@ -221,6 +253,13 @@ class DesyListener(RDLListener):
             context["memwidth"] = x.get_property("memwidth")
             context["addresses"] = x.get_property("mementries") * 4
             context["aw"] = ceil(log2(x.get_property("mementries") * 4))
+
+            context["desyrdl_access_channel"] = self.get_access_channel(x)
+
+            # add all non-native explicitly set properties
+            for p in x.list_properties(include_native=False):
+                assert not p in context
+                context[p] = x.get_property(p)
 
             yield context
 
@@ -241,6 +280,13 @@ class DesyListener(RDLListener):
             context["incrwidth"] = x.get_property("incrwidth") if x.get_property("incrwidth") is not None else 1
             context["name"] = x.type_name
 
+            context["desyrdl_access_channel"] = self.get_access_channel(x)
+
+            # add all non-native explicitly set properties
+            for p in node.list_properties(include_native=False):
+                assert not p in context
+                context[p] = node.get_property(p)
+
             yield context
 
     def get_ftype(self, node):
@@ -260,38 +306,24 @@ class DesyListener(RDLListener):
             print("error: can't make out the type of field for {}".format(node.get_path()))
             return "WIRE"
 
-    def context_get_bar(self, node):
+    def get_access_channel(self, node):
 
         # Starting point for finding the top node
-        if isinstance(node, AddrmapNode):
-            ancestor = node
-        else:
-            ancestor = node.parent
+        ancestor = node.owning_addrmap
 
-        # ancestor might be the top node already, so check for that
-        if not isinstance(ancestor.parent, RootNode):
-            while not isinstance(ancestor.parent.parent, RootNode):
-                ancestor = ancestor.parent
+        while not isinstance(ancestor.parent, RootNode):
+            ancestor = ancestor.parent
+        assert isinstance(ancestor.parent, RootNode)
 
         try:
-            bar = ancestor.get_property("BAR")
-            #print(f"{node.inst_name} gets BAR {bar} from {ancestor.inst_name}")
+            ch = ancestor.get_property("desyrdl_access_channel")
         except LookupError:
             # handle standalone modules in a temporary way
-            bar = 0
+            ch = 0
+            print(f"Couldn't find access channel, setting {ch}")
             pass
 
-        return bar
-
-    def context_get_interface(self, node):
-        try:
-            interface = node.get_property("interface")
-        except LookupError:
-            # handle standalone modules in a temporary way
-            interface = "NONE"
-            pass
-
-        return interface
+        return ch
 
 
 # Types, names and counts are needed. Clear after each exit_Addrmap
@@ -300,7 +332,9 @@ class VhdlListener(DesyListener):
     def exit_Addrmap(self, node):
         super().exit_Addrmap(node)
 
-        self.process_template(node)
+        # only generate something if the custom property is set
+        if node.get_property('desyrdl_generate_hdl'):
+            self.process_template(node)
 
         # Context must be cleared on addrmap boundaries
         self.init_context()

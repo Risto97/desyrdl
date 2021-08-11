@@ -1,0 +1,9 @@
+regfile generic_ibus #(longint unsigned SIZE) {
+
+  desyrdl_interface = "IBUS";
+
+  reg {
+    //field {fieldwidth = 8*REALSIZE/SIZE;} data;
+    field {fieldwidth = 32;} data;
+  } generic_reg[SIZE] += 4; // make sure each element always takes four bytes
+};

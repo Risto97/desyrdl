@@ -15,17 +15,26 @@ addrmap test_hectare {
     field {sw=r; hw=rw; } data[31:0];
   } iitoh;
 
+  reg {
+    field {
+      desc = "Some set point, maybe? A number that is set by the software." ;
+      sw = rw ;
+      hw = r ;
+      desyrdl_data_type = "signed16";
+    } hello[18] ;
+  } foo2 ;
+
   external mem {
     memwidth = 32;
     mementries = `C_COOLMEM_ENTRIES;
   } coolmem;
-  coolmem->interface = "DPM";
+  coolmem->desyrdl_interface = "DPM";
 
   external spi_ad9510 spi_ad9510_a @0x10000;
-  spi_ad9510_a->interface = "AXI4";
+  spi_ad9510_a->desyrdl_interface = "AXI4";
 
   // test_hectare.sv holds size and address information for downstream IBUS
   // modules
-  external generic_ibus #(.SIZE(`C_SIZE_LLRF_CTABLES), .REALSIZE(4*`C_SIZE_LLRF_CTABLES)) llrf_ctables @`C_ADDR_LLRF_CTABLES;
+  external generic_ibus #(.SIZE(`C_SIZE_LLRF_CTABLES)) llrf_ctables @`C_ADDR_LLRF_CTABLES;
 
 };
