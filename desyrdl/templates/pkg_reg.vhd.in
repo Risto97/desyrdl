@@ -7,7 +7,7 @@ use ieee.numeric_std.all;
 library desyrdl;
 use desyrdl.common.all;
 
-package pkg_reg_{context[node].type_name} is
+package pkg_reg_{node.type_name} is
 
   -----------------------------------------------
   -- per addrmap / module
@@ -17,58 +17,58 @@ package pkg_reg_{context[node].type_name} is
 
   -- must be calculated by register tool
   -- always add +1 for the dummy
-  constant C_REGTYPES  : integer := {context[n_regtypes]};
-  constant C_REGNAMES : integer := {context[n_regnames]};
-  constant C_REGCOUNT : integer := {context[n_regcount]};
-  constant C_MEMNAMES : integer := {context[n_memnames]};
+  constant C_REGTYPES  : integer := {n_regtypes};
+  constant C_REGNAMES : integer := {n_regnames};
+  constant C_REGCOUNT : integer := {n_regcount};
+  constant C_MEMNAMES : integer := {n_memnames};
   -- TODO C_MEMCOUNT
   constant C_MEM_AW : T_IntegerArray(C_MEMNAMES downto 0) := (
-    --{context:repeat:memnames:
+    --{memnames:repeat:memnames:
     {{i}} => {{aw}}, -- {{mem.inst_name}}}
     C_MEMNAMES => 0 -- dummy
   );
   constant C_MEM_START : T_IntegerArray(C_MEMNAMES downto 0) := (
-    --{context:repeat:memnames:
-    {{i}} => {{baraddr}}, -- {{mem.inst_name}}}
+    --{memnames:repeat:memnames:
+    {{i}} => {{mem.absolute_address}}, -- {{mem.inst_name}}}
     C_MEMNAMES => 0 -- dummy
   );
 
-  constant C_EXTNAMES : integer := {context[n_extnames]};
+  constant C_EXTNAMES : integer := {n_extnames};
   constant C_EXTCOUNT : integer := C_EXTNAMES;
   constant C_EXT_AW : T_IntegerArray(C_EXTNAMES downto 0) := (
-    --{context:repeat:extnames:
-    {{context[i]}} => {{context[aw]}}, -- {{context[ext].inst_name}}}
+    --{extnames:repeat:extnames:
+    {{i}} => {{aw}}, -- {{ext.inst_name}}}
     C_EXTNAMES => 0 -- dummy
   );
   constant C_EXT_START : T_IntegerArray(C_EXTNAMES downto 0) := (
-    --{context:repeat:extnames:
-    {{context[i]}} => {{context[baraddr]}}, -- {{context[ext].inst_name}}}
+    --{extnames:repeat:extnames:
+    {{i}} => {{ext.absolute_address}}, -- {{ext.inst_name}}}
     C_EXTNAMES => 0 -- dummy
   );
   -- size in bytes occupied in the address map
   constant C_EXT_SIZE : T_IntegerArray(C_EXTNAMES downto 0) := (
-    --{context:repeat:extnames:
-    {{context[i]}} => {{context[ext].size}}, -- {{context[ext].inst_name}}}
+    --{extnames:repeat:extnames:
+    {{i}} => {{ext.size}}, -- {{ext.inst_name}}}
     C_EXTNAMES => 0 -- dummy
   );
   -- interface type
   constant C_EXT_IF : t_if_type_array(C_EXTNAMES downto 0) := (
-    --{context:repeat:extnames:
-    {{context[i]}} => {{context[interface]}}, -- {{context[ext].inst_name}}}
+    --{extnames:repeat:extnames:
+    {{i}} => {{interface}}, -- {{ext.inst_name}}}
     C_EXTNAMES => NONE -- dummy
   );
 
-  --{context:repeat:regtypes:
+  --{regtypes:repeat:regtypes:
   constant C_{{regtype.type_name:upper}}_FIELDS : t_field_info_arr := (
     --{{fields:repeat:fields:
-    {{{{i}}}} => (ftype => {{{{field:ftype}}}}, len => {{{{field.width}}}}, upper => {{{{field.high}}}}, lower => {{{{field.low}}}}, hw_we => {{{{hw_we}}}}, sw_access => C_{{{{sw_access:upper}}}}, hw_access => C_{{{{hw_access:upper}}}},  def_val => std_logic_vector(to_unsigned({{{{reset}}}}, 32)), decrwidth => {{{{decrwidth}}}}, incrwidth => {{{{incrwidth}}}}), -- {{{{field.inst_name}}}} --}}
+    {{{{i}}}} => (ftype => {{{{ftype}}}}, len => {{{{field.width}}}}, upper => {{{{field.high}}}}, lower => {{{{field.low}}}}, hw_we => {{{{hw_we}}}}, sw_access => C_{{{{sw_access:upper}}}}, hw_access => C_{{{{hw_access:upper}}}},  def_val => std_logic_vector(to_unsigned({{{{reset}}}}, 32)), decrwidth => {{{{decrwidth}}}}, incrwidth => {{{{incrwidth}}}}), -- {{{{field.inst_name}}}} --}}
     others => C_FIELD_NONE
   );
   --}
 
   constant C_REGISTER_INFO : t_reg_info_array(0 to C_REGNAMES) := (
-    --{context:repeat:regnames:
-    {{i}} => (addr => {{baraddr}}, base => {{base}}, fields => C_{{reg.type_name:upper}}_FIELDS, N => {{N}}, M => {{M}}), --}
+    --{regnames:repeat:regnames:
+    {{i}} => (addr => {{reg.absolute_address}}, base => {{base}}, fields => C_{{reg.type_name:upper}}_FIELDS, N => {{N}}, M => {{M}}), --}
     others => C_REG_NONE
   );
 
@@ -80,7 +80,7 @@ package pkg_reg_{context[node].type_name} is
   -- that doesn't specify the field width before knowing the actual register
   -- properties. We want to avoid VHDL-2008 so for now each field of each
   -- register must have its own type.
-  --{context:repeat:regtypes:
+  --{regtypes:repeat:regtypes:
   -----------------------------------------------
   -- register type: {{regtype.type_name}}
   -----------------------------------------------
@@ -116,7 +116,7 @@ package pkg_reg_{context[node].type_name} is
 
   -- Memory types (to get variable address and data widths that don't have to
   -- show up in the module HDL code)
-  --{context:repeat:memtypes:
+  --{memtypes:repeat:memtypes:
   type t_mem_{{mem.type_name}}_in is record
     ena  : std_logic;
     wr   : std_logic;
@@ -127,29 +127,29 @@ package pkg_reg_{context[node].type_name} is
   --}
 
   -----------------------------------------------
-  -- module I/O types: {context[node].type_name}
+  -- module I/O types: {node.type_name}
   -----------------------------------------------
-  type t_addrmap_{context[node].type_name}_in is record
-    --{context:repeat:regnames:
+  type t_addrmap_{node.type_name}_in is record
+    --{regnames:repeat:regnames:
     {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_in(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
-    --{context:repeat:memnames:
+    --{memnames:repeat:memnames:
     {{mem.inst_name}} : t_mem_{{mem.type_name}}_out; --}
-    --{context:repeat:extnames:
-    {{context[ext].inst_name}} : t_{{context[interface]}}_s2m; --}
+    --{extnames:repeat:extnames:
+    {{ext.inst_name}} : t_{{interface}}_s2m; --}
     NONE : std_logic;
   end record;
 
-  type t_addrmap_{context[node].type_name}_out is record
-    --{context:repeat:regnames:
+  type t_addrmap_{node.type_name}_out is record
+    --{regnames:repeat:regnames:
     {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_out(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
-    --{context:repeat:memnames:
+    --{memnames:repeat:memnames:
     {{mem.inst_name}} : t_mem_{{mem.type_name}}_in; --}
-    --{context:repeat:extnames:
-    {{context[ext].inst_name}} : t_{{context[interface]}}_m2s; --}
+    --{extnames:repeat:extnames:
+    {{ext.inst_name}} : t_{{interface}}_m2s; --}
     NONE : std_logic;
   end record;
 
-  --{context:repeat:regtypes:
+  --{regtypes:repeat:regtypes:
   -----------------------------------------------
   -- register type functions: {{regtype.type_name}}
   -----------------------------------------------
@@ -164,7 +164,7 @@ package pkg_reg_{context[node].type_name} is
   -- top level component declaration
   -- must come after defining the interfaces
   -----------------------------------------------
-  component top_reg_{context[node].type_name} is
+  component top_reg_{node.type_name} is
     port (
       pi_clock : in std_logic;
       pi_reset : in std_logic;
@@ -174,17 +174,17 @@ package pkg_reg_{context[node].type_name} is
       po_s_axi4 : out t_axi4_s2m;
 
       -- logic
-      pi_addrmap : in t_addrmap_{context[node].type_name}_in;
-      po_addrmap : out t_addrmap_{context[node].type_name}_out
+      pi_addrmap : in t_addrmap_{node.type_name}_in;
+      po_addrmap : out t_addrmap_{node.type_name}_out
 
     );
-  end component top_reg_{context[node].type_name};
+  end component top_reg_{node.type_name};
 
-end package pkg_reg_{context[node].type_name};
+end package pkg_reg_{node.type_name};
 
-package body pkg_reg_{context[node].type_name} is
+package body pkg_reg_{node.type_name} is
 
-  --{context:repeat:regtypes:
+  --{regtypes:repeat:regtypes:
   -----------------------------------------------
   -- register type: {{regtype.type_name}}
   -----------------------------------------------

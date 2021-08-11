@@ -2,9 +2,10 @@
 # import string
 import sys
 from pathlib import Path  # get filenames
+from math import ceil, log2
 
 from systemrdl import RDLListener
-from systemrdl.node import AddrmapNode  # FieldNode ,AddressableNode
+from systemrdl.node import AddrmapNode, FieldNode # ,AddressableNode
 from systemrdl.node import MemNode, RegfileNode, RegNode, RootNode
 
 
@@ -33,7 +34,7 @@ class DesyListener(RDLListener):
         with self.tpl.open('r') as f_in:
             s_in = f_in.read()
 
-        s_out = self.formatter.format(s_in, context=self.context)
+        s_out = self.formatter.format(s_in, **self.context)
 
         suffix = "".join(self.tpl.suffixes)  # get the ".vhd.in"
 
@@ -63,26 +64,24 @@ class DesyListener(RDLListener):
 
     def exit_Addrmap(self, node):
 
-        # Only get the immediate children. Otherwise a higher-level AddrmapNode would
-        # "see" the arrays of registers/memories below.
-        for x in self.gen_node_names(node, [RegNode], False):
-            self.regnames.append(x)
-        for x in self.gen_node_names(node, [MemNode], True, first_only=False):
-            self.memnames.append(x)
-        for x in self.gen_node_names(node, [AddrmapNode, RegfileNode, RegNode], True, first_only=False):
-            self.extnames.append(x)
+        # Each address map adds to the list of addressable nodes. This is used
+        # for mapfile generation only - for HDL generation the list gets
+        # cleared after being used.
+
+        #self.regnames[len(self.regnames):] = [x for x in self.gen_regnames(node)]
+        #self.memnames[len(self.memnames):] = [x for x in self.gen_memnames(node)]
+        #self.extnames[len(self.extnames):] = [x for x in self.gen_extnames(node)]
+        # python is nice, use list.extend(iterable)
+        self.regnames.extend(self.gen_regnames(node))
+        self.memnames.extend(self.gen_memnames(node))
+        self.extnames.extend(self.gen_extnames(node))
+
         self.regcount += len([x for x in self.gen_node_names(node, [RegNode], False)])
 
-        # what needs to be passed?
-        # regtypes: list of RegNodes -> type_name only
-        # regnames: longer list of RegNodes -> all inst_names
-        # regcount: count of individual registers including those in arrays
-        # memtypes: list of MemNodes -> type_name only
-        # memnames: longer list of MemNodes -> all inst_names
         self.context = dict(
                 node=node,
-                regtypes=self.regtypes.values(),
-                memtypes=self.memtypes.values(),
+                regtypes=[x for x in self.gen_regtypes()],
+                memtypes=[x for x in self.gen_memtypes()],
                 regnames=self.regnames,
                 memnames=self.memnames,
                 extnames=self.extnames,
@@ -114,6 +113,185 @@ class DesyListener(RDLListener):
                     continue
             yield (i, child)
             i += 1
+
+    def gen_regnames(self, node):
+        # For indexing of flattened arrays in VHDL port definitions.
+        # Move to a dict() or improve VHDL code.
+        base = 0
+
+        for i,x in self.gen_node_names(node, [RegNode], False):
+            if x.parent.is_array:
+                addrmap = f"{x.parent.inst_name}.{x.parent.current_idx}"
+            else:
+                addrmap = f"{x.parent.inst_name}.0"
+
+            N = 1
+            M = 1
+            if x.is_array:
+                if len(x.array_dimensions) == 2:
+                    N = x.array_dimensions[0]
+                    M = x.array_dimensions[1]
+                else:
+                    N = 1
+                    if len(x.array_dimensions) == 1:
+                        M = x.array_dimensions[0]
+                    else:
+                        M = 1
+
+            context = dict()
+
+            context["i"] = i
+            context["addrmap"] = addrmap
+            context["reladdr"] = x.address_offset
+            context["absaddr"] = x.absolute_address
+
+            context["reg"] = x
+            context["N"] = N
+            context["M"] = M
+            context["rw"] = "RW" if x.has_sw_writable else "RO"
+            context["regwidth"] = x.get_property("regwidth")
+            # "base" is needed for indexing of flattened arrays in VHDL
+            # port definitions. Improve VHDL code to get rid of it.
+            context["base"] = base
+            base = base+N*M
+
+            yield context
+
+    def gen_memnames(self, node):
+        for i,x in self.gen_node_names(node, [MemNode], True, first_only=False):
+            if x.parent.is_array:
+                addrmap = f"{x.parent.inst_name}.{x.parent.current_idx}"
+            else:
+                addrmap = f"{x.parent.inst_name}.0"
+
+            context = dict()
+
+            context["i"] = i
+            context["addrmap"] = addrmap
+            context["reladdr"] = x.address_offset
+            context["absaddr"] = x.absolute_address
+
+            context["mem"] = x
+            context["mementries"] = x.get_property("mementries")
+            context["memwidth"] = x.get_property("memwidth")
+            context["addresses"] = x.get_property("mementries") * 4
+            context["aw"] = ceil(log2(x.get_property("mementries") * 4))
+
+            yield context
+
+    def gen_extnames(self, node):
+        for i,x in self.gen_node_names(node, [AddrmapNode, RegfileNode, RegNode], True, first_only=False):
+            if x.parent.is_array:
+                addrmap = f"{x.parent.inst_name}.{x.parent.current_idx}"
+            else:
+                addrmap = f"{x.parent.inst_name}.0"
+
+            context = dict()
+
+            context["i"] = i
+            context["addrmap"] = addrmap
+            context["reladdr"] = x.address_offset
+            context["absaddr"] = x.absolute_address
+
+            context["ext"] = x
+            context["total_words"] = int(x.total_size/4)
+            context["aw"] = ceil(log2(x.size))
+
+            context["interface"] = self.context_get_interface(node)
+            context["bar"]       = self.context_get_bar(node)
+
+            yield context
+
+    def gen_regtypes(self):
+        for i,x in enumerate(self.regtypes.values()):
+            context = dict()
+
+            context["i"] = i
+            context["regtype"] = x
+            context["fields"] = [f for f in self.gen_fields(x)]
+
+            yield context
+
+    def gen_memtypes(self):
+        for i,x in enumerate(self.memtypes.values()):
+            context = dict()
+
+            context["mem"] = x
+            context["mementries"] = x.get_property("mementries")
+            context["memwidth"] = x.get_property("memwidth")
+            context["addresses"] = x.get_property("mementries") * 4
+            context["aw"] = ceil(log2(x.get_property("mementries") * 4))
+
+            yield context
+
+    def gen_fields(self, node):
+        for i,x in enumerate(node.fields()):
+
+            context = dict()
+
+            context["i"] = i
+            context["regtype"] = x.parent
+            context["field"] = x
+            context["ftype"] = self.get_ftype(x)
+            context["hw_we"] = x.get_property("we")
+            context["sw_access"] = x.get_property("sw").name
+            context["hw_access"] = x.get_property("hw").name
+            context["reset"] = 0 if x.get_property("reset") is None else x.get_property("reset")
+            context["decrwidth"] = x.get_property("decrwidth") if x.get_property("decrwidth") is not None else 1
+            context["incrwidth"] = x.get_property("incrwidth") if x.get_property("incrwidth") is not None else 1
+            context["name"] = x.type_name
+
+            yield context
+
+    def get_ftype(self, node):
+        # Expects FieldNode type
+        assert isinstance(node, FieldNode)
+
+        if node.get_property("counter"):
+            return "COUNTER"
+        elif node.get_property("intr"):
+            return "INTERRUPT"
+        elif node.implements_storage:
+            return "STORAGE"
+        elif not node.is_virtual:
+            return "WIRE"
+        else:
+            # error (TODO: handle as such)
+            print("error: can't make out the type of field for {}".format(node.get_path()))
+            return "WIRE"
+
+    def context_get_bar(self, node):
+
+        # Starting point for finding the top node
+        if isinstance(node, AddrmapNode):
+            ancestor = node
+        else:
+            ancestor = node.parent
+
+        # ancestor might be the top node already, so check for that
+        if not isinstance(ancestor.parent, RootNode):
+            while not isinstance(ancestor.parent.parent, RootNode):
+                ancestor = ancestor.parent
+
+        try:
+            bar = ancestor.get_property("BAR")
+            #print(f"{node.inst_name} gets BAR {bar} from {ancestor.inst_name}")
+        except LookupError:
+            # handle standalone modules in a temporary way
+            bar = 0
+            pass
+
+        return bar
+
+    def context_get_interface(self, node):
+        try:
+            interface = node.get_property("interface")
+        except LookupError:
+            # handle standalone modules in a temporary way
+            interface = "NONE"
+            pass
+
+        return interface
 
 
 # Types, names and counts are needed. Clear after each exit_Addrmap

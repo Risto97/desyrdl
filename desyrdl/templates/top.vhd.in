@@ -6,9 +6,9 @@ use ieee.numeric_std.all;
 
 library work;
 use work.common.all;
-use work.pkg_reg_{context[node].type_name}.all;
+use work.pkg_reg_{node.type_name}.all;
 
-entity top_reg_{context[node].type_name} is
+entity top_reg_{node.type_name} is
   port (
     pi_clock           : in std_logic;
     pi_reset         : in std_logic;
@@ -18,13 +18,13 @@ entity top_reg_{context[node].type_name} is
     po_s_axi4 : out t_axi4_s2m;
 
     -- logic
-    pi_addrmap : in t_addrmap_{context[node].type_name}_in;
-    po_addrmap : out t_addrmap_{context[node].type_name}_out
+    pi_addrmap : in t_addrmap_{node.type_name}_in;
+    po_addrmap : out t_addrmap_{node.type_name}_out
 
   );
-end entity top_reg_{context[node].type_name};
+end entity top_reg_{node.type_name};
 
-architecture arch of top_reg_{context[node].type_name} is
+architecture arch of top_reg_{node.type_name} is
   signal adapter_stb : std_logic_vector(C_REGCOUNT-1 downto 0);
   signal adapter_we  : std_logic;
   signal adapter_err : std_logic;
@@ -92,22 +92,20 @@ begin
              S_AXI_RID     => po_s_axi4.rid
            );
 
-  -- external interfaces (if present) {context:ifgtzero:n_extnames:
   -- downstream interface assignments
   blk_ext_ports : block
   begin
-  --{{context:repeat:extnames:
-    ins_{{{{context[i]}}}}_{{{{context[ext].inst_name}}}} : entity work.axi4_to_{{{{context[interface]}}}}
+  --{extnames:repeat:extnames:
+    ins_{{i}}_{{ext.inst_name}} : entity work.axi4_to_{{interface}}
       port map (
         pi_clock => pi_clock,
         pi_reset => pi_reset,
-        pi_adapter_m2s => adapter_to_ext({{{{context[i]}}}}),
-        po_adapter_s2m => adapter_from_ext({{{{context[i]}}}}),
-        po_ext_m2s => po_addrmap.{{{{context[ext].inst_name}}}},
-        pi_ext_s2m => pi_addrmap.{{{{context[ext].inst_name}}}}
-      ); --}}
+        pi_adapter_m2s => adapter_to_ext({{i}}),
+        po_adapter_s2m => adapter_from_ext({{i}}),
+        po_ext_m2s => po_addrmap.{{ext.inst_name}},
+        pi_ext_s2m => pi_addrmap.{{ext.inst_name}}
+      ); --}
   end block;
-  --}
 
   po_s_axi4.aclk <= pi_clock;
   po_s_axi4.rlast <= '1';
@@ -118,7 +116,7 @@ begin
   -- rely on separate instances for now.
   blk_mem_ports : block
   begin
-  --{context:repeat:memnames:
+  --{memnames:repeat:memnames:
     po_addrmap.{{mem.inst_name}}.ena  <= adapter_to_dpm({{i}}).ena;
     po_addrmap.{{mem.inst_name}}.wr   <= adapter_to_dpm({{i}}).wr;
     po_addrmap.{{mem.inst_name}}.addr <= adapter_to_dpm({{i}}).addr({{aw}}-1 downto 0);
@@ -126,7 +124,7 @@ begin
     adapter_from_dpm({{i}})({{memwidth}}-1 downto 0) <= pi_addrmap.{{mem.inst_name}}; --}
   end block;
 
-  --{context:repeat:regnames:
+  --{regnames:repeat:regnames:
   -- regname {{reg.inst_name}} regtype {{reg.type_name}}
   blk_{{i}}_{{reg.inst_name}} : block
     constant l_r : integer := {{i}};

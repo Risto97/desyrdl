@@ -1,9 +1,9 @@
 @MAPFILE_REVISION 9999
-{context:repeat:regnames:
-{{addrmap}}.{{reg.inst_name}} {{M}} {{baraddr}} {{reg.total_size}} {{bar}} {{regwidth}} 0 0 {{rw}}}
+{regnames:repeat:regnames:
+{{addrmap}}.{{reg.inst_name}} {{M}} {{reg.absolute_address}} {{reg.total_size}} 1 {{regwidth}} 0 0 {{rw}}}
 
-{context:repeat:memnames:
-{{addrmap}}.{{mem.inst_name}} {{mementries}} {{baraddr}} {{addresses}} {{bar}} {{memwidth}} 0 0 RW}
+{memnames:repeat:memnames:
+{{addrmap}}.{{mem.inst_name}} {{mementries}} {{mem.absolute_address}} {{addresses}} {{bar}} {{memwidth}} 0 0 RW}
 
-{context:repeat:extnames:
-{{context[addrmap]}}.{{context[ext].inst_name}} {{context[total_words]}} {{context[baraddr]}} {{context[ext].size}} {{context[bar]}} 32 0 0 RW}
+{extnames:repeat:extnames:
+{{addrmap}}.{{ext.inst_name}} {{total_words}} {{ext.absolute_address}} {{ext.size}} 1 32 0 0 RW}
