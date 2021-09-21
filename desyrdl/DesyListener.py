@@ -1,12 +1,12 @@
 
 # import string
-import sys
-from pathlib import Path  # get filenames
+# import sys
 from math import ceil, log2
+from pathlib import Path  # get filenames
 
 from systemrdl import RDLListener
-from systemrdl.node import AddrmapNode, FieldNode # ,AddressableNode
-from systemrdl.node import MemNode, RegfileNode, RegNode, RootNode
+from systemrdl.node import (AddrmapNode, FieldNode,  # AddressableNode,
+                            MemNode, RegfileNode, RegNode, RootNode)
 
 
 class DesyListener(RDLListener):
@@ -335,8 +335,9 @@ class VhdlListener(DesyListener):
     def exit_Addrmap(self, node):
         super().exit_Addrmap(node)
 
-        # only generate something if the custom property is set
-        if node.get_property('desyrdl_generate_hdl'):
+        # generate if no property set or is set to true
+        if node.get_property('desyrdl_generate_hdl') is None or \
+           node.get_property('desyrdl_generate_hdl') is True:
             self.process_template(node)
 
         # Context must be cleared on addrmap boundaries
