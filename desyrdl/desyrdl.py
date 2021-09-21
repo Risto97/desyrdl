@@ -66,12 +66,11 @@ def main():
     lib_dir = Path(__file__).parent.resolve() / "./libraries"
     print('INFO: Taking common libraries from ' + str(lib_dir))
 
-
     out_dir = Path(args.out_dir).resolve()
     out_dir.mkdir(exist_ok=True)
 
     rdlfiles = list()
-    rdlfiles.extend(Path(lib_dir / "rdl").glob("*.rdl"))
+    rdlfiles.extend(sorted(Path(lib_dir / "rdl").glob("*.rdl")))
     rdlfiles.extend(args.input_files)
 
     # ----------------------------------
