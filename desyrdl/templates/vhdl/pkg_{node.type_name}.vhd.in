@@ -7,17 +7,16 @@ use ieee.numeric_std.all;
 library desyrdl;
 use desyrdl.common.all;
 
-package pkg_reg_{node.type_name} is
+package pkg_{node.type_name} is
 
   -----------------------------------------------
   -- per addrmap / module
   -----------------------------------------------
-
   constant C_ADDR_W : integer := 32;
 
   -- must be calculated by register tool
   -- always add +1 for the dummy
-  constant C_REGTYPES  : integer := {n_regtypes};
+  constant C_REGTYPES : integer := {n_regtypes};
   constant C_REGNAMES : integer := {n_regnames};
   constant C_REGCOUNT : integer := {n_regcount};
   constant C_MEMNAMES : integer := {n_memnames};
@@ -88,12 +87,12 @@ package pkg_reg_{node.type_name} is
   --{{fields:repeat:fields:
   type t_field_signals_{{{{regtype.type_name}}}}_{{{{field.type_name}}}}_in is record
     data : std_logic_vector(C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).len-1 downto 0);
-    we : std_logic;
+    we   : std_logic;
     incr : std_logic;
     decr : std_logic;
   end record;
   type t_field_signals_{{{{regtype.type_name}}}}_{{{{field.type_name}}}}_out is record
-    data : std_logic_vector(C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).len-1 downto 0);
+    data  : std_logic_vector(C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).len-1 downto 0);
     swacc : std_logic;
     swmod : std_logic;
   end record; --}}
@@ -164,7 +163,7 @@ package pkg_reg_{node.type_name} is
   -- top level component declaration
   -- must come after defining the interfaces
   -----------------------------------------------
-  component top_reg_{node.type_name} is
+  component {node.type_name} is
     port (
       pi_clock : in std_logic;
       pi_reset : in std_logic;
@@ -178,11 +177,11 @@ package pkg_reg_{node.type_name} is
       po_addrmap : out t_addrmap_{node.type_name}_out
 
     );
-  end component top_reg_{node.type_name};
+  end component {node.type_name};
 
-end package pkg_reg_{node.type_name};
+end package pkg_{node.type_name};
 
-package body pkg_reg_{node.type_name} is
+package body pkg_{node.type_name} is
 
   --{regtypes:repeat:regtypes:
   -----------------------------------------------

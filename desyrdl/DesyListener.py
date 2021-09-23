@@ -36,10 +36,14 @@ class DesyListener(RDLListener):
 
         s_out = self.formatter.format(s_in, **self.context)
 
-        suffix = "".join(self.tpl.suffixes)  # get the ".vhd.in"
+        # get .in suffix and remove it, process only .in files
+        suffix = "".join(self.tpl.suffix)
+        if suffix != ".in":
+            return
 
-        # FIXME not so clean
-        out_file = "".join([str(self.tpl.name).replace(suffix, ""), "_", node.type_name, suffix[:-3]])
+        out_file = str(self.tpl.name).replace(suffix, "")
+        out_file = self.formatter.format(out_file, **self.context)
+
         out_path = Path(self.out_dir, out_file)
         print('Output file: ' + str(out_path))
         if out_path.is_file():

@@ -4,27 +4,27 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-library work;
-use work.common.all;
-use work.pkg_reg_{node.type_name}.all;
+library desyrdl;
+use desyrdl.common.all;
+use desyrdl.pkg_{node.type_name}.all;
 
-entity top_reg_{node.type_name} is
+entity {node.type_name} is
   port (
-    pi_clock           : in std_logic;
-    pi_reset         : in std_logic;
+    pi_clock : in std_logic;
+    pi_reset : in std_logic;
 
     -- AXI4
     pi_s_axi4 : in  t_axi4_m2s;
     po_s_axi4 : out t_axi4_s2m;
 
     -- logic
-    pi_addrmap : in t_addrmap_{node.type_name}_in;
+    pi_addrmap : in  t_addrmap_{node.type_name}_in;
     po_addrmap : out t_addrmap_{node.type_name}_out
 
   );
-end entity top_reg_{node.type_name};
+end entity {node.type_name};
 
-architecture arch of top_reg_{node.type_name} is
+architecture arch of {node.type_name} is
   signal adapter_stb : std_logic_vector(C_REGCOUNT-1 downto 0);
   signal adapter_we  : std_logic;
   signal adapter_err : std_logic;
@@ -38,7 +38,7 @@ architecture arch of top_reg_{node.type_name} is
   signal adapter_to_ext : t_axi4_m2s_array(C_EXTCOUNT downto 0);
 
 begin
-  ins_adapter: entity work.adapter_axi4
+  ins_adapter: entity desyrdl.adapter_axi4
   generic map (
                 G_ADDR_W     => C_ADDR_W,
                 G_REGISTER_INFO => C_REGISTER_INFO,
