@@ -162,11 +162,11 @@ begin
                    pi_reset => pi_reset,
 
                    -- to/from adapter
-                   pi_adapter_stb  => adapter_stb(l_reg_info.base+i*l_reg_info.M+j),
+                   pi_adapter_stb  => adapter_stb(l_reg_info.internal_offset+i*l_reg_info.M+j),
                    pi_adapter_we   => adapter_we,
                    po_adapter_err  => adapter_err,
                    pi_adapter_data => adapter_wdata,
-                   po_adapter_data => adapter_rdata(l_reg_info.base+i*l_reg_info.M+j),
+                   po_adapter_data => adapter_rdata(l_reg_info.internal_offset+i*l_reg_info.M+j),
 
                    -- to/from our IP
                    pi_logic_incr => l_reg_incr,

@@ -67,7 +67,7 @@ package pkg_{node.type_name} is
 
   constant C_REGISTER_INFO : t_reg_info_array(0 to C_REGNAMES) := (
     --{regnames:repeat:regnames:
-    {{i}} => (addr => {{reg.absolute_address}}, base => {{base}}, fields => C_{{reg.type_name:upper}}_FIELDS, N => {{N}}, M => {{M}}), --}
+    {{i}} => (addr => {{reg.absolute_address}}, fields => C_{{reg.type_name:upper}}_FIELDS, N => {{N}}, M => {{M}}, internal_offset => {{internal_offset}}), --}
     others => C_REG_NONE
   );
 

@@ -234,11 +234,11 @@ package common is
   constant C_FIELD_NONE : t_field_info := (WIRE, 0, 0, 0, false, C_NA, C_NA, (others => '0'), 0, 0);
 
   type t_reg_info is record
-    addr    : integer;
-    base    : integer;
-    fields  : t_field_info_arr;
-    N       : positive;
-    M       : positive;
+    addr            : integer;
+    internal_offset : integer;
+    fields          : t_field_info_arr;
+    N               : positive;
+    M               : positive;
   end record;
   constant C_REG_NONE : t_reg_info := (0, 0, (others => C_FIELD_NONE), 1, 1);
 

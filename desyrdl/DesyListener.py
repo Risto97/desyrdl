@@ -128,7 +128,7 @@ class DesyListener(RDLListener):
     def gen_regnames(self, node):
         # For indexing of flattened arrays in VHDL port definitions.
         # Move to a dict() or improve VHDL code.
-        base = 0
+        internal_offset = 0
 
         for i,x in self.gen_node_names(node, [RegNode], False):
 
@@ -161,10 +161,10 @@ class DesyListener(RDLListener):
             context["M"] = M
             context["rw"] = "RW" if x.has_sw_writable else "RO"
             context["regwidth"] = x.get_property("regwidth")
-            # "base" is needed for indexing of flattened arrays in VHDL
+            # "internal_offset" is needed for indexing of flattened arrays in VHDL
             # port definitions. Improve VHDL code to get rid of it.
-            context["base"] = base
-            base = base+N*M
+            context["internal_offset"] = internal_offset
+            internal_offset = internal_offset+N*M
 
             context["desyrdl_access_channel"] = self.get_access_channel(x)
 

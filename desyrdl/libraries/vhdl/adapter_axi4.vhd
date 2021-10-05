@@ -301,7 +301,7 @@ begin
         for k in 0 to G_REGISTER_INFO(i).M-1 loop
           if raddr_q_int = G_REGISTER_INFO(i).addr+4*(j*G_REGISTER_INFO(i).M+k) then
             rtarget <= REG;
-            reg_rsel <= G_REGISTER_INFO(i).base+j*G_REGISTER_INFO(i).M+k;
+            reg_rsel <= G_REGISTER_INFO(i).internal_offset+j*G_REGISTER_INFO(i).M+k;
           end if;
         end loop;
       end loop;
@@ -537,7 +537,7 @@ begin
         for k in 0 to G_REGISTER_INFO(i).M-1 loop
           if waddr_q_int = G_REGISTER_INFO(i).addr+4*(j*G_REGISTER_INFO(i).M+k) then
             wtarget <= REG;
-            reg_wsel <= G_REGISTER_INFO(i).base+j*G_REGISTER_INFO(i).M+k;
+            reg_wsel <= G_REGISTER_INFO(i).internal_offset+j*G_REGISTER_INFO(i).M+k;
           end if;
         end loop;
       end loop;
