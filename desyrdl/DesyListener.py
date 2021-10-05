@@ -11,12 +11,14 @@ from systemrdl.node import (AddrmapNode, FieldNode,  # AddressableNode,
 
 class DesyListener(RDLListener):
 
-    def __init__(self, formatter, tpl, out_dir):
-        assert isinstance(tpl, Path)
+    def __init__(self, formatter, templates, out_dir):
+        for t in templates:
+            assert isinstance(t, Path)
         assert isinstance(out_dir, Path)
 
-        self.tpl = tpl
+        self.templates = templates
         self.out_dir = out_dir
+        self.generated_files = list()
 
         self.formatter = formatter
 
@@ -30,31 +32,31 @@ class DesyListener(RDLListener):
         self.memtypes = dict()
         self.regcount = 0
 
-    def process_template(self, node):
-        with self.tpl.open('r') as f_in:
-            s_in = f_in.read()
+    def process_templates(self, node):
+        for tpl in self.templates:
+            with tpl.open('r') as f_in:
+                s_in = f_in.read()
 
-        s_out = self.formatter.format(s_in, **self.context)
+            s_out = self.formatter.format(s_in, **self.context)
 
-        # get .in suffix and remove it, process only .in files
-        suffix = "".join(self.tpl.suffix)
-        if suffix != ".in":
-            return
+            # get .in suffix and remove it, process only .in files
+            suffix = "".join(tpl.suffix)
+            if suffix != ".in":
+                continue
 
-        out_file = str(self.tpl.name).replace(suffix, "")
-        out_file = self.formatter.format(out_file, **self.context)
+            out_file = str(tpl.name).replace(suffix, "")
+            out_file = self.formatter.format(out_file, **self.context)
+            out_path = Path(self.out_dir, out_file)
+            self.generated_files.append(out_path)
+            if out_path.is_file():
+                # two possible reasons:
+                # (1) old output from previous run
+                # (2) this is another AddrmapNode instance of the same type
+                # For now we just overwrite existing files
+                print("File exists, overwriting: {}".format(out_path))
 
-        out_path = Path(self.out_dir, out_file)
-        print('Output file: ' + str(out_path))
-        if out_path.is_file():
-            # two possible reasons:
-            # (1) old output from previous run
-            # (2) this is another AddrmapNode instance of the same type
-            # For now we just overwrite existing files
-            print("File exists, overwriting: {}".format(out_path))
-
-        with out_path.open('w') as f_out:
-            f_out.write(s_out)
+            with out_path.open('w') as f_out:
+                f_out.write(s_out)
 
     # types
     # TODO might have to be cleared on enter_Addrmap
@@ -332,6 +334,9 @@ class DesyListener(RDLListener):
 
         return ch
 
+    def get_generated_files(self):
+        return self.generated_files
+
 
 # Types, names and counts are needed. Clear after each exit_Addrmap
 class VhdlListener(DesyListener):
@@ -342,7 +347,7 @@ class VhdlListener(DesyListener):
         # generate if no property set or is set to true
         if node.get_property('desyrdl_generate_hdl') is None or \
            node.get_property('desyrdl_generate_hdl') is True:
-            self.process_template(node)
+            self.process_templates(node)
 
         # Context must be cleared on addrmap boundaries
         self.init_context()
@@ -356,4 +361,4 @@ class MapfileListener(DesyListener):
 
         # only handle the top Addrmap, otherwise do nothing
         if isinstance(node.parent, RootNode):
-            self.process_template(node)
+            self.process_templates(node)

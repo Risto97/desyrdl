@@ -109,35 +109,35 @@ def main():
             copy(lib, out_dir)
 
         # attention: this will include hidden files, e.g. .my_tpl.vhd.swp
-        tpl_files = Path(tpl_dir / out_format).glob('*')
+        tpl_files = [fname for fname in Path(tpl_dir / out_format).glob('*')]
 
         if out_format == 'vhdl':
             # Generate from VHDL templates
             print('======================')
             print('Generating VHDL files')
             print('======================')
-            for tpl in tpl_files:
-                listener = VhdlListener(vf, tpl, out_dir)
-                tpl_walker = RDLWalker(unroll=True)
-                tpl_walker.walk(top_node, listener)
+            listener = VhdlListener(vf, tpl_files, out_dir)
+            tpl_walker = RDLWalker(unroll=True)
+            tpl_walker.walk(top_node, listener)
+            print('Generated VHDL files:')
+            for f in listener.get_generated_files():
+                print(f'{f!s}')
         elif out_format == 'map':
             # Generate mapfile from template
             print('======================')
             print('Generating map files')
             print('======================')
-            for tpl in tpl_files:
-                listener = MapfileListener(vf, tpl, out_dir)
-                tpl_walker = RDLWalker(unroll=True)
-                tpl_walker.walk(top_node, listener)
+            listener = MapfileListener(vf, tpl_files, out_dir)
+            tpl_walker = RDLWalker(unroll=True)
+            tpl_walker.walk(top_node, listener)
         elif out_format == 'adoc':
             # Generate register descriptions from template
             print('======================')
             print('Generating AsciiDoc file')
             print('======================')
-            for tpl in tpl_files:
-                listener = MapfileListener(vf, tpl, out_dir)
-                tpl_walker = RDLWalker(unroll=True)
-                tpl_walker.walk(top_node, listener)
+            listener = MapfileListener(vf, tpl_files, out_dir)
+            tpl_walker = RDLWalker(unroll=True)
+            tpl_walker.walk(top_node, listener)
 
     # argparse takes care about it
     # else:
