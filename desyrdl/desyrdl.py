@@ -9,8 +9,8 @@ from systemrdl import RDLCompileError, RDLCompiler, RDLWalker  # RDLListener
 from systemrdl.node import (AddrmapNode, FieldNode, MemNode,  # AddressableNode
                             RegfileNode, RegNode, RootNode)
 
-from .DesyListener import MapfileListener, VhdlListener
-from .RdlFormatter import RdlFormatter
+from desyrdl.DesyListener import MapfileListener, VhdlListener
+from desyrdl.RdlFormatter import RdlFormatter
 
 
 def main():
@@ -61,15 +61,18 @@ def main():
         tpl_dir = Path(args.tpl_dir).resolve()
         print('INFO: Using custom templates directory ' + str(tpl_dir))
 
-    # location of libraries that are provided per output format
-    lib_dir = Path(__file__).parent.parent.resolve() / "./libraries"
+    # location of libraries that are provided for SystemRDL and each output
+    # format
+    lib_dir = Path(__file__).parent.resolve() / "./libraries"
     print('INFO: Taking common libraries from ' + str(lib_dir))
 
 
     out_dir = Path(args.out_dir).resolve()
     out_dir.mkdir(exist_ok=True)
 
-    rdlfiles = args.input_files
+    rdlfiles = list()
+    rdlfiles.extend(Path(lib_dir / "rdl").glob("*.rdl"))
+    rdlfiles.extend(args.input_files)
 
     # ----------------------------------
     # Create an instance of the compiler
@@ -106,33 +109,35 @@ def main():
         for lib in Path(lib_dir / out_format).glob('*'):
             copy(lib, out_dir)
 
+        tpl_files = Path(tpl_dir / out_format).glob('*')
+
         if out_format == 'vhdl':
             # Generate from VHDL templates
             print('======================')
             print('Generating VHDL files')
             print('======================')
-            for tpl in tpl_dir.glob('*.vhd.in'):
+            for tpl in tpl_files:
                 listener = VhdlListener(vf, tpl, out_dir)
                 tpl_walker = RDLWalker(unroll=True)
                 tpl_walker.walk(top_node, listener)
         elif out_format == 'map':
             # Generate mapfile from template
             print('======================')
-            print('Generating map file')
+            print('Generating map files')
             print('======================')
-            tpl = tpl_dir / "mapfile.mapp.in"
-            listener = MapfileListener(vf, tpl, out_dir)
-            tpl_walker = RDLWalker(unroll=True)
-            tpl_walker.walk(top_node, listener)
+            for tpl in tpl_files:
+                listener = MapfileListener(vf, tpl, out_dir)
+                tpl_walker = RDLWalker(unroll=True)
+                tpl_walker.walk(top_node, listener)
         elif out_format == 'adoc':
             # Generate register descriptions from template
             print('======================')
             print('Generating AsciiDoc file')
             print('======================')
-            tpl = tpl_dir / "registers.adoc.in"
-            listener = MapfileListener(vf, tpl, out_dir)
-            tpl_walker = RDLWalker(unroll=True)
-            tpl_walker.walk(top_node, listener)
+            for tpl in tpl_files:
+                listener = MapfileListener(vf, tpl, out_dir)
+                tpl_walker = RDLWalker(unroll=True)
+                tpl_walker.walk(top_node, listener)
 
     # argparse takes care about it
     # else:
