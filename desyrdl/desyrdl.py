@@ -109,14 +109,29 @@ def main():
         fname_out_list = Path(out_dir / f'gen_files_{out_format}.txt')
 
         # try getting an ordered list of templates to use
+        tpl_files = []
         fname_in_list = Path(tpl_dir / out_format / 'include.txt')
         try:
             with fname_in_list.open('r') as f_in:
-                tpl_files = [Path(tpl_dir / out_format / line.strip('\n')) for line in f_in]
+                # - Ignore lines starting with a '#'
+                # - Separator is a space (' ')
+                # - Two elements per line: "template_file outfile_template_string"
+                for line in f_in:
+                    if line[0] == '#':
+                        continue
+                    (tpl_in, tpl_tplstr) = line.strip('\n').split(' ')
+                    # add a tuple (template, template string)
+                    tpl_files.append((Path(tpl_dir / out_format / tpl_in), tpl_tplstr))
         except FileNotFoundError:
             # attention: this will include hidden files, e.g. .my_tpl.vhd.swp
             print('Using glob to find templates')
-            tpl_files = [fname for fname in Path(tpl_dir / out_format).glob('*')]
+            tpl_in = [fname for fname in Path(tpl_dir / out_format).glob('*')]
+            for fname in tpl_in:
+                tpl_name = ''.join([fname.name.partition('.')[0], '_', '{node.type_name}'])
+                tpl_suffixes = ''.join(fname.suffixes[:-1]) # just leave out the ".in"
+                tpl_tplstr = ''.join([tpl_name, tpl_suffixes])
+                # add a tuple (template, template string)
+                tpl_files.append((Path(tpl_dir / out_format / fname), tpl_tplstr))
 
         if out_format == 'vhdl':
             # Generate from VHDL templates

@@ -11,8 +11,11 @@ from systemrdl.node import (AddrmapNode, FieldNode,  # AddressableNode,
 
 class DesyListener(RDLListener):
 
+    # formatter: RdlFormatter instance
+    # templates: array of tuples (tpl_file, tpl_tplstr)
+    # out_dir: path where to put output files
     def __init__(self, formatter, templates, out_dir):
-        for t in templates:
+        for t,tplstr in templates:
             assert isinstance(t, Path)
         assert isinstance(out_dir, Path)
 
@@ -33,7 +36,7 @@ class DesyListener(RDLListener):
         self.regcount = 0
 
     def process_templates(self, node):
-        for tpl in self.templates:
+        for tpl,tplstr in self.templates:
             with tpl.open('r') as f_in:
                 s_in = f_in.read()
 
@@ -44,11 +47,8 @@ class DesyListener(RDLListener):
             if suffix != ".in":
                 continue
 
-            out_name = ''.join([tpl.name.partition('.')[0], '_', node.type_name])
-            out_suffixes = ''.join(tpl.suffixes[:-1]) # just leave out the ".in"
-            out_file = ''.join([out_name, out_suffixes])
+            out_file = self.formatter.format(tplstr, **self.context)
             out_path = Path(self.out_dir / out_file)
-            #out_file = self.formatter.format(out_file, **self.context)
             if out_path.is_file():
                 # two possible reasons:
                 # (1) old output from previous run
