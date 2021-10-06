@@ -104,12 +104,19 @@ def main():
     # ----------------------------------
     # select format-action dependently on for type, iterate over the list
     for out_format in args.out_format:
-        # copy all common files of the selected format into the out folder
-        for lib in Path(lib_dir / out_format).glob('*'):
-            copy(lib, out_dir)
+        # target file where to list all output files, either copied from
+        # libraries or generated
+        fname_out_list = Path(out_dir / f'gen_files_{out_format}.txt')
 
-        # attention: this will include hidden files, e.g. .my_tpl.vhd.swp
-        tpl_files = [fname for fname in Path(tpl_dir / out_format).glob('*')]
+        # try getting an ordered list of templates to use
+        fname_in_list = Path(tpl_dir / out_format / 'include.txt')
+        try:
+            with fname_in_list.open('r') as f_in:
+                tpl_files = [Path(tpl_dir / out_format / line.strip('\n')) for line in f_in]
+        except FileNotFoundError:
+            # attention: this will include hidden files, e.g. .my_tpl.vhd.swp
+            print('Using glob to find templates')
+            tpl_files = [fname for fname in Path(tpl_dir / out_format).glob('*')]
 
         if out_format == 'vhdl':
             # Generate from VHDL templates
@@ -119,9 +126,9 @@ def main():
             listener = VhdlListener(vf, tpl_files, out_dir)
             tpl_walker = RDLWalker(unroll=True)
             tpl_walker.walk(top_node, listener)
-            print('Generated VHDL files:')
-            for f in listener.get_generated_files():
-                print(f'{f!s}')
+
+            generated_files = [fname for fname in listener.get_generated_files()]
+
         elif out_format == 'map':
             # Generate mapfile from template
             print('======================')
@@ -138,6 +145,15 @@ def main():
             listener = MapfileListener(vf, tpl_files, out_dir)
             tpl_walker = RDLWalker(unroll=True)
             tpl_walker.walk(top_node, listener)
+
+        print(f'List of output files in {fname_out_list}')
+        with fname_out_list.open('w') as f_out:
+            # copy all common files of the selected format into the out folder
+            for lib in Path(lib_dir / out_format).glob('*'):
+                copy(lib, out_dir)
+                f_out.write(f'{Path(out_dir / lib.name)!s}\n')
+            for fname in listener.get_generated_files():
+                f_out.write(f'{fname!s}\n')
 
     # argparse takes care about it
     # else:

@@ -44,10 +44,11 @@ class DesyListener(RDLListener):
             if suffix != ".in":
                 continue
 
-            out_file = str(tpl.name).replace(suffix, "")
-            out_file = self.formatter.format(out_file, **self.context)
-            out_path = Path(self.out_dir, out_file)
-            self.generated_files.append(out_path)
+            out_name = ''.join([tpl.name.partition('.')[0], '_', node.type_name])
+            out_suffixes = ''.join(tpl.suffixes[:-1]) # just leave out the ".in"
+            out_file = ''.join([out_name, out_suffixes])
+            out_path = Path(self.out_dir / out_file)
+            #out_file = self.formatter.format(out_file, **self.context)
             if out_path.is_file():
                 # two possible reasons:
                 # (1) old output from previous run
@@ -57,6 +58,7 @@ class DesyListener(RDLListener):
 
             with out_path.open('w') as f_out:
                 f_out.write(s_out)
+                self.generated_files.append(out_path)
 
     # types
     # TODO might have to be cleared on enter_Addrmap
