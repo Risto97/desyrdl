@@ -133,6 +133,15 @@ def main():
                 # add a tuple (template, template string)
                 tpl_files.append((Path(tpl_dir / out_format / fname), tpl_tplstr))
 
+        # get a list of common libraries per output type
+        fname_in_list = Path(lib_dir / out_format / 'include.txt')
+        try:
+            with fname_in_list.open('r') as f_in:
+                lib_files = [Path(lib_dir / out_format / fname.strip('\n')) for fname in f_in]
+        except FileNotFoundError:
+            print('Using glob to find libraries')
+            lib_files = [fname for fname in Path(lib_dir / out_format).glob('*')]
+
         if out_format == 'vhdl':
             # Generate from VHDL templates
             print('======================')
@@ -164,7 +173,7 @@ def main():
         print(f'List of output files in {fname_out_list}')
         with fname_out_list.open('w') as f_out:
             # copy all common files of the selected format into the out folder
-            for lib in Path(lib_dir / out_format).glob('*'):
+            for lib in lib_files:
                 copy(lib, out_dir)
                 f_out.write(f'{Path(out_dir / lib.name)!s}\n')
             for fname in listener.get_generated_files():
