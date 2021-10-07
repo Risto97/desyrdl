@@ -22,12 +22,12 @@ package pkg_{node.type_name} is
   constant C_MEMNAMES : integer := {n_memnames};
   -- TODO C_MEMCOUNT
   constant C_MEM_AW : T_IntegerArray(C_MEMNAMES downto 0) := (
-    --{memnames:repeat:memnames:
+    --{memnames:repeat:
     {{i}} => {{aw}}, -- {{mem.inst_name}}}
     C_MEMNAMES => 0 -- dummy
   );
   constant C_MEM_START : T_IntegerArray(C_MEMNAMES downto 0) := (
-    --{memnames:repeat:memnames:
+    --{memnames:repeat:
     {{i}} => {{mem.absolute_address}}, -- {{mem.inst_name}}}
     C_MEMNAMES => 0 -- dummy
   );
@@ -35,39 +35,39 @@ package pkg_{node.type_name} is
   constant C_EXTNAMES : integer := {n_extnames};
   constant C_EXTCOUNT : integer := C_EXTNAMES;
   constant C_EXT_AW : T_IntegerArray(C_EXTNAMES downto 0) := (
-    --{extnames:repeat:extnames:
+    --{extnames:repeat:
     {{i}} => {{aw}}, -- {{ext.inst_name}}}
     C_EXTNAMES => 0 -- dummy
   );
   constant C_EXT_START : T_IntegerArray(C_EXTNAMES downto 0) := (
-    --{extnames:repeat:extnames:
+    --{extnames:repeat:
     {{i}} => {{ext.absolute_address}}, -- {{ext.inst_name}}}
     C_EXTNAMES => 0 -- dummy
   );
   -- size in bytes occupied in the address map
   constant C_EXT_SIZE : T_IntegerArray(C_EXTNAMES downto 0) := (
-    --{extnames:repeat:extnames:
+    --{extnames:repeat:
     {{i}} => {{ext.size}}, -- {{ext.inst_name}}}
     C_EXTNAMES => 0 -- dummy
   );
   -- interface type
   constant C_EXT_IF : t_if_type_array(C_EXTNAMES downto 0) := (
-    --{extnames:repeat:extnames:
+    --{extnames:repeat:
     {{i}} => {{desyrdl_interface}}, -- {{ext.inst_name}}}
     C_EXTNAMES => NONE -- dummy
   );
 
-  --{regtypes:repeat:regtypes:
+  --{regtypes:repeat:
   constant C_{{regtype.type_name:upper}}_FIELDS : t_field_info_arr := (
-    --{{fields:repeat:fields:
+    --{{fields:repeat:
     {{{{i}}}} => (ftype => {{{{ftype}}}}, len => {{{{field.width}}}}, upper => {{{{field.high}}}}, lower => {{{{field.low}}}}, hw_we => {{{{hw_we}}}}, sw_access => C_{{{{sw_access:upper}}}}, hw_access => C_{{{{hw_access:upper}}}},  def_val => std_logic_vector(to_unsigned({{{{reset}}}}, 32)), decrwidth => {{{{decrwidth}}}}, incrwidth => {{{{incrwidth}}}}), -- {{{{field.inst_name}}}} --}}
     others => C_FIELD_NONE
   );
   --}
 
   constant C_REGISTER_INFO : t_reg_info_array(0 to C_REGNAMES) := (
-    --{regnames:repeat:regnames:
-    {{i}} => (addr => {{reg.absolute_address}}, fields => C_{{reg.type_name:upper}}_FIELDS, N => {{N}}, M => {{M}}, internal_offset => {{internal_offset}}), --}
+    --{regnames:repeat:
+    {{i}} => (addr => {{reg.address_offset}}, fields => C_{{reg.type_name:upper}}_FIELDS, N => {{N}}, M => {{M}}, internal_offset => {{internal_offset}}), --}
     others => C_REG_NONE
   );
 
@@ -79,12 +79,12 @@ package pkg_{node.type_name} is
   -- that doesn't specify the field width before knowing the actual register
   -- properties. We want to avoid VHDL-2008 so for now each field of each
   -- register must have its own type.
-  --{regtypes:repeat:regtypes:
+  --{regtypes:repeat:
   -----------------------------------------------
   -- register type: {{regtype.type_name}}
   -----------------------------------------------
   -- Field types: up to 32 data bits plus the other signals (we, incr, ..)
-  --{{fields:repeat:fields:
+  --{{fields:repeat:
   type t_field_signals_{{{{regtype.type_name}}}}_{{{{field.type_name}}}}_in is record
     data : std_logic_vector(C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).len-1 downto 0);
     we   : std_logic;
@@ -100,13 +100,13 @@ package pkg_{node.type_name} is
   -- The actual register types
   type t_reg_{{regtype.type_name}}_in is record
     -- fields
-    --{{fields:repeat:fields:
+    --{{fields:repeat:
     {{{{field.type_name}}}} : t_field_signals_{{{{regtype.type_name}}}}_{{{{field.type_name}}}}_in; --}}
   end record;
   type t_reg_{{regtype.type_name}}_3d_in is array (integer range <>, integer range <>) of t_reg_{{regtype.type_name}}_in;
   type t_reg_{{regtype.type_name}}_out is record
     -- fields
-    --{{fields:repeat:fields:
+    --{{fields:repeat:
     {{{{field.type_name}}}} : t_field_signals_{{{{regtype.type_name}}}}_{{{{field.type_name}}}}_out; --}}
   end record;
   type t_reg_{{regtype.type_name}}_3d_out is array (integer range <>, integer range <>) of t_reg_{{regtype.type_name}}_out;
@@ -115,7 +115,7 @@ package pkg_{node.type_name} is
 
   -- Memory types (to get variable address and data widths that don't have to
   -- show up in the module HDL code)
-  --{memtypes:repeat:memtypes:
+  --{memtypes:repeat:
   type t_mem_{{mem.type_name}}_in is record
     ena  : std_logic;
     wr   : std_logic;
@@ -129,26 +129,26 @@ package pkg_{node.type_name} is
   -- module I/O types: {node.type_name}
   -----------------------------------------------
   type t_addrmap_{node.type_name}_in is record
-    --{regnames:repeat:regnames:
+    --{regnames:repeat:
     {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_in(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
-    --{memnames:repeat:memnames:
+    --{memnames:repeat:
     {{mem.inst_name}} : t_mem_{{mem.type_name}}_out; --}
-    --{extnames:repeat:extnames:
+    --{extnames:repeat:
     {{ext.inst_name}} : t_{{desyrdl_interface}}_s2m; --}
     NONE : std_logic;
   end record;
 
   type t_addrmap_{node.type_name}_out is record
-    --{regnames:repeat:regnames:
+    --{regnames:repeat:
     {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_out(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
-    --{memnames:repeat:memnames:
+    --{memnames:repeat:
     {{mem.inst_name}} : t_mem_{{mem.type_name}}_in; --}
-    --{extnames:repeat:extnames:
+    --{extnames:repeat:
     {{ext.inst_name}} : t_{{desyrdl_interface}}_m2s; --}
     NONE : std_logic;
   end record;
 
-  --{regtypes:repeat:regtypes:
+  --{regtypes:repeat:
   -----------------------------------------------
   -- register type functions: {{regtype.type_name}}
   -----------------------------------------------
@@ -183,7 +183,7 @@ end package pkg_{node.type_name};
 
 package body pkg_{node.type_name} is
 
-  --{regtypes:repeat:regtypes:
+  --{regtypes:repeat:
   -----------------------------------------------
   -- register type: {{regtype.type_name}}
   -----------------------------------------------
@@ -191,7 +191,7 @@ package body pkg_{node.type_name} is
   function fun_slv_to_{{regtype.type_name}} (slv : std_logic_vector(32-1 downto 0); swmod : std_logic_vector(32-1 downto 0); swacc : std_logic_vector(32-1 downto 0)) return t_reg_{{regtype.type_name}}_out is
     variable v_tmp : t_reg_{{regtype.type_name}}_out;
   begin
-    --{{fields:repeat:fields:
+    --{{fields:repeat:
     v_tmp.{{{{field.type_name}}}}.data := slv(C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).upper downto C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).lower);
     v_tmp.{{{{field.type_name}}}}.swmod := swmod({{{{i}}}});
     v_tmp.{{{{field.type_name}}}}.swacc := swacc({{{{i}}}}); --}}
@@ -203,7 +203,7 @@ package body pkg_{node.type_name} is
   function fun_{{regtype.type_name}}_to_data (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
-    --{{fields:repeat:fields:
+    --{{fields:repeat:
     v_tmp(C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).upper downto C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).lower) := reg.{{{{field.type_name}}}}.data; --}}
 
     return v_tmp;
@@ -212,7 +212,7 @@ package body pkg_{node.type_name} is
   function fun_{{regtype.type_name}}_to_decr (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
-    --{{fields:repeat:fields:
+    --{{fields:repeat:
     v_tmp({{{{i}}}}) := reg.{{{{field.type_name}}}}.decr ; -- FIXME? --}}
 
     return v_tmp;
@@ -221,7 +221,7 @@ package body pkg_{node.type_name} is
   function fun_{{regtype.type_name}}_to_incr (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector is
     variable v_tmp : std_logic_vector(32-1 downto 0);
   begin
-    --{{fields:repeat:fields:
+    --{{fields:repeat:
     v_tmp({{{{i}}}}) := reg.{{{{field.type_name}}}}.incr; --}}
 
     return v_tmp;
@@ -230,7 +230,7 @@ package body pkg_{node.type_name} is
   function fun_{{regtype.type_name}}_to_we (reg : t_reg_{{regtype.type_name}}_in) return std_logic_vector is
     variable v_tmp : std_logic_vector(32-1 downto 0) := (others => '0');
   begin
-    --{{fields:repeat:fields:
+    --{{fields:repeat:
     if C_{{{{field.parent.type_name:upper}}}}_FIELDS({{{{i}}}}).hw_we then
       v_tmp({{{{i}}}}) := reg.{{{{field.type_name}}}}.we;
     end if; --}}

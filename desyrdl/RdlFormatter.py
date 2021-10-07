@@ -30,17 +30,10 @@ class RdlFormatter(string.Formatter):
                 return value
 
         if func == "repeat":
-            # Expects different types for value depending on what to repeat
-            # alternatives:
-            # - check isinstance(value, systemrdl.node.RegNode) etc
-            # - initialize RdlFormatter with the root node object and traverse it in here
-            what = spec.split(":")[1]  # what to repeat?
-            # remove "repeat:what:" prefix from spec to obtain the actual template
-            template = spec.partition(":")[2].partition(":")[2]
-
+            # "args" is the template string
             results = []
             for x in value:
-                results.append(self.format(template, **x))
+                results.append(self.format(args, **x))
 
             return "".join(results)
 

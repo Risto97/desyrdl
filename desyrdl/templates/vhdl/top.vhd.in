@@ -95,7 +95,7 @@ begin
   -- downstream interface assignments
   blk_ext_ports : block
   begin
-  --{extnames:repeat:extnames:
+  --{extnames:repeat:
     ins_{{i}}_{{ext.inst_name}} : entity work.axi4_to_{{desyrdl_interface}}
       port map (
         pi_clock => pi_clock,
@@ -116,7 +116,7 @@ begin
   -- rely on separate instances for now.
   blk_mem_ports : block
   begin
-  --{memnames:repeat:memnames:
+  --{memnames:repeat:
     po_addrmap.{{mem.inst_name}}.ena  <= adapter_to_dpm({{i}}).ena;
     po_addrmap.{{mem.inst_name}}.wr   <= adapter_to_dpm({{i}}).wr;
     po_addrmap.{{mem.inst_name}}.addr <= adapter_to_dpm({{i}}).addr({{aw}}-1 downto 0);
@@ -124,7 +124,7 @@ begin
     adapter_from_dpm({{i}})({{memwidth}}-1 downto 0) <= pi_addrmap.{{mem.inst_name}}; --}
   end block;
 
-  --{regnames:repeat:regnames:
+  --{regnames:repeat:
   -- regname {{reg.inst_name}} regtype {{reg.type_name}}
   blk_{{i}}_{{reg.inst_name}} : block
     constant l_r : integer := {{i}};

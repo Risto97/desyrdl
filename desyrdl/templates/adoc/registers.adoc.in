@@ -4,7 +4,7 @@
 |===
 |Name |Register Width |Number of Elements | RO/RW | Description
 
-{context:repeat:regnames:
+{regnames:repeat:
 |{{reg.inst_name}}
 |{{regwidth}}
 |{{M}}
@@ -12,7 +12,7 @@
 |TODO
 }
 
-{context:repeat:memnames:
+{memnames:repeat:
 |{{mem.inst_name}}
 |{{memwidth}}
 |{{mementries}}
@@ -20,7 +20,7 @@
 |TODO
 }
 
-{context:repeat:extnames:
+{extnames:repeat:
 |{{ext.inst_name}}
 |32 (always for external components)
 |{{total_words}}

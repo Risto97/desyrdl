@@ -1,10 +1,10 @@
-{regnames:repeat:regnames:
+{regnames:repeat:
 {{addrmap}}.{{reg.inst_name}} {{M}} {{reg.absolute_address}} {{reg.total_size}} {{desyrdl_access_channel}} {{regwidth}} 0 0 {{rw}}}
 
-{memnames:repeat:memnames:
+{memnames:repeat:
 {{addrmap}}.{{mem.inst_name}} {{mementries}} {{mem.absolute_address}} {{addresses}} {{desyrdl_access_channel}} {{memwidth}} 0 0 RW
-{{vregs:repeat:vregs:{{{{addrmap}}}}.{{{{reg.parent.inst_name:removeprefix:AREA_MULTIPLEXED_}}}}_{{{{i}}}} {{{{M}}}} {{{{reg.absolute_address}}}} {{{{reg.total_size}}}} {{{{desyrdl_access_channel}}}} {{{{regwidth}}}} 0 0 RO
+{{vregs:repeat:{{{{addrmap}}}}.{{{{reg.parent.inst_name:removeprefix:AREA_MULTIPLEXED_}}}}_{{{{i}}}} {{{{M}}}} {{{{reg.absolute_address}}}} {{{{reg.total_size}}}} {{{{desyrdl_access_channel}}}} {{{{regwidth}}}} 0 0 RO
 }}}
 
-{extnames:repeat:extnames:
+{extnames:repeat:
 {{addrmap}}.{{ext.inst_name}} {{total_words}} {{ext.absolute_address}} {{ext.size}} {{desyrdl_access_channel}} 32 0 0 RW}
