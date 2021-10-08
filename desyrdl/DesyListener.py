@@ -14,7 +14,7 @@ class DesyListener(RDLListener):
     # formatter: RdlFormatter instance
     # templates: array of tuples (tpl_file, tpl_tplstr)
     # out_dir: path where to put output files
-    def __init__(self, formatter, templates, out_dir):
+    def __init__(self, formatter, templates, out_dir, merge_outputs=False):
         for t,tplstr in templates:
             assert isinstance(t, Path)
         assert isinstance(out_dir, Path)
@@ -22,17 +22,29 @@ class DesyListener(RDLListener):
         self.templates = templates
         self.out_dir = out_dir
         self.generated_files = list()
+        self.merge_outputs = merge_outputs
 
         self.formatter = formatter
 
         self.init_context()
 
+        # If generated outputs shall be merged, remove any existing files.
+        # The output file template string should be the final filename.
+        if self.merge_outputs:
+            for tpl,tplstr in self.templates:
+                try:
+                    Path(self.out_dir / tplstr).unlink()
+                except FileNotFoundError:
+                    pass
+
+
+
     def init_context(self):
         self.regnames = list()
         self.memnames = list()
         self.extnames = list()
-        self.regtypes = dict()
-        self.memtypes = dict()
+        self.regtypes = list()
+        self.memtypes = list()
         self.regcount = 0
 
     def process_templates(self, node):
@@ -49,41 +61,41 @@ class DesyListener(RDLListener):
 
             out_file = self.formatter.format(tplstr, **self.context)
             out_path = Path(self.out_dir / out_file)
-            if out_path.is_file():
-                # two possible reasons:
-                # (1) old output from previous run
-                # (2) this is another AddrmapNode instance of the same type
-                # For now we just overwrite existing files
-                print("File exists, overwriting: {}".format(out_path))
 
-            with out_path.open('w') as f_out:
+            if self.merge_outputs:
+                mode = 'a'
+            else:
+                mode = 'w'
+
+            with out_path.open(mode) as f_out:
                 f_out.write(s_out)
-                self.generated_files.append(out_path)
+                if out_path not in self.generated_files:
+                    self.generated_files.append(out_path)
 
-    # types
-    # TODO might have to be cleared on enter_Addrmap
+    def enter_Addrmap(self, node):
+        self.regtypes.append(dict())
+        self.memtypes.append(dict())
+        self.regnames.append(list())
+        self.memnames.append(list())
+        self.extnames.append(list())
+
+    # types are in the dictionary on the top of the stack
     def enter_Component(self, node):
         if isinstance(node, MemNode):
-            if node.type_name not in self.memtypes:
-                self.memtypes[node.type_name] = node
+            if node.type_name not in self.memtypes[-1]:
+                self.memtypes[-1][node.type_name] = node
 
         if isinstance(node, RegNode) and not node.external:
-            if node.type_name not in self.regtypes:
-                self.regtypes[node.type_name] = node
+            if node.type_name not in self.regtypes[-1]:
+                print(f'adding type {node.type_name} to {self.regtypes[-1]}')
+
+                self.regtypes[-1][node.type_name] = node
 
     def exit_Addrmap(self, node):
 
-        # Each address map adds to the list of addressable nodes. This is used
-        # for mapfile generation only - for HDL generation the list gets
-        # cleared after being used.
-
-        #self.regnames[len(self.regnames):] = [x for x in self.gen_regnames(node)]
-        #self.memnames[len(self.memnames):] = [x for x in self.gen_memnames(node)]
-        #self.extnames[len(self.extnames):] = [x for x in self.gen_extnames(node)]
-        # python is nice, use list.extend(iterable)
-        self.regnames.extend(self.gen_regnames(node))
-        self.memnames.extend(self.gen_memnames(node))
-        self.extnames.extend(self.gen_extnames(node))
+        self.regnames[-1].extend(self.gen_regnames(node))
+        self.memnames[-1].extend(self.gen_memnames(node))
+        self.extnames[-1].extend(self.gen_extnames(node))
 
         self.regcount += len([x for x in self.gen_node_names(node, [RegNode], False)])
 
@@ -91,15 +103,15 @@ class DesyListener(RDLListener):
                 node=node,
                 regtypes=[x for x in self.gen_regtypes()],
                 memtypes=[x for x in self.gen_memtypes()],
-                regnames=self.regnames,
-                memnames=self.memnames,
-                extnames=self.extnames,
-                n_regtypes=len(self.regtypes),
-                n_regnames=len(self.regnames),
+                regnames=self.regnames[-1],
+                memnames=self.memnames[-1],
+                extnames=self.extnames[-1],
+                n_regtypes=len(self.regtypes[-1]),
+                n_regnames=len(self.regnames[-1]),
                 n_regcount=self.regcount,
-                n_memtypes=len(self.memtypes),
-                n_memnames=len(self.memnames),
-                n_extnames=len(self.extnames))
+                n_memtypes=len(self.memtypes[-1]),
+                n_memnames=len(self.memnames[-1]),
+                n_extnames=len(self.extnames[-1]))
 
         # add all non-native explicitly set properties
         for p in node.list_properties(include_native=False):
@@ -110,6 +122,14 @@ class DesyListener(RDLListener):
         print(f"path_segment = {node.get_path_segment()}")
         print(f"node.inst_name = {node.inst_name}")
         print(f"node.type_name = {node.type_name}")
+
+        # Some context must be cleared on addrmap boundaries
+        self.regtypes.pop()
+        self.memtypes.pop()
+        self.regnames.pop()
+        self.memnames.pop()
+        self.extnames.pop()
+        self.regcount = 0
 
     # yields a tuple (i, node) for each child of node that matches a list of
     # types and is either external or internal
@@ -239,7 +259,7 @@ class DesyListener(RDLListener):
             yield context
 
     def gen_regtypes(self):
-        for i,x in enumerate(self.regtypes.values()):
+        for i,x in enumerate(self.regtypes[-1].values()):
             context = dict()
 
             context["i"] = i
@@ -256,7 +276,7 @@ class DesyListener(RDLListener):
             yield context
 
     def gen_memtypes(self):
-        for i,x in enumerate(self.memtypes.values()):
+        for i,x in enumerate(self.memtypes[-1].values()):
             context = dict()
 
             context["mem"] = x
@@ -351,16 +371,10 @@ class VhdlListener(DesyListener):
            node.get_property('desyrdl_generate_hdl') is True:
             self.process_templates(node)
 
-        # Context must be cleared on addrmap boundaries
-        self.init_context()
 
-
-# Names are needed. Collect until exiting the top Addrmap
 class MapfileListener(DesyListener):
 
     def exit_Addrmap(self, node):
         super().exit_Addrmap(node)
 
-        # only handle the top Addrmap, otherwise do nothing
-        if isinstance(node.parent, RootNode):
-            self.process_templates(node)
+        self.process_templates(node)

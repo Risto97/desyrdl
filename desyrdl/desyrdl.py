@@ -150,15 +150,12 @@ def main():
             listener = VhdlListener(vf, tpl_files, out_dir)
             tpl_walker = RDLWalker(unroll=True)
             tpl_walker.walk(top_node, listener)
-
-            generated_files = [fname for fname in listener.get_generated_files()]
-
         elif out_format == 'map':
             # Generate mapfile from template
             print('======================')
             print('Generating map files')
             print('======================')
-            listener = MapfileListener(vf, tpl_files, out_dir)
+            listener = MapfileListener(vf, tpl_files, out_dir, merge_outputs=True)
             tpl_walker = RDLWalker(unroll=True)
             tpl_walker.walk(top_node, listener)
         elif out_format == 'adoc':
