@@ -37,5 +37,26 @@ class RdlFormatter(string.Formatter):
 
             return "".join(results)
 
+        if func == "if":
+            # "args" is further separated by ':':
+            #   * the check to be performed
+            #   * the name of the dict entry in 'value' to perform the
+            #     ckeck on
+            #   * the template to format, if the check succeeds
+            # "value" is the value to apply the check to
+            (check,sep,tmp) = args.partition(":")
+            (name,sep,template) = tmp.partition(":")
+            def do_format():
+                return self.format(template, **value)
+
+            if check == "gtzero" and value[name] > 0:
+                do_format()
+            if check == "ltzero" and value[name] < 0:
+                do_format()
+            if check == "eqzero" and value[name] == 0:
+                do_format()
+            if check == "nezero" and value[name] != 0:
+                do_format()
+
         else:
             return super(RdlFormatter, self).format_field(value, spec)
