@@ -33,7 +33,7 @@ class RdlFormatter(string.Formatter):
             # "args" is the template string
             results = []
             for x in value:
-                results.append(self.format(args, **x))
+                results.append(self.format(args, context=x, **x))
 
             return "".join(results)
 
@@ -47,16 +47,19 @@ class RdlFormatter(string.Formatter):
             (check,sep,tmp) = args.partition(":")
             (name,sep,template) = tmp.partition(":")
             def do_format():
-                return self.format(template, **value)
+                return self.format(template, context=value, **value)
 
             if check == "gtzero" and value[name] > 0:
-                do_format()
+                return do_format()
             if check == "ltzero" and value[name] < 0:
-                do_format()
+                return do_format()
             if check == "eqzero" and value[name] == 0:
-                do_format()
+                return do_format()
             if check == "nezero" and value[name] != 0:
-                do_format()
+                return do_format()
+
+            # return an empty string if the check fails
+            return ""
 
         else:
             return super(RdlFormatter, self).format_field(value, spec)
