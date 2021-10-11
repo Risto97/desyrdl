@@ -66,14 +66,26 @@ package pkg_{node.type_name} is
   --}
 
   constant C_REGISTER_INFO : t_reg_info_array(0 to C_REGNAMES) := (
-    --{regnames:repeat:
+  --{regnames:repeat:
     {{i}} => (addr => {{reg.address_offset}}, fields => C_{{reg.type_name:upper}}_FIELDS, N => {{N}}, M => {{M}}, internal_offset => {{internal_offset}}), --}
     others => C_REG_NONE
   );
 
+  -- The OSVVM verification needs a mapping from name to info
+  --{regnames:repeat:
+  constant C_{{reg.inst_name:upper}} : t_reg_info := C_REGISTER_INFO({{i}}); --}
+  --{memnames:repeat:
+  constant C_{{mem.inst_name:upper}}_AW    : integer := C_MEM_AW({{i}});
+  constant C_{{mem.inst_name:upper}}_START : integer := C_MEM_START({{i}}); --}
+  --{extnames:repeat:
+  constant C_{{ext.inst_name:upper}}_AW    : integer := C_EXT_AW({{i}});
+  constant C_{{ext.inst_name:upper}}_START : integer := C_EXT_START({{i}});
+  constant C_{{ext.inst_name:upper}}_SIZE  : integer := C_EXT_SIZE({{i}});
+  constant C_{{ext.inst_name:upper}}_IF    : t_if_type := C_EXT_IF({{i}}); --}
+
   -----------------------------------------------
   -- Register types
-  -- Used by dweveloper to access registers in their VHDL code
+  -- Used by developer to access registers in their VHDL code
   -----------------------------------------------
   -- We need VDHL-2008 for an unconstrained array "data" in the record type
   -- that doesn't specify the field width before knowing the actual register

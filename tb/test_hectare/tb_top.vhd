@@ -7,7 +7,7 @@ use ieee.numeric_std_unsigned.all ;
 
 library desyrdl;
 use desyrdl.common.all;
-use desyrdl.pkg_reg_test_hectare.all;
+use desyrdl.pkg_test_hectare.all;
 
 library osvvm ;
   context osvvm.OsvvmContext ;
@@ -52,29 +52,29 @@ architecture sim of tb_top is
 
 
   signal AxiMinionTransRec_spi_ad9510_a  : AddressBusRecType(
-          Address(C_EXT_AW(0)-1 downto 0),
+          Address(C_SPI_AD9510_A_AW-1 downto 0),
           DataToModel(AXI_DATA_WIDTH-1 downto 0),
           DataFromModel(AXI_DATA_WIDTH-1 downto 0)
         ) ;
 
   -- AXI Minion Functional Interface
   signal AxiBus_spi_ad9510_a : Axi4LiteRecType(
-    WriteAddress( Addr(C_EXT_AW(0)-1 downto 0) ),
+    WriteAddress( Addr(C_SPI_AD9510_A_AW-1 downto 0) ),
     WriteData   ( Data (AXI_DATA_WIDTH-1 downto 0),   Strb(AXI_STRB_WIDTH-1 downto 0) ),
-    ReadAddress ( Addr(C_EXT_AW(0)-1 downto 0) ),
+    ReadAddress ( Addr(C_SPI_AD9510_A_AW-1 downto 0) ),
     ReadData    ( Data (AXI_DATA_WIDTH-1 downto 0) )
   ) ;
 
   -- DPM Responder transaction interface
   signal DpmTransRec_coolmem : AddressBusRecType(
-    Address(C_MEM_AW(0)-1 downto 0), -- TODO get C_MEM_AW(coolmem)
+    Address(C_COOLMEM_AW-1 downto 0),
     DataToModel(32-1 downto 0),
     DataFromModel(32-1 downto 0)
   );
 
   -- DPM Responder functional interface
   signal DpmInterface_coolmem : DpmRecType(
-    DpmIn(Addr(C_MEM_AW(0)-1 downto 0), Data(32-1 downto 0)),
+    DpmIn(Addr(C_COOLMEM_AW-1 downto 0), Data(32-1 downto 0)),
     DpmOut(Data(32-1 downto 0))
   );
 
@@ -188,7 +188,7 @@ begin
   --RLast <= s2m_axi4_hectare.rlast;
   RValid <= s2m_axi4_hectare.rvalid;
 
-  ins_dut : top_reg_test_hectare
+  ins_dut : test_hectare
   port map (
     pi_clock => Clk,
     pi_reset => not nReset,
@@ -204,7 +204,7 @@ begin
 
   -- M2S
   --addrmap_out.spi_ad9510_a.awid 
-  AxiBus_spi_ad9510_a.WriteAddress.Addr <= addrmap_out.spi_ad9510_a.awaddr(C_EXT_AW(0)-1 downto 0);
+  AxiBus_spi_ad9510_a.WriteAddress.Addr <= addrmap_out.spi_ad9510_a.awaddr(C_SPI_AD9510_A_AW-1 downto 0);
   --addrmap_out.spi_ad9510_a.awlen;
   --addrmap_out.spi_ad9510_a.awsize;
   --addrmap_out.spi_ad9510_a.awburst;
@@ -222,7 +222,7 @@ begin
   AxiBus_spi_ad9510_a.WriteResponse.Ready <= addrmap_out.spi_ad9510_a.bready;
 
   --addrmap_out.spi_ad9510_a.arid;
-  AxiBus_spi_ad9510_a.ReadAddress.Addr <= addrmap_out.spi_ad9510_a.araddr(C_EXT_AW(0)-1 downto 0);
+  AxiBus_spi_ad9510_a.ReadAddress.Addr <= addrmap_out.spi_ad9510_a.araddr(C_SPI_AD9510_A_AW-1 downto 0);
   --addrmap_out.spi_ad9510_a.arlen;
   --addrmap_out.spi_ad9510_a.arsize;
   --addrmap_out.spi_ad9510_a.arburst;
