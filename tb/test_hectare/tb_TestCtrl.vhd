@@ -13,6 +13,7 @@ library osvvm_Axi4 ;
 
 library desyrdl ;
   use desyrdl.pkg_test_hectare.all;
+  use desyrdl.pkg_something_downstream_desyrdl_interface_bbf87faf;
 
 entity TestCtrl is
   port (
@@ -96,6 +97,9 @@ begin
     -- The axi4_spi component maps the address of the request directly to the
     -- SPI interface, so don't multiply the address by 4 in the request.
     Write(AxiSuperTransRec, std_logic_vector(to_unsigned(C_SPI_AD9510_A_START+16#40#, AXI_ADDR_WIDTH)), X"01010101");
+
+    -- Downstream addrmap
+    ReadCheck(AxiSuperTransRec, std_logic_vector(to_unsigned(C_DS_START+pkg_something_downstream_desyrdl_interface_bbf87faf.C_DS_REG.addr, AXI_ADDR_WIDTH)), X"7000_BEEF");
 
 
     -- Wait for test to finish

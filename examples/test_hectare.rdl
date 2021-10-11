@@ -1,5 +1,16 @@
 `include "test_hectare.sv"
 
+addrmap something_downstream {
+  reg {
+    field {
+      desc = "some static sw-accessible data" ;
+      sw = r ;
+      hw = rw ;
+      we ; // TODO make hw=r and no we once the WIRE type of register is done
+    } data[32] = 32'h7000BEEF;
+  } ds_reg @0x100 ;
+} ;
+
 addrmap test_hectare {
   addressing = regalign; // this is the default
 
@@ -36,5 +47,8 @@ addrmap test_hectare {
   // test_hectare.sv holds size and address information for downstream IBUS
   // modules
   external generic_ibus #(.SIZE(`C_SIZE_LLRF_CTABLES)) llrf_ctables @`C_ADDR_LLRF_CTABLES;
+
+  something_downstream ds;
+  ds->desyrdl_interface = "AXI4";
 
 };
