@@ -41,21 +41,25 @@ class RdlFormatter(string.Formatter):
             # "args" is further separated by ':':
             #   * the check to be performed
             #   * the name of the dict entry in 'value' to perform the
-            #     ckeck on
+            #     check on
+            #   * the integer to compare with
             #   * the template to format, if the check succeeds
             # "value" is the value to apply the check to
-            (check,sep,tmp) = args.partition(":")
-            (name,sep,template) = tmp.partition(":")
+            (check,name,compareval,template) = args.split(":", maxsplit=3)
             def do_format():
                 return self.format(template, context=value, **value)
 
-            if check == "gtzero" and value[name] > 0:
+            if check == "gt" and value[name] > int(compareval):
                 return do_format()
-            if check == "ltzero" and value[name] < 0:
+            if check == "lt" and value[name] < int(compareval):
                 return do_format()
-            if check == "eqzero" and value[name] == 0:
+            if check == "eq" and value[name] == int(compareval):
                 return do_format()
-            if check == "nezero" and value[name] != 0:
+            if check == "ne" and value[name] != int(compareval):
+                return do_format()
+            if check == "ge" and value[name] >= int(compareval):
+                return do_format()
+            if check == "le" and value[name] <= int(compareval):
                 return do_format()
 
             # return an empty string if the check fails
