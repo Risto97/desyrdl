@@ -21,42 +21,42 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-library work;
-use work.common.all;
+library desyrdl;
+use desyrdl.common.all;
 
-entity desy_register is
+entity desyrdl_register is
   generic (
-            g_fields : t_field_info_arr
-          );
+    g_fields : t_field_info_arr
+  );
   port (
-         pi_clock : in std_logic;
-         pi_reset : in std_logic;
-         -- to/from adapter
-         pi_adapter_stb : in std_logic;
-         pi_adapter_we  : in std_logic;
-         po_adapter_err : out std_logic;
-         pi_adapter_data : in std_logic_vector(32-1 downto 0);
-         po_adapter_data : out std_logic_vector(32-1 downto 0);
+    pi_clock        : in  std_logic;
+    pi_reset        : in  std_logic;
+    -- to/from adapter
+    pi_decoder_stb  : in  std_logic;
+    pi_decoder_we   : in  std_logic;
+    po_decoder_err  : out std_logic;
+    pi_decoder_data : in  std_logic_vector(32-1 downto 0);
+    po_decoder_data : out std_logic_vector(32-1 downto 0);
 
-         -- to/from our IP
-         pi_logic_incr : in std_logic_vector(32-1 downto 0);
-         pi_logic_decr : in std_logic_vector(32-1 downto 0);
-         pi_logic_we   : in std_logic_vector(32-1 downto 0);
-         pi_logic_data : in std_logic_vector(32-1 downto 0);
-         -- TODO add swmod/swacc signals
-         po_logic_data : out std_logic_vector(32-1 downto 0);
-         po_logic_swmod : out std_logic_vector(32-1 downto 0)
-       );
-end entity desy_register;
+    -- to/from our IP
+    pi_logic_incr  : in  std_logic_vector(32-1 downto 0);
+    pi_logic_decr  : in  std_logic_vector(32-1 downto 0);
+    pi_logic_we    : in  std_logic_vector(32-1 downto 0);
+    pi_logic_data  : in  std_logic_vector(32-1 downto 0);
+    -- TODO add swmod/swacc signals
+    po_logic_data  : out std_logic_vector(32-1 downto 0);
+    po_logic_swmod : out std_logic_vector(32-1 downto 0)
+  );
+end entity desyrdl_register;
 
-architecture rtl of desy_register is
+architecture rtl of desyrdl_register is
 begin
 
   -- on a strobe, write to all fields --> one signal for the register (storage)
   -- but respect the write mask (generate for each bit)
 
   -- TODO implement in fields
-  po_adapter_err <= '0';
+  po_decoder_err <= '0';
 
   gen_fields : for f in g_fields'range generate
     constant field : t_field_info := g_fields(f);
@@ -65,20 +65,20 @@ begin
     gen_storage : if field.ftype = STORAGE generate
       ins_field_storage : entity work.reg_field_storage
       generic map(
-                   g_info => field
-                 )
+        g_info => field
+      )
       port map (
-                 pi_clock   => pi_clock,
-                 pi_reset   => pi_reset,
-                 pi_sw_stb  => pi_adapter_stb,
-                 pi_sw_we   => pi_adapter_we,
-                 pi_sw_data => pi_adapter_data(field.upper downto field.lower),
-                 po_sw_data => po_adapter_data(field.upper downto field.lower),
-                 pi_hw_we   => pi_logic_we(f),
-                 pi_hw_data => pi_logic_data(field.upper downto field.lower),
-                 po_hw_data => po_logic_data(field.upper downto field.lower),
-                 po_hw_swmod => po_logic_swmod(f)
-               );
+        pi_clock    => pi_clock,
+        pi_reset    => pi_reset,
+        pi_sw_stb   => pi_decoder_stb,
+        pi_sw_we    => pi_decoder_we,
+        pi_sw_data  => pi_decoder_data(field.upper downto field.lower),
+        po_sw_data  => po_decoder_data(field.upper downto field.lower),
+        pi_hw_we    => pi_logic_we(f),
+        pi_hw_data  => pi_logic_data(field.upper downto field.lower),
+        po_hw_data  => po_logic_data(field.upper downto field.lower),
+        po_hw_swmod => po_logic_swmod(f)
+      );
     end generate;
 
 --    -- wire type fields
@@ -90,7 +90,7 @@ begin
 --                   g_info => field.info
 --                 )
 --      port map (
---                 po_sw_data => po_adapter_data(field.upper downto field.lower),
+--                 po_sw_data => po_decoder_data(field.upper downto field.lower),
 --                 pi_hw_data => pi_logic_data.data(field.upper downto field.lower),
 --                 po_hw_data => po_logic_data.data(field.upper downto field.lower)
 --               );
@@ -101,22 +101,22 @@ begin
     begin
       ins_field_counter : entity work.reg_field_counter
       generic map(
-                   g_info => field
-                 )
+        g_info => field
+      )
       port map (
-                 pi_clock   => pi_clock,
-                 pi_reset   => pi_reset,
-                 pi_sw_stb  => pi_adapter_stb,
-                 po_sw_data => po_adapter_data(field.upper downto field.lower),
-                 po_hw_data => po_logic_data(field.upper downto field.lower),
-                 po_hw_swmod => po_logic_swmod(f),
-                 po_hw_overflow => open,
-                 po_hw_underflow => open,
-                 pi_hw_incr => pi_logic_incr(f),
-                 pi_hw_decr => pi_logic_decr(f),
-                 pi_hw_incrvalue => (others => '1'),
-                 pi_hw_decrvalue => (others => '1')
-               );
+        pi_clock        => pi_clock,
+        pi_reset        => pi_reset,
+        pi_sw_stb       => pi_decoder_stb,
+        po_sw_data      => po_decoder_data(field.upper downto field.lower),
+        po_hw_data      => po_logic_data(field.upper downto field.lower),
+        po_hw_swmod     => po_logic_swmod(f),
+        po_hw_overflow  => open,
+        po_hw_underflow => open,
+        pi_hw_incr      => pi_logic_incr(f),
+        pi_hw_decr      => pi_logic_decr(f),
+        pi_hw_incrvalue => (others => '1'),
+        pi_hw_decrvalue => (others => '1')
+      );
     end generate;
   end generate gen_fields;
 end architecture;

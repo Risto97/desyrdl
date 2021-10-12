@@ -8,71 +8,75 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-library work;
-use work.common.all;
+library desyrdl;
+use desyrdl.common.all;
 
-entity adapter_axi4 is
+-- library desy;
+-- use desy.common_axi.all;
+
+entity decoder_axi4l is
   generic (
-    G_ADDR_W    : integer := 8;
-    G_REGISTER_INFO : t_reg_info_array;
-    G_MEMNAMES  : integer := 1;
-    G_MEM_START : T_IntegerArray;
-    G_MEM_AW    : T_IntegerArray;
-    G_EXTCOUNT  : integer := 1;
-    G_EXT_START : T_IntegerArray;
-    G_EXT_SIZE  : T_IntegerArray;
-    G_EXT_AW    : T_IntegerArray;
-    G_REGNAMES  : integer := 1;
-    G_REGCOUNT  : natural := 1
+    g_addr_width    : integer := 8;
+    g_data_width    : integer := 32;
+
+    g_register_info : t_reg_info_array;
+    g_regnames      : integer := 1;
+    g_regcount      : natural := 1;
+
+    g_memnames      : integer := 1;
+    g_mem_start     : t_integer_array;
+    g_mem_aw        : t_integer_array;
+
+    g_extcount      : integer := 1;
+    g_ext_start     : t_integer_array;
+    g_ext_size      : t_integer_array;
+    g_ext_aw        : t_integer_array
   );
   port (
+    pi_clock  : in std_logic;
+    pi_reset  : in std_logic;
     -- one element for each register, so N elements for a 2D register with length N
-    pi_regs : in t_32BitArray(G_REGCOUNT-1 downto 0);
-    pi_err  : in  std_logic;
+    pi_regs : in t_32b_slv_array(G_REGCOUNT-1 downto 0);
+    pi_err  : in std_logic;
 
     po_stb  : out std_logic_vector(G_REGCOUNT-1 downto 0);
     po_we   : out std_logic;
     po_data : out std_logic_vector(32-1 downto 0);
 
-    pi_mem : in t_mem_out_arr(G_MEMNAMES downto 0);
-    po_mem : out t_mem_in_arr(G_MEMNAMES downto 0);
+    pi_mem : in  tif_mem_out_arr(G_MEMNAMES downto 0);
+    po_mem : out tif_mem_in_arr(G_MEMNAMES downto 0);
 
-    pi_ext : in t_axi4_s2m_array(G_EXTCOUNT downto 0);
-    po_ext : out t_axi4_m2s_array(G_EXTCOUNT downto 0);
+    pi_ext : in  tif_axi4l_s2m_array(G_EXTCOUNT downto 0);
+    po_ext : out tif_axi4l_m2s_array(G_EXTCOUNT downto 0);
 
-    clk           : in std_logic;
-    reset         : in std_logic;
-    S_AXI_AWADDR  : in std_logic_vector(G_ADDR_W-1 downto 0);
-    S_AXI_AWPROT  : in std_logic_vector(2 downto 0);
-    S_AXI_AWVALID : in std_logic;
-    S_AXI_AWREADY : out std_logic;
-    S_AXI_AWID    : in std_logic_vector(16-1 downto 0);
-    S_AXI_WDATA   : in std_logic_vector(32-1 downto 0);
-    S_AXI_WSTRB   : in std_logic_vector(32/8-1 downto 0);
-    S_AXI_WVALID  : in std_logic;
-    S_AXI_WREADY  : out std_logic;
-    S_AXI_BRESP   : out std_logic_vector(1 downto 0);
-    S_AXI_BVALID  : out std_logic;
-    S_AXI_BREADY  : in std_logic;
-    S_AXI_BID     : out std_logic_vector(16-1 downto 0);
-    S_AXI_ARADDR  : in std_logic_vector(G_ADDR_W-1 downto 0);
-    S_AXI_ARPROT  : in std_logic_vector(2 downto 0);
-    S_AXI_ARVALID : in std_logic;
-    S_AXI_ARREADY : out std_logic;
-    S_AXI_ARID    : in std_logic_vector(16-1 downto 0);
-    S_AXI_RDATA   : out std_logic_vector(32-1 downto 0);
-    S_AXI_RRESP   : out std_logic_vector(1 downto 0);
-    S_AXI_RVALID  : out std_logic;
-    S_AXI_RREADY  : in std_logic;
-    S_AXI_RID     : out std_logic_vector(16-1 downto 0)
+    s_axi_awaddr  : in  std_logic_vector(g_addr_width-1 downto 0);
+    s_axi_awprot  : in  std_logic_vector(2 downto 0);
+    s_axi_awvalid : in  std_logic;
+    s_axi_awready : out std_logic;
+    s_axi_wdata   : in  std_logic_vector(32-1 downto 0);
+    s_axi_wstrb   : in  std_logic_vector(32/8-1 downto 0);
+    s_axi_wvalid  : in  std_logic;
+    s_axi_wready  : out std_logic;
+    s_axi_bresp   : out std_logic_vector(1 downto 0);
+    s_axi_bvalid  : out std_logic;
+    s_axi_bready  : in  std_logic;
+    s_axi_araddr  : in  std_logic_vector(g_addr_width-1 downto 0);
+    s_axi_arprot  : in  std_logic_vector(2 downto 0);
+    s_axi_arvalid : in  std_logic;
+    s_axi_arready : out std_logic;
+    s_axi_rdata   : out std_logic_vector(32-1 downto 0);
+    s_axi_rresp   : out std_logic_vector(1 downto 0);
+    s_axi_rvalid  : out std_logic;
+    s_axi_rready  : in  std_logic
 );
-end entity adapter_axi4;
+end entity decoder_axi4l;
 
-architecture arch of adapter_axi4 is
+architecture arch of decoder_axi4l is
 
   type t_target is (NONE, REG, MEM, EXT);
-  signal rtarget, wtarget : t_target;
+  signal rtarget, wtarget     : t_target;
   signal rtarget_q, wtarget_q : t_target;
+
   -- read
   type t_state_read is (
     ST_READ_IDLE, ST_READ_SELECT, ST_READ_VALID,
@@ -83,9 +87,9 @@ architecture arch of adapter_axi4 is
   signal state_read : t_state_read;
 
   signal rdata_reg : std_logic_vector(31 downto 0);
-  signal rdata_mem : t_32BitArray(G_MEMNAMES-1 downto 0);
+  signal rdata_mem : t_32b_slv_array(G_MEMNAMES-1 downto 0);
   signal rdata_ext : std_logic_vector(31 downto 0);
-  signal raddr_q : std_logic_vector(G_ADDR_W-1 downto 0);
+  signal raddr_q   : std_logic_vector(g_addr_width-1 downto 0);
   signal raddr_q_int : integer;
 
   signal rdata   : std_logic_vector(31 downto 0);
@@ -100,7 +104,7 @@ architecture arch of adapter_axi4 is
 
   signal wdata_q : std_logic_vector(31 downto 0);
   signal wstrb_q : std_logic_vector(3 downto 0);
-  signal waddr_q : std_logic_vector(G_ADDR_W-1 downto 0);
+  signal waddr_q : std_logic_vector(g_addr_width-1 downto 0);
   signal waddr_q_int : integer;
 
   -- select read
@@ -130,63 +134,60 @@ architecture arch of adapter_axi4 is
   -- I don't care if the individual signals are indepentent SCREW YOU go
   -- and use separate signals for each.
   signal ext_arvalid : std_logic_vector (G_EXTCOUNT downto 0);
-  signal ext_araddr : T_32BitArray (G_EXTCOUNT downto 0);
+  signal ext_araddr : t_32b_slv_array (G_EXTCOUNT downto 0);
   signal ext_rready : std_logic_vector (G_EXTCOUNT downto 0);
 
   signal ext_awvalid : std_logic_vector (G_EXTCOUNT downto 0);
   signal ext_wvalid : std_logic_vector (G_EXTCOUNT downto 0);
   signal ext_bready : std_logic_vector (G_EXTCOUNT downto 0);
-  signal ext_awaddr : T_32BitArray (G_EXTCOUNT downto 0);
-  signal ext_wdata : T_32BitArray (G_EXTCOUNT downto 0);
-  signal ext_wstrb : T_4BitArray (G_EXTCOUNT downto 0);
+  signal ext_awaddr : t_32b_slv_array (G_EXTCOUNT downto 0);
+  signal ext_wdata : t_32b_slv_array (G_EXTCOUNT downto 0);
+  signal ext_wstrb : t_4b_slv_array (G_EXTCOUNT downto 0);
 
 begin
 
   gen_ext_if : for i in G_EXTCOUNT-1 downto 0 generate
-    po_ext(i).arvalid <= ext_arvalid(i);
-    po_ext(i).araddr(G_EXT_AW(i)-1 downto 0) <= ext_araddr(i)(G_EXT_AW(i)-1 downto 0);
+    po_ext(i).arvalid                                          <= ext_arvalid(i);
+    po_ext(i).araddr(G_EXT_AW(i)-1 downto 0)                   <= ext_araddr(i)(G_EXT_AW(i)-1 downto 0);
     po_ext(i).araddr(po_ext(i).araddr'left downto G_EXT_AW(i)) <= (others => '0');
-    po_ext(i).rready <= ext_rready(i);
-    po_ext(i).awvalid <= ext_awvalid(i);
-    po_ext(i).wvalid <= ext_wvalid(i);
-    po_ext(i).bready <= ext_bready(i);
-    po_ext(i).awaddr(G_EXT_AW(i)-1 downto 0) <= ext_awaddr(i)(G_EXT_AW(i)-1 downto 0);
+    po_ext(i).rready                                           <= ext_rready(i);
+    po_ext(i).awvalid                                          <= ext_awvalid(i);
+    po_ext(i).wvalid                                           <= ext_wvalid(i);
+    po_ext(i).bready                                           <= ext_bready(i);
+    po_ext(i).awaddr(G_EXT_AW(i)-1 downto 0)                   <= ext_awaddr(i)(G_EXT_AW(i)-1 downto 0);
     po_ext(i).awaddr(po_ext(i).awaddr'left downto G_EXT_AW(i)) <= (others => '0');
-    po_ext(i).wdata(31 downto 0) <= ext_wdata(i);
-    po_ext(i).wstrb(3 downto 0) <= ext_wstrb(i);
+    po_ext(i).wdata(31 downto 0)                               <= ext_wdata(i);
+    po_ext(i).wstrb(3 downto 0)                                <= ext_wstrb(i);
   end generate;
 
   -- ### read logic
 
   -- state transitions, assignment of extended state variables and assignment
   -- of output signals in one process
-  prs_state_read: process (clk)
+  prs_state_read: process (pi_clock)
   begin
-    if rising_edge(clk) then
-      if reset = '1' then
+    if rising_edge(pi_clock) then
+      if pi_reset = '1' then
         state_read <= ST_READ_IDLE;
-        mem_ren <= (others => '0');
-
-        -- some AXI4 signals must be reset here
+        mem_ren   <= (others => '0');
+        rdata_reg <= (others => '0');
+        -- some AXI4 signals must be pi_reset here
         for i in G_EXTCOUNT downto 0 loop
           ext_arvalid(i) <= '0';
           ext_rready(i) <= '0';
         end loop;
       else
-        state_read <= state_read;
 
         case state_read is
           when ST_READ_IDLE =>
             if S_AXI_ARVALID = '1' then
               state_read <= ST_READ_SELECT;
-              raddr_q <= S_AXI_ARADDR(G_ADDR_W-1 downto 0);
+              raddr_q <= S_AXI_ARADDR(g_addr_width-1 downto 0);
               S_AXI_RRESP <= "00";
-              S_AXI_RID <= S_AXI_ARID;
             end if;
 
           when ST_READ_SELECT =>
-            state_read <= state_read;
-            rtarget_q <= rtarget;
+            rtarget_q  <= rtarget;
             if rtarget = REG then
               state_read <= ST_READ_REG_BUSY;
               reg_rsel_q <= reg_rsel;
@@ -200,6 +201,9 @@ begin
               ext_arvalid(ext_rsel) <= '1';
               ext_araddr(ext_rsel) <= raddr_q;
               ext_rready(ext_rsel) <= '1';
+            else
+              state_read <= ST_READ_REG_BUSY;
+              reg_rsel_q <= reg_rsel;
             end if;
 
           when ST_READ_REG_BUSY =>
@@ -301,7 +305,7 @@ begin
         for k in 0 to G_REGISTER_INFO(i).M-1 loop
           if raddr_q_int = G_REGISTER_INFO(i).addr+4*(j*G_REGISTER_INFO(i).M+k) then
             rtarget <= REG;
-            reg_rsel <= G_REGISTER_INFO(i).internal_offset+j*G_REGISTER_INFO(i).M+k;
+            reg_rsel <= G_REGISTER_INFO(i).base+j*G_REGISTER_INFO(i).M+k;
           end if;
         end loop;
       end loop;
@@ -313,7 +317,7 @@ begin
   -- Multiplex read data
   with rtarget_q select rdata <=
     rdata_reg when REG,
-    rdata_mem(mem_rsel_q) when MEM,
+--    rdata_mem(mem_rsel_q) when MEM,
     rdata_ext when EXT,
     rdata_reg when others;
 
@@ -325,7 +329,7 @@ begin
   --
   gen_memories : for i in G_MEMNAMES-1 downto 0 generate
     signal l_rwsel : std_logic_vector(1 downto 0) := (others => '0');
-    signal l_mem_addr : std_logic_vector(G_ADDR_W-1 downto 0) := (others => '0');
+    signal l_mem_addr : std_logic_vector(g_addr_width-1 downto 0) := (others => '0');
 
     signal l_ena : std_logic := '0';
     signal l_wr : std_logic := '0';
@@ -385,9 +389,9 @@ begin
 
   -- ### write logic
 
-  prs_state_write: process (clk) begin
-    if rising_edge (clk) then
-      if reset = '1' then
+  prs_state_write: process (pi_clock) begin
+    if rising_edge (pi_clock) then
+      if pi_reset = '1' then
         state_write <= ST_WriteIdle;
         mem_wen <= (others => '0');
 
@@ -396,7 +400,7 @@ begin
           po_stb(i) <= '0';
         end loop;
 
-        -- some AXI4 signals must be reset here
+        -- some AXI4 signals must be pi_reset here
         for i in G_EXTCOUNT-1 downto 0 loop
           ext_awvalid(i) <= '0';
           ext_wvalid(i) <= '0';
@@ -409,13 +413,11 @@ begin
             if S_AXI_AWVALID = '1' and S_AXI_WVALID = '1' then
               state_write <= ST_WriteSelect;
               waddr_q <= S_AXI_AWADDR;
-              S_AXI_BID <= S_AXI_AWID;
               wdata_q <= S_AXI_WDATA;
               wstrb_q <= S_AXI_WSTRB;
             elsif S_AXI_AWVALID = '1' and S_AXI_WVALID = '0' then
               state_write <= ST_WriteWaitData;
               waddr_q <= S_AXI_AWADDR;
-              S_AXI_BID <= S_AXI_AWID;
             elsif S_AXI_AWVALID = '0' and S_AXI_WVALID = '1' then
               state_write <= ST_WriteWaitAddr;
               wdata_q <= S_AXI_WDATA;
@@ -433,7 +435,6 @@ begin
             if S_AXI_AWVALID = '1' then
               state_write <= ST_WriteSelect;
               waddr_q <= S_AXI_AWADDR;
-              S_AXI_BID <= S_AXI_AWID;
             end if;
 
           when ST_WriteSelect =>
@@ -537,7 +538,7 @@ begin
         for k in 0 to G_REGISTER_INFO(i).M-1 loop
           if waddr_q_int = G_REGISTER_INFO(i).addr+4*(j*G_REGISTER_INFO(i).M+k) then
             wtarget <= REG;
-            reg_wsel <= G_REGISTER_INFO(i).internal_offset+j*G_REGISTER_INFO(i).M+k;
+            reg_wsel <= G_REGISTER_INFO(i).base+j*G_REGISTER_INFO(i).M+k;
           end if;
         end loop;
       end loop;

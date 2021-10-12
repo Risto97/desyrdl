@@ -7,26 +7,32 @@ use ieee.numeric_std.all;
 library desyrdl;
 use desyrdl.common.all;
 
+-- library desy;
+-- use desy.common_axi.all;
+
 package pkg_{node.type_name} is
 
   -----------------------------------------------
   -- per addrmap / module
   -----------------------------------------------
-  constant C_ADDR_W : integer := 32;
+  constant C_ADDR_WIDTH : integer := 32;
+  constant C_DATA_WIDTH : integer := 32;
 
   -- must be calculated by register tool
   -- always add +1 for the dummy
   constant C_REGTYPES : integer := {n_regtypes};
   constant C_REGNAMES : integer := {n_regnames};
   constant C_REGCOUNT : integer := {n_regcount};
+
   constant C_MEMNAMES : integer := {n_memnames};
   -- TODO C_MEMCOUNT
-  constant C_MEM_AW : T_IntegerArray(C_MEMNAMES downto 0) := (
+  constant C_MEM_AW : t_integer_array(C_MEMNAMES downto 0) := (
     --{memnames:repeat:
-    {{i}} => {{aw}}, -- {{mem.inst_name}}}
+    {{i}} => {{aw}}, -- {{mem.inst_name}}
+    --}
     C_MEMNAMES => 0 -- dummy
   );
-  constant C_MEM_START : T_IntegerArray(C_MEMNAMES downto 0) := (
+  constant C_MEM_START : t_integer_array(C_MEMNAMES downto 0) := (
     --{memnames:repeat:
     {{i}} => {{mem.address_offset}}, -- {{mem.inst_name}}}
     C_MEMNAMES => 0 -- dummy
@@ -34,18 +40,18 @@ package pkg_{node.type_name} is
 
   constant C_EXTNAMES : integer := {n_extnames};
   constant C_EXTCOUNT : integer := C_EXTNAMES;
-  constant C_EXT_AW : T_IntegerArray(C_EXTNAMES downto 0) := (
+  constant C_EXT_AW : t_integer_array(C_EXTNAMES downto 0) := (
     --{extnames:repeat:
     {{i}} => {{aw}}, -- {{ext.inst_name}}}
     C_EXTNAMES => 0 -- dummy
   );
-  constant C_EXT_START : T_IntegerArray(C_EXTNAMES downto 0) := (
+  constant C_EXT_START : t_integer_array(C_EXTNAMES downto 0) := (
     --{extnames:repeat:
     {{i}} => {{ext.address_offset}}, -- {{ext.inst_name}}}
     C_EXTNAMES => 0 -- dummy
   );
   -- size in bytes occupied in the address map
-  constant C_EXT_SIZE : T_IntegerArray(C_EXTNAMES downto 0) := (
+  constant C_EXT_SIZE : t_integer_array(C_EXTNAMES downto 0) := (
     --{extnames:repeat:
     {{i}} => {{ext.size}}, -- {{ext.inst_name}}}
     C_EXTNAMES => 0 -- dummy
@@ -128,36 +134,36 @@ package pkg_{node.type_name} is
   -- Memory types (to get variable address and data widths that don't have to
   -- show up in the module HDL code)
   --{memtypes:repeat:
-  type t_mem_{{mem.type_name}}_in is record
+  type tif_mem_{{mem.type_name}}_in is record
     ena  : std_logic;
     wr   : std_logic;
     addr : std_logic_vector({{aw}}-1 downto 0);
     data : std_logic_vector({{memwidth}}-1 downto 0);
-  end record t_mem_{{mem.type_name}}_in;
-  subtype t_mem_{{mem.type_name}}_out is std_logic_vector({{memwidth}}-1 downto 0);
+  end record tif_mem_{{mem.type_name}}_in;
+  subtype tif_mem_{{mem.type_name}}_out is std_logic_vector({{memwidth}}-1 downto 0);
   --}
 
   -----------------------------------------------
   -- module I/O types: {node.type_name}
   -----------------------------------------------
-  type t_addrmap_{node.type_name}_in is record
+  type tif_addrmap_{node.type_name}_in is record
     --{regnames:repeat:
     {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_in(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
     --{memnames:repeat:
     {{mem.inst_name}} : t_mem_{{mem.type_name}}_out; --}
     --{extnames:repeat:
-    {{ext.inst_name}} : t_{{desyrdl_interface}}_s2m; --}
-    NONE : std_logic;
+    {{ext.inst_name}} : tif_{{desyrdl_interface}}_s2m; --}
+    -- NONE : std_logic;
   end record;
 
-  type t_addrmap_{node.type_name}_out is record
+  type tif_addrmap_{node.type_name}_out is record
     --{regnames:repeat:
     {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_out(0 to C_REGISTER_INFO({{i}}).N-1, 0 to C_REGISTER_INFO({{i}}).M-1); --}
     --{memnames:repeat:
     {{mem.inst_name}} : t_mem_{{mem.type_name}}_in; --}
     --{extnames:repeat:
-    {{ext.inst_name}} : t_{{desyrdl_interface}}_m2s; --}
-    NONE : std_logic;
+    {{ext.inst_name}} : tif_{{desyrdl_interface}}_m2s; --}
+    -- NONE : std_logic;
   end record;
 
   --{regtypes:repeat:
@@ -175,19 +181,21 @@ package pkg_{node.type_name} is
   -- top level component declaration
   -- must come after defining the interfaces
   -----------------------------------------------
+  subtype tif_{node.type_name}_m2s is tif_{desyrdl_interface}_m2s;
+  subtype tif_{node.type_name}_s2m is tif_{desyrdl_interface}_s2m;
+
   component {node.type_name} is
     port (
       pi_clock : in std_logic;
       pi_reset : in std_logic;
 
-      -- AXI4
-      pi_s_axi4 : in  t_axi4_m2s;
-      po_s_axi4 : out t_axi4_s2m;
+      -- TOP interface
+      pifi_s_top : in  tif_{node.type_name}_m2s;
+      pifo_s_top : out tif_{node.type_name}_s2m;
 
       -- logic
-      pi_addrmap : in t_addrmap_{node.type_name}_in;
-      po_addrmap : out t_addrmap_{node.type_name}_out
-
+      pifi_addrmap : in  tif_addrmap_{node.type_name}_in;
+      pifo_addrmap : out tif_addrmap_{node.type_name}_out
     );
   end component {node.type_name};
 

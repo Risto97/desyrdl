@@ -1,7 +1,7 @@
 pkg_desyrdl_common.vhd
-axi4_to_axi4.vhd
-axi4_to_ibus.vhd
+axi4l_to_axi4l.vhd
+axi4l_to_ibus.vhd
+decoder_axi4l.vhd
 reg_field_storage.vhd
 reg_field_counter.vhd
 register.vhd
-adapter_axi4.vhd
