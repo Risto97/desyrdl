@@ -1,6 +1,7 @@
 `include "test_hectare.sv"
 
 addrmap nextlevel {
+  desyrdl_interface = "AXI4L";
   reg {
     field {
       desc = "whatever status" ;
