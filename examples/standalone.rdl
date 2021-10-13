@@ -28,5 +28,19 @@ addrmap standalone {
       reset = 3 ;
     } rate[8] ;
   } control ;
+
+  reg snake_counter {
+    field {
+      desc = "Amount of snakes I dreamt of last night" ;
+      sw = rw ;
+      hw = r ;
+    } data[8] ;
+  } ;
+
+  snake_counter snakes[2] ;
 };
 
+addrmap top {
+  standalone APP[2] ;
+  APP[1].address = 1024 ;
+};
