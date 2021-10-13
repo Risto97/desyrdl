@@ -38,7 +38,7 @@ architecture arch of {node.type_name} is
   signal adapter_to_ext : t_axi4_m2s_array(C_EXTCOUNT downto 0);
 
 begin
-  ins_adapter: entity desyrdl.adapter_axi4
+  ins_adapter: entity desyrdl.decoder_axi4
   generic map (
                 G_ADDR_W     => C_ADDR_W,
                 G_REGISTER_INFO => C_REGISTER_INFO,

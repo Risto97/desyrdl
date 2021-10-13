@@ -11,7 +11,7 @@ use ieee.numeric_std.all;
 library work;
 use work.common.all;
 
-entity adapter_axi4 is
+entity decoder_axi4 is
   generic (
     G_ADDR_W    : integer := 8;
     G_REGISTER_INFO : t_reg_info_array;
@@ -66,9 +66,9 @@ entity adapter_axi4 is
     S_AXI_RREADY  : in std_logic;
     S_AXI_RID     : out std_logic_vector(16-1 downto 0)
 );
-end entity adapter_axi4;
+end entity decoder_axi4;
 
-architecture arch of adapter_axi4 is
+architecture arch of decoder_axi4 is
 
   type t_target is (NONE, REG, MEM, EXT);
   signal rtarget, wtarget : t_target;

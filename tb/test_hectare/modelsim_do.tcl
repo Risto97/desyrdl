@@ -20,7 +20,7 @@ analyze ../../desyrdl/libraries/vhdl/axi4_to_ibus.vhd
 analyze ../../desyrdl/libraries/vhdl/reg_field_storage.vhd
 analyze ../../desyrdl/libraries/vhdl/reg_field_counter.vhd
 analyze ../../desyrdl/libraries/vhdl/register.vhd
-analyze ../../desyrdl/libraries/vhdl/adapter_axi4.vhd
+analyze ../../desyrdl/libraries/vhdl/decoder_axi4.vhd
 analyze ../../out/pkg_reg_$modname.vhd
 analyze ../../out/top_$modname.vhd
 

@@ -26,7 +26,7 @@ analyze ../../HECTARE/pkg_reg_$modname.vhd
 analyze ../../HECTARE/reg_field_storage_$modname.vhd
 analyze ../../HECTARE/reg_field_counter_$modname.vhd
 analyze ../../HECTARE/register_$modname.vhd
-analyze ../../HECTARE/adapter_axi4_$modname.vhd
+analyze ../../HECTARE/decoder_axi4_$modname.vhd
 analyze ../../HECTARE/top_$modname.vhd
 analyze test_hectare_top.vhd
 analyze tb_TestCtrl.vhd

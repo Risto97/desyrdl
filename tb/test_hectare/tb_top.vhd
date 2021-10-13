@@ -160,7 +160,7 @@ begin
   --m2s_axi4_hectare.awlen <= ;
   --m2s_axi4_hectare.awsize <= ;
   --m2s_axi4_hectare.awburst <= ;
-  --m2s_axi4_hectare.awprot <= ; -- not in t_axi4_m2s, unused by adapter_axi4
+  --m2s_axi4_hectare.awprot <= ; -- not in t_axi4_m2s, unused by decoder_axi4
   m2s_axi4_hectare.awvalid <= AWValid;
   m2s_axi4_hectare.wid <= (others => '0');
   m2s_axi4_hectare.wdata(AXI_DATA_WIDTH-1 downto 0) <= WData;
