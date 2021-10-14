@@ -97,8 +97,6 @@ class DesyListener(RDLListener):
         self.memitems[-1].extend(self.gen_memitems(node))
         self.extitems[-1].extend(self.gen_extitems(node))
 
-        self.regcount += len([x for x in self.gen_node_names(node, [RegNode], False)])
-
         self.context = dict(
                 node=node,
                 regtypes=[x for x in self.gen_regtypes()],
@@ -115,7 +113,7 @@ class DesyListener(RDLListener):
 
         # add all non-native explicitly set properties
         for p in node.list_properties(include_native=False):
-            assert not p in self.context
+            assert p not in self.context
             print(f"exit_Addrmap {node.inst_name}: Adding non-native property {p}")
             self.context[p] = node.get_property(p)
 
@@ -152,183 +150,186 @@ class DesyListener(RDLListener):
     def gen_regitems(self, node):
         # For indexing of flattened arrays in VHDL port definitions.
         # Move to a dict() or improve VHDL code.
-        internal_offset = 0
+        index = 0
 
-        for i,x in self.gen_node_names(node, [RegNode], False):
+        for i, regx in self.gen_node_names(node, [RegNode], False):
 
-            N = 1
-            M = 1
+            dim_n = 1
+            dim_m = 1
             dim = 1
-            if x.is_array:
-                if len(x.array_dimensions) == 2:
-                    N = x.array_dimensions[0]
-                    M = x.array_dimensions[1]
+            if regx.is_array:
+                if len(regx.array_dimensions) == 2:
+                    dim_n = regx.array_dimensions[0]
+                    dim_m = regx.array_dimensions[1]
                     dim = 3
-                else:
-                    N = 1
-                    if len(x.array_dimensions) == 1:
-                        M = x.array_dimensions[0]
-                        dim = 2
-                    else:
-                        M = 1
-                        dim = 1
+                elif len(regx.array_dimensions) == 1:
+                    dim_n = 1
+                    dim_m = regx.array_dimensions[0]
+                    dim = 2
+
+            elements = dim_n * dim_m
+
+            self.regcount += elements
 
             context = dict()
 
-            addrmap = x.owning_addrmap.get_path_segment(array_suffix='.{index:d}', empty_array_suffix='')
-            addrmap_full = x.owning_addrmap.get_path(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap = regx.owning_addrmap.get_path_segment(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap_full = regx.owning_addrmap.get_path(array_suffix='.{index:d}', empty_array_suffix='')
 
             context["i"] = i
-            context["name"] = x.type_name
+            context["name"] = regx.type_name
             context["addrmap"] = addrmap
             context["addrmap_full"] = addrmap_full
-            context["reladdr"] = x.address_offset
-            context["absaddr"] = x.absolute_address
+            context["reladdr"] = regx.address_offset
+            context["absaddr"] = regx.absolute_address
 
-            context["reg"] = x
-            context["N"] = N
-            context["M"] = M
+            context["reg"] = regx
+            context["dim_n"] = dim_n
+            context["dim_m"] = dim_m
             context["dim"] = dim
-            context["elements"] = N*M
-            context["rw"] = "RW" if x.has_sw_writable else "RO"
-            context["width"] = x.get_property("regwidth")
-            context["name"] = x.type_name
+            context["elements"] = elements
+            context["rw"] = "RW" if regx.has_sw_writable else "RO"
+            context["width"] = regx.get_property("regwidth")
+            context["name"] = regx.type_name
             # "internal_offset" is needed for indexing of flattened arrays in VHDL
             # port definitions. Improve VHDL code to get rid of it.
-            context["internal_offset"] = internal_offset
-            internal_offset = internal_offset+N*M
+            context["index"] = index
+            index = index + elements
 
-            context["desyrdl_access_channel"] = self.get_access_channel(x)
+            context["desyrdl_access_channel"] = self.get_access_channel(regx)
 
             # add all non-native explicitly set properties
-            for p in x.list_properties(include_native=False):
-                assert not p in context
-                context[p] = x.get_property(p)
+            for p in regx.list_properties(include_native=False):
+                assert p not in context
+                context[p] = regx.get_property(p)
 
             yield context
 
     def gen_memitems(self, node):
-        for i,x in self.gen_node_names(node, [MemNode], True, first_only=False):
+        for i, memx in self.gen_node_names(node, [MemNode], True, first_only=False):
 
             context = dict()
 
-            addrmap = x.owning_addrmap.get_path_segment(array_suffix='.{index:d}', empty_array_suffix='')
-            addrmap_full = x.owning_addrmap.get_path(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap = memx.owning_addrmap.get_path_segment(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap_full = memx.owning_addrmap.get_path(array_suffix='.{index:d}', empty_array_suffix='')
 
             context["i"] = i
             context["addrmap"] = addrmap
             context["addrmap_full"] = addrmap_full
-            context["reladdr"] = x.address_offset
-            context["absaddr"] = x.absolute_address
+            context["reladdr"] = memx.address_offset
+            context["absaddr"] = memx.absolute_address
 
-            context["mem"] = x
-            context["entries"] = x.get_property("mementries")
-            context["addresses"] = x.get_property("mementries") * 4
-            context["datawidth"] = x.get_property("memwidth")
-            context["addrwidth"] = ceil(log2(x.get_property("mementries") * 4))
-            context["name"] = x.type_name
-            context["sw"] = x.get_property("sw").name
+            context["mem"] = memx
+            context["entries"] = memx.get_property("mementries")
+            context["addresses"] = memx.get_property("mementries") * 4
+            context["datawidth"] = memx.get_property("memwidth")
+            context["addrwidth"] = ceil(log2(memx.get_property("mementries") * 4))
+            context["name"] = memx.type_name
+            context["sw"] = memx.get_property("sw").name
             # virtual registers, e.g. for DMA regions
-            context["vregs"] = [x for x in self.gen_regitems(x)]
+            context["vregs"] = [x for x in self.gen_regitems(memx)]
 
-            context["desyrdl_access_channel"] = self.get_access_channel(x)
+            context["desyrdl_access_channel"] = self.get_access_channel(memx)
 
 
             # add all non-native explicitly set properties
-            for p in x.list_properties(include_native=False):
-                assert not p in context
-                context[p] = x.get_property(p)
+            for p in memx.list_properties(include_native=False):
+                assert p not in context
+                context[p] = memx.get_property(p)
 
             yield context
 
     def gen_extitems(self, node):
-        for i,x in self.gen_node_names(node, [AddrmapNode, RegfileNode, RegNode], True, first_only=False):
+        for i, extx in self.gen_node_names(node, [AddrmapNode, RegfileNode, RegNode], True, first_only=False):
 
             context = dict()
 
-            addrmap = x.parent.get_path_segment(array_suffix='.{index:d}', empty_array_suffix='')
-            addrmap_full = x.parent.get_path(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap = extx.parent.get_path_segment(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap_full = extx.parent.get_path(array_suffix='.{index:d}', empty_array_suffix='')
 
             context["i"] = i
             context["addrmap"] = addrmap
             context["addrmap_full"] = addrmap_full
-            context["reladdr"] = x.address_offset
-            context["absaddr"] = x.absolute_address
+            context["reladdr"] = extx.address_offset
+            context["absaddr"] = extx.absolute_address
 
-            context["ext"] = x
-            context["size"] = int(x.total_size)
-            context["total_words"] = int(x.total_size/4)
-            context["addrwidth"] = ceil(log2(x.size))
+            context["ext"] = extx
+            context["size"] = int(extx.total_size)
+            context["total_words"] = int(extx.total_size/4)
+            context["addrwidth"] = ceil(log2(extx.size))
 
-            context["desyrdl_access_channel"] = self.get_access_channel(x)
+            context["desyrdl_access_channel"] = self.get_access_channel(extx)
 
             # add all non-native explicitly set properties
-            for p in x.list_properties(include_native=False):
-                if not p in context:
-                    context[p] = x.get_property(p)
+            for p in extx.list_properties(include_native=False):
+                if p not in context:
+                    context[p] = extx.get_property(p)
 
             yield context
 
     def gen_regtypes(self):
-        for i,x in enumerate(self.regtypes[-1].values()):
+        for i, regx in enumerate(self.regtypes[-1].values()):
+            fields = [f for f in self.gen_fields(regx)]
+
             context = dict()
 
             context["i"] = i
-            context["regtype"] = x
-            context["fields"] = [f for f in self.gen_fields(x)]
-            context["name"] = x.type_name
+            context["regtype"] = regx
+            context["fields"] = fields
+            context["fields_count"] = len(fields)
+            context["name"] = regx.type_name
 
-            context["desyrdl_access_channel"] = self.get_access_channel(x)
+            context["desyrdl_access_channel"] = self.get_access_channel(regx)
 
             # add all non-native explicitly set properties
-            for p in x.list_properties(include_native=False):
-                assert not p in context
-                context[p] = x.get_property(p)
+            for p in regx.list_properties(include_native=False):
+                assert p not in context
+                context[p] = regx.get_property(p)
 
             yield context
 
     def gen_memtypes(self):
-        for i,x in enumerate(self.memtypes[-1].values()):
+        for i, memx in enumerate(self.memtypes[-1].values()):
             context = dict()
 
-            context["mem"] = x
-            context["mementries"] = x.get_property("mementries")
-            context["memwidth"] = x.get_property("memwidth")
-            context["datawidth"] = x.get_property("memwidth")
-            context["addresses"] = x.get_property("mementries") * 4
-            context["addrwidth"] = ceil(log2(x.get_property("mementries") * 4))
+            context["mem"] = memx
+            context["mementries"] = memx.get_property("mementries")
+            context["memwidth"] = memx.get_property("memwidth")
+            context["datawidth"] = memx.get_property("memwidth")
+            context["addresses"] = memx.get_property("mementries") * 4
+            context["addrwidth"] = ceil(log2(memx.get_property("mementries") * 4))
 
-            context["desyrdl_access_channel"] = self.get_access_channel(x)
+            context["desyrdl_access_channel"] = self.get_access_channel(memx)
 
             # add all non-native explicitly set properties
-            for p in x.list_properties(include_native=False):
-                assert not p in context
-                context[p] = x.get_property(p)
+            for p in memx.list_properties(include_native=False):
+                assert p not in context
+                context[p] = memx.get_property(p)
 
             yield context
 
     def gen_fields(self, node):
-        for i,x in enumerate(node.fields()):
+        for i, fldx in enumerate(node.fields()):
 
             context = dict()
 
             context["i"] = i
-            context["regtype"] = x.parent
-            context["field"] = x
-            context["ftype"] = self.get_ftype(x)
-            context["width"] = x.get_property("fieldwidth")
-            context["we"] = 0 if x.get_property("we") is False else 1
-            context["sw"] = x.get_property("sw").name
-            context["hw"] = x.get_property("hw").name
-            context["reset"] = 0 if x.get_property("reset") is None else x.get_property("reset")
-            context["decrwidth"] = x.get_property("decrwidth") if x.get_property("decrwidth") is not None else 1
-            context["incrwidth"] = x.get_property("incrwidth") if x.get_property("incrwidth") is not None else 1
-            context["name"] = x.type_name
-            context["desyrdl_access_channel"] = self.get_access_channel(x)
+            context["regtype"] = fldx.parent
+            context["field"] = fldx
+            context["ftype"] = self.get_ftype(fldx)
+            context["width"] = fldx.get_property("fieldwidth")
+            context["we"] = 0 if fldx.get_property("we") is False else 1
+            context["sw"] = fldx.get_property("sw").name
+            context["hw"] = fldx.get_property("hw").name
+            context["reset"] = 0 if fldx.get_property("reset") is None else fldx.get_property("reset")
+            context["decrwidth"] = fldx.get_property("decrwidth") if fldx.get_property("decrwidth") is not None else 1
+            context["incrwidth"] = fldx.get_property("incrwidth") if fldx.get_property("incrwidth") is not None else 1
+            context["name"] = fldx.type_name
+            context["desyrdl_access_channel"] = self.get_access_channel(fldx)
 
             # add all non-native explicitly set properties
             for p in node.list_properties(include_native=False):
-                assert not p in context
+                assert p not in context
                 context[p] = node.get_property(p)
 
             yield context
