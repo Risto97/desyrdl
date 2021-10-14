@@ -2,8 +2,8 @@
 import string
 
 from systemrdl import RDLCompileError, RDLCompiler, RDLListener, RDLWalker
-from systemrdl.node import AddrmapNode, FieldNode  #, AddressableNode
-from systemrdl.node import MemNode, RegfileNode, RegNode, RootNode
+from systemrdl.node import (AddrmapNode, FieldNode,  # , AddressableNode
+                            MemNode, RegfileNode, RegNode, RootNode)
 
 
 class RdlFormatter(string.Formatter):

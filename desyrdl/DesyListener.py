@@ -40,9 +40,9 @@ class DesyListener(RDLListener):
 
 
     def init_context(self):
-        self.regnames = list()
-        self.memnames = list()
-        self.extnames = list()
+        self.regitems = list()
+        self.memitems = list()
+        self.extitems = list()
         self.regtypes = list()
         self.memtypes = list()
         self.regcount = 0
@@ -75,9 +75,9 @@ class DesyListener(RDLListener):
     def enter_Addrmap(self, node):
         self.regtypes.append(dict())
         self.memtypes.append(dict())
-        self.regnames.append(list())
-        self.memnames.append(list())
-        self.extnames.append(list())
+        self.regitems.append(list())
+        self.memitems.append(list())
+        self.extitems.append(list())
 
     # types are in the dictionary on the top of the stack
     def enter_Component(self, node):
@@ -93,9 +93,9 @@ class DesyListener(RDLListener):
 
     def exit_Addrmap(self, node):
 
-        self.regnames[-1].extend(self.gen_regnames(node))
-        self.memnames[-1].extend(self.gen_memnames(node))
-        self.extnames[-1].extend(self.gen_extnames(node))
+        self.regitems[-1].extend(self.gen_regitems(node))
+        self.memitems[-1].extend(self.gen_memitems(node))
+        self.extitems[-1].extend(self.gen_extitems(node))
 
         self.regcount += len([x for x in self.gen_node_names(node, [RegNode], False)])
 
@@ -103,15 +103,15 @@ class DesyListener(RDLListener):
                 node=node,
                 regtypes=[x for x in self.gen_regtypes()],
                 memtypes=[x for x in self.gen_memtypes()],
-                regnames=self.regnames[-1],
-                memnames=self.memnames[-1],
-                extnames=self.extnames[-1],
+                regitems=self.regitems[-1],
+                memitems=self.memitems[-1],
+                extitems=self.extitems[-1],
                 n_regtypes=len(self.regtypes[-1]),
-                n_regnames=len(self.regnames[-1]),
+                n_regitems=len(self.regitems[-1]),
                 n_regcount=self.regcount,
                 n_memtypes=len(self.memtypes[-1]),
-                n_memnames=len(self.memnames[-1]),
-                n_extnames=len(self.extnames[-1]))
+                n_memitems=len(self.memitems[-1]),
+                n_extitems=len(self.extitems[-1]))
 
         # add all non-native explicitly set properties
         for p in node.list_properties(include_native=False):
@@ -126,9 +126,9 @@ class DesyListener(RDLListener):
         # Some context must be cleared on addrmap boundaries
         self.regtypes.pop()
         self.memtypes.pop()
-        self.regnames.pop()
-        self.memnames.pop()
-        self.extnames.pop()
+        self.regitems.pop()
+        self.memitems.pop()
+        self.extitems.pop()
         self.regcount = 0
 
     # yields a tuple (i, node) for each child of node that matches a list of
@@ -149,7 +149,7 @@ class DesyListener(RDLListener):
             yield (i, child)
             i += 1
 
-    def gen_regnames(self, node):
+    def gen_regitems(self, node):
         # For indexing of flattened arrays in VHDL port definitions.
         # Move to a dict() or improve VHDL code.
         internal_offset = 0
@@ -158,16 +158,20 @@ class DesyListener(RDLListener):
 
             N = 1
             M = 1
+            dim = 1
             if x.is_array:
                 if len(x.array_dimensions) == 2:
                     N = x.array_dimensions[0]
                     M = x.array_dimensions[1]
+                    dim = 3
                 else:
                     N = 1
                     if len(x.array_dimensions) == 1:
                         M = x.array_dimensions[0]
+                        dim = 2
                     else:
                         M = 1
+                        dim = 1
 
             context = dict()
 
@@ -175,6 +179,7 @@ class DesyListener(RDLListener):
             addrmap_full = x.owning_addrmap.get_path(array_suffix='.{index:d}', empty_array_suffix='')
 
             context["i"] = i
+            context["name"] = x.type_name
             context["addrmap"] = addrmap
             context["addrmap_full"] = addrmap_full
             context["reladdr"] = x.address_offset
@@ -183,8 +188,11 @@ class DesyListener(RDLListener):
             context["reg"] = x
             context["N"] = N
             context["M"] = M
+            context["dim"] = dim
+            context["elements"] = N*M
             context["rw"] = "RW" if x.has_sw_writable else "RO"
-            context["regwidth"] = x.get_property("regwidth")
+            context["width"] = x.get_property("regwidth")
+            context["name"] = x.type_name
             # "internal_offset" is needed for indexing of flattened arrays in VHDL
             # port definitions. Improve VHDL code to get rid of it.
             context["internal_offset"] = internal_offset
@@ -199,7 +207,7 @@ class DesyListener(RDLListener):
 
             yield context
 
-    def gen_memnames(self, node):
+    def gen_memitems(self, node):
         for i,x in self.gen_node_names(node, [MemNode], True, first_only=False):
 
             context = dict()
@@ -214,15 +222,17 @@ class DesyListener(RDLListener):
             context["absaddr"] = x.absolute_address
 
             context["mem"] = x
-            context["mementries"] = x.get_property("mementries")
-            context["memwidth"] = x.get_property("memwidth")
+            context["entries"] = x.get_property("mementries")
             context["addresses"] = x.get_property("mementries") * 4
-            context["aw"] = ceil(log2(x.get_property("mementries") * 4))
-
+            context["datawidth"] = x.get_property("memwidth")
+            context["addrwidth"] = ceil(log2(x.get_property("mementries") * 4))
+            context["name"] = x.type_name
+            context["sw"] = x.get_property("sw").name
             # virtual registers, e.g. for DMA regions
-            context["vregs"] = [x for x in self.gen_regnames(x)]
+            context["vregs"] = [x for x in self.gen_regitems(x)]
 
             context["desyrdl_access_channel"] = self.get_access_channel(x)
+
 
             # add all non-native explicitly set properties
             for p in x.list_properties(include_native=False):
@@ -231,7 +241,7 @@ class DesyListener(RDLListener):
 
             yield context
 
-    def gen_extnames(self, node):
+    def gen_extitems(self, node):
         for i,x in self.gen_node_names(node, [AddrmapNode, RegfileNode, RegNode], True, first_only=False):
 
             context = dict()
@@ -246,8 +256,9 @@ class DesyListener(RDLListener):
             context["absaddr"] = x.absolute_address
 
             context["ext"] = x
+            context["size"] = int(x.total_size)
             context["total_words"] = int(x.total_size/4)
-            context["aw"] = ceil(log2(x.size))
+            context["addrwidth"] = ceil(log2(x.size))
 
             context["desyrdl_access_channel"] = self.get_access_channel(x)
 
@@ -265,6 +276,7 @@ class DesyListener(RDLListener):
             context["i"] = i
             context["regtype"] = x
             context["fields"] = [f for f in self.gen_fields(x)]
+            context["name"] = x.type_name
 
             context["desyrdl_access_channel"] = self.get_access_channel(x)
 
@@ -282,8 +294,9 @@ class DesyListener(RDLListener):
             context["mem"] = x
             context["mementries"] = x.get_property("mementries")
             context["memwidth"] = x.get_property("memwidth")
+            context["datawidth"] = x.get_property("memwidth")
             context["addresses"] = x.get_property("mementries") * 4
-            context["aw"] = ceil(log2(x.get_property("mementries") * 4))
+            context["addrwidth"] = ceil(log2(x.get_property("mementries") * 4))
 
             context["desyrdl_access_channel"] = self.get_access_channel(x)
 
@@ -303,14 +316,14 @@ class DesyListener(RDLListener):
             context["regtype"] = x.parent
             context["field"] = x
             context["ftype"] = self.get_ftype(x)
-            context["hw_we"] = x.get_property("we")
-            context["sw_access"] = x.get_property("sw").name
-            context["hw_access"] = x.get_property("hw").name
+            context["width"] = x.get_property("fieldwidth")
+            context["we"] = 0 if x.get_property("we") is False else 1
+            context["sw"] = x.get_property("sw").name
+            context["hw"] = x.get_property("hw").name
             context["reset"] = 0 if x.get_property("reset") is None else x.get_property("reset")
             context["decrwidth"] = x.get_property("decrwidth") if x.get_property("decrwidth") is not None else 1
             context["incrwidth"] = x.get_property("incrwidth") if x.get_property("incrwidth") is not None else 1
             context["name"] = x.type_name
-
             context["desyrdl_access_channel"] = self.get_access_channel(x)
 
             # add all non-native explicitly set properties
