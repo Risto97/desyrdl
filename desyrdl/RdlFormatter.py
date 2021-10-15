@@ -49,18 +49,28 @@ class RdlFormatter(string.Formatter):
             def do_format():
                 return self.format(template, context=value, **value)
 
-            if check == "gt" and value[name] > int(compareval):
-                return do_format()
-            if check == "lt" and value[name] < int(compareval):
-                return do_format()
-            if check == "eq" and value[name] == int(compareval):
-                return do_format()
-            if check == "ne" and value[name] != int(compareval):
-                return do_format()
-            if check == "ge" and value[name] >= int(compareval):
-                return do_format()
-            if check == "le" and value[name] <= int(compareval):
-                return do_format()
+            # compare with int, if string cannot be coveted to string compare strings
+            try:
+                if check == "eq" and value[name] == int(compareval):
+                    return do_format()
+                if check == "ne" and value[name] != int(compareval):
+                    return do_format()
+            except ValueError:
+                if check == "eq" and value[name] == compareval:
+                    return do_format()
+                if check == "ne" and value[name] != compareval:
+                    return do_format()
+            try:
+                if check == "gt" and value[name] > int(compareval):
+                    return do_format()
+                if check == "lt" and value[name] < int(compareval):
+                    return do_format()
+                if check == "ge" and value[name] >= int(compareval):
+                    return do_format()
+                if check == "le" and value[name] <= int(compareval):
+                    return do_format()
+            except ValueError:
+                print(f'if with string can by used only with eq,ne; if:{check}:{name}:{compareval} ')
 
             # return an empty string if the check fails
             return ""

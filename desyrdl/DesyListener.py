@@ -176,8 +176,11 @@ class DesyListener(RDLListener):
             addrmap = regx.owning_addrmap.get_path_segment(array_suffix='.{index:d}', empty_array_suffix='')
             addrmap_full = regx.owning_addrmap.get_path(array_suffix='.{index:d}', empty_array_suffix='')
 
+            fields = [f for f in self.gen_fields(regx)]
+
             context["i"] = i
-            context["name"] = regx.type_name
+            context["name"] = regx.inst_name
+            context["type"] = regx.type_name
             context["addrmap"] = addrmap
             context["addrmap_full"] = addrmap_full
             context["reladdr"] = regx.address_offset
@@ -188,9 +191,9 @@ class DesyListener(RDLListener):
             context["dim_m"] = dim_m
             context["dim"] = dim
             context["elements"] = elements
+            context["fields"] = fields
             context["rw"] = "RW" if regx.has_sw_writable else "RO"
             context["width"] = regx.get_property("regwidth")
-            context["name"] = regx.type_name
             # "internal_offset" is needed for indexing of flattened arrays in VHDL
             # port definitions. Improve VHDL code to get rid of it.
             context["index"] = index
