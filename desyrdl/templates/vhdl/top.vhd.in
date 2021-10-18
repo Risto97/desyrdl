@@ -25,163 +25,126 @@ entity {node.type_name} is
 end entity {node.type_name};
 
 architecture arch of {node.type_name} is
-  signal decoder_stb : std_logic_vector(C_REGCOUNT-1 downto 0);
-  signal decoder_we  : std_logic;
-  signal decoder_err : std_logic;
-  signal decoder_wdata : std_logic_vector(32-1 downto 0);
-  signal decoder_rdata : t_32b_slv_array(C_REGCOUNT-1 downto 0);
 
-  signal decoder_from_dpm : tif_mem_out_arr(C_MEMNAMES downto 0);
-  signal decoder_to_dpm   : tif_mem_in_arr(C_MEMNAMES downto 0);
+  type t_reg_data_out is array (natural range<>) of std_logic_vector(C_DATA_WIDTH-1 downto 0) ;
+  signal reg_data_out_vect : t_reg_data_out({n_regcount}-1 downto 0);
 
-  signal decoder_from_ext : tif_axi4l_s2m_array(C_EXTCOUNT downto 0);
-  signal decoder_to_ext   : tif_axi4l_m2s_array(C_EXTCOUNT downto 0);
+  signal reg_rd_stb   : std_logic_vector({n_regcount}-1 downto 0);
+  signal reg_wr_stb   : std_logic_vector({n_regcount}-1 downto 0);
+  signal reg_data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+  signal reg_data_in  : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+
+  signal mem_stb      : std_logic_vector({n_memitems}-1 downto 0);
+  signal mem_we       : std_logic;
+  signal mem_addr     : std_logic_vector(C_ADDR_WIDTH-1 downto 0);
+  signal mem_data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+  signal mem_data_in  : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+  signal mem_ack      : std_logic;
+
+  signal ifi_ext      : tif_{desyrdl_interface:lower}_s2m_array({n_extitems} downto 0);
+  signal ifo_ext      : tif_{desyrdl_interface:lower}_m2s_array({n_extitems} downto 0);
 
 begin
-  ins_decoder: entity desyrdl.decoder_axi4l
-  generic map (
-    g_addr_width    => C_ADDR_WIDTH,
-    g_data_width    => C_DATA_WIDTH,
 
-    g_register_info  => C_REGISTER_INFO,
-    g_regnames       => C_REGNAMES,
-    g_regcount       => C_REGCOUNT,
+  inst_decoder_axi4l: entity desyrdl.decoder_{desyrdl_interface:lower}
+    generic map (
+      g_addr_width    => C_ADDR_WIDTH,
+      g_data_width    => C_DATA_WIDTH,
+      g_register_info => C_REGISTER_INFO,
+      g_regitems      => {n_regitems},
+      g_regcount      => {n_regcount},
+      g_mem_info      => C_MEM_INFO,
+      g_memitems      => {n_memitems},
+      g_memcount      => {n_memitems},
+      g_ext_info      => C_EXT_INFO,
+      g_extitems      => {n_extitems},
+      g_extcount      => {n_extitems}
+    )
+    port map (
+      pi_clock      => pi_clock,
+      pi_reset      => pi_reset,
 
-    g_memnames       => C_MEMNAMES,
-    g_mem_start      => C_MEM_START,
-    g_mem_aw         => C_MEM_AW,
+      po_reg_rd_stb => reg_rd_stb,
+      po_reg_wr_stb => reg_wr_stb,
+      po_reg_data   => reg_data_in,
+      pi_reg_data   => reg_data_out,
+      po_mem_stb    => mem_stb,
+      po_mem_we     => mem_we,
+      po_mem_addr   => mem_addr,
+      po_mem_data   => mem_data_out,
+      pi_mem_data   => mem_data_in,
+      pi_mem_ack    => mem_ack,
 
-    g_extcount       => C_EXTCOUNT,
-    g_ext_start      => C_EXT_START,
-    g_ext_size       => C_EXT_SIZE,
-    g_ext_aw         => C_EXT_AW
-  )
-  port map (
-    pi_clock      => pi_clock,
-    pi_reset      => pi_reset,
+      pifi_ext      => ifi_ext,
+      pifo_ext      => ifo_ext,
+      pifi_s_top    => pifi_s_top,
+      pifo_s_top    => pifo_s_top
+    );
 
-    pi_regs       => decoder_rdata,
-    po_stb        => decoder_stb,
-    po_we         => decoder_we,
-    pi_err        => decoder_err,
-    po_data       => decoder_wdata,
-
-    po_mem        => decoder_to_dpm,
-    pi_mem        => decoder_from_dpm,
-
-    po_ext        => decoder_to_ext,
-    pi_ext        => decoder_from_ext,
-
-    s_axi_awaddr  => pifi_s_top.awaddr(C_ADDR_WIDTH-1 downto 0),
-    s_axi_awprot  => (others => '0'),
-    s_axi_awvalid => pifi_s_top.awvalid,
-    s_axi_awready => pifo_s_top.awready,
-    s_axi_wdata   => pifi_s_top.wdata(C_DATA_WIDTH-1 downto 0),
-    s_axi_wstrb   => pifi_s_top.wstrb(C_DATA_WIDTH/8-1 downto 0),
-    s_axi_wvalid  => pifi_s_top.wvalid,
-    s_axi_wready  => pifo_s_top.wready,
-    s_axi_bresp   => pifo_s_top.bresp,
-    s_axi_bvalid  => pifo_s_top.bvalid,
-    s_axi_bready  => pifi_s_top.bready,
-    s_axi_araddr  => pifi_s_top.araddr(C_ADDR_WIDTH-1 downto 0),
-    s_axi_arprot  => (others => '0'),
-    s_axi_arvalid => pifi_s_top.arvalid,
-    s_axi_arready => pifo_s_top.arready,
-    s_axi_rdata   => pifo_s_top.rdata(C_DATA_WIDTH-1 downto 0),
-    s_axi_rresp   => pifo_s_top.rresp,
-    s_axi_rvalid  => pifo_s_top.rvalid,
-    s_axi_rready  => pifi_s_top.rready
-  );
-
-  -- downstream interface assignments
-  blk_ext_ports : block
+  prs_reg_rd_mux: process(pi_clock)
   begin
-  --{extnames:repeat:extnames:
-    ins_{{i}}_{{ext.inst_name}} : entity desyrdl.{{desyrdl_interface}}_to_{{desyrdl_interface}}
-      port map (
-        pi_clock       => pi_clock,
-        pi_reset       => pi_reset,
-        pifi_s_adapter => decoder_to_ext({{i}}),
-        pifo_s_adapter => decoder_from_ext({{i}}),
-        pifo_m_ext     => pifo_addrmap.{{ext.inst_name}},
-        pifi_m_ext     => pifi_addrmap.{{ext.inst_name}}
-      ); --}
-  end block;
+    if rising_edge(pi_clock) then
+      for idx in 0 to {n_regcount}-1 loop
+        if reg_rd_stb(idx) = '1' then
+          reg_data_out <= reg_data_out_vect(idx);
+        end if;
+      end loop;
+    end if;
+  end process prs_reg_rd_mux;
 
-  -- po_s_axi4.aclk <= pi_clock;
-  -- po_s_axi4.rlast <= '1';
-
-  -- memory assignments
-  --
-  -- TODO implement arrays of memories? DeviceAccess couldn't handle,
-  -- rely on separate instances for now.
-  blk_mem_ports : block
-  begin
-  --{memnames:repeat:memnames:
-    pifo_addrmap.{{mem.inst_name}}.ena  <= decoder_to_dpm({{i}}).ena;
-    pifo_addrmap.{{mem.inst_name}}.wr   <= decoder_to_dpm({{i}}).wr;
-    pifo_addrmap.{{mem.inst_name}}.addr <= decoder_to_dpm({{i}}).addr({{aw}}-1 downto 0);
-    pifo_addrmap.{{mem.inst_name}}.data <= decoder_to_dpm({{i}}).data({{memwidth}}-1 downto 0);
-    decoder_from_dpm({{i}})({{memwidth}}-1 downto 0) <= pifi_addrmap.{{mem.inst_name}}; --}
-  end block;
-
-  --{regnames:repeat:regnames:
+  --{regitems:repeat:
   -- regname {{reg.inst_name}} regtype {{reg.type_name}}
-  blk_{{i}}_{{reg.inst_name}} : block
-    constant l_r : integer := {{i}};
-    constant l_reg_info : t_reg_info := C_REGISTER_INFO(l_r);
-  begin
-    gen_N : for i in 0 to l_reg_info.N-1 generate  -- outer dim, for 3D arrays
-    begin
-      gen_M: for j in 0 to l_reg_info.M-1 generate -- inner dim, for 2D arrays
-        signal l_reg_incr     : std_logic_vector(32-1 downto 0);
-        signal l_reg_decr     : std_logic_vector(32-1 downto 0);
-        signal l_reg_we       : std_logic_vector(32-1 downto 0);
-        signal l_reg_data_in  : std_logic_vector(32-1 downto 0);
-        signal l_reg_data_out : std_logic_vector(32-1 downto 0);
-        signal l_reg_swmod    : std_logic_vector(32-1 downto 0);
-        signal l_reg_swacc    : std_logic_vector(32-1 downto 0);
-      begin
+  blk_{{i}}_{{name}} : block
+  begin  --{{context:if:eq:dim:1:
+    inst_{{i}}_{{name}}: entity desyrdl.{node.type_name}_{{reg.type_name}}
+      port map(
+        pi_clock        => pi_clock,
+        pi_reset        => pi_reset,
+        -- to/from adapter
+        pi_decoder_rd_stb => reg_rd_stb({{index}}),
+        pi_decoder_wr_stb => reg_wr_stb({{index}}),
+        pi_decoder_data   => reg_data_in,
+        po_decoder_data   => reg_data_out_vect({{index}}),
 
-        -- signal assignments have to be done with generated functions
-        l_reg_incr    <= fun_{{reg.type_name}}_to_incr(pifi_addrmap.{{reg.inst_name}}(i,j));
-        l_reg_decr    <= fun_{{reg.type_name}}_to_decr(pifi_addrmap.{{reg.inst_name}}(i,j));
-        l_reg_we      <= fun_{{reg.type_name}}_to_we(  pifi_addrmap.{{reg.inst_name}}(i,j));
-        l_reg_data_in <= fun_{{reg.type_name}}_to_data(pifi_addrmap.{{reg.inst_name}}(i,j));
-        pifo_addrmap.{{reg.inst_name}}(i,j) <= fun_slv_to_{{reg.type_name}}(l_reg_data_out, l_reg_swmod, l_reg_swacc);
-
-        -- TODO implement swacc
-        l_reg_swacc <= (others => '0');
-
-        ins_reg: entity work.desyrdl_register
-        generic map (
-          -- contains an array of field info
-          g_fields => l_reg_info.fields
-        )
-        port map (
-          pi_clock => pi_clock,
-          pi_reset => pi_reset,
-
+        pifi_reg  => pifi_addrmap.{{{{reg.inst_name}}}},
+        pifo_reg  => pifo_addrmap.{{{{reg.inst_name}}}}
+      );--}} --{{context:if:eq:dim:2:
+    gen_dim_m: for idx_m in 0 to {{dim_m}}-1 generate
+      inst_{{i}}_{{name}}: entity desyrdl.{node.type_name}_{{reg.type_name}}
+        port map(
+          pi_clock        => pi_clock,
+          pi_reset        => pi_reset,
           -- to/from adapter
-          pi_decoder_stb  => decoder_stb(l_reg_info.base+i*l_reg_info.M+j),
-          pi_decoder_we   => decoder_we,
-          po_decoder_err  => decoder_err,
-          pi_decoder_data => decoder_wdata,
-          po_decoder_data => decoder_rdata(l_reg_info.base+i*l_reg_info.M+j),
+          pi_decoder_rd_stb => reg_rd_stb({{index}}),
+          pi_decoder_wr_stb => reg_wr_stb({{index}}),
+          pi_decoder_data   => reg_data_in,
+          po_decoder_data   => reg_data_out_vect({{index}}+idx_m),
 
-          -- to/from our IP
-          pi_logic_incr => l_reg_incr,
-          pi_logic_decr => l_reg_decr,
-          pi_logic_we   => l_reg_we,
-          pi_logic_data => l_reg_data_in,
-          po_logic_data => l_reg_data_out,
-          po_logic_swmod => l_reg_swmod
+          pifi_reg  => pifi_addrmap.{{{{reg.inst_name}}}}(idx_m),
+          pifo_reg  => pifo_addrmap.{{{{reg.inst_name}}}}(idx_m)
         );
+    end generate;--}} --{{context:if:eq:dim:3:
+    gen_dim_n : for idx_n in 0 to {{dim_n}}-1 generate  -- outer dim, for 3D arrays
+      gen_dim_m: for idx_m in 0 to {{dim_m}}-1 generate -- inner dim, for 2D arrays
+        constant l_idx : natural := (idx_m + 1) * (idx_n + 1) - 1 ;
+      begin
+        inst_{{i}}_{{reg.inst_name}}: entity desyrdl.{node.type_name}_{{reg.type_name}}
+          port map(
+            pi_clock        => pi_clock,
+            pi_reset        => pi_reset,
+            -- to/from adapter
+            pi_decoder_rd_stb => reg_rd_stb({{index}}),
+            pi_decoder_wr_stb => reg_wr_stb({{index}}),
+            pi_decoder_data   => reg_data_in,
+            po_decoder_data   => reg_data_out_vect({{index}}+l_idx),
 
+            pifi_reg  => pifi_addrmap.{{{{reg.inst_name}}}}(idx_n,idx_m),
+            pifo_reg  => pifo_addrmap.{{{{reg.inst_name}}}}(idx_n,idx_m)
+          );
       end generate;
-    end generate;
-  end block;
+    end generate;--}}
 
-  --}
+  end block; --}
+
 
 end architecture;

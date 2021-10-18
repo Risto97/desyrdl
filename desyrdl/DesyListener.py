@@ -324,6 +324,7 @@ class DesyListener(RDLListener):
             context["we"] = 0 if fldx.get_property("we") is False else 1
             context["sw"] = fldx.get_property("sw").name
             context["hw"] = fldx.get_property("hw").name
+            context["const"] = 1 if fldx.get_property("hw").name is "na" or fldx.get_property("hw").name is "r" else 0
             context["reset"] = 0 if fldx.get_property("reset") is None else fldx.get_property("reset")
             context["decrwidth"] = fldx.get_property("decrwidth") if fldx.get_property("decrwidth") is not None else 1
             context["incrwidth"] = fldx.get_property("incrwidth") if fldx.get_property("incrwidth") is not None else 1
