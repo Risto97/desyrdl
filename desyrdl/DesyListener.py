@@ -1,6 +1,6 @@
 
 # import string
-# import sys
+import re
 from math import ceil, log2
 from pathlib import Path  # get filenames
 
@@ -194,6 +194,8 @@ class DesyListener(RDLListener):
             context["fields"] = fields
             context["rw"] = "RW" if regx.has_sw_writable else "RO"
             context["width"] = regx.get_property("regwidth")
+            context["signed"] = self.get_data_type_sign(regx)
+            context["fixedpoint"] = self.get_data_type_fixed(regx)
             # "internal_offset" is needed for indexing of flattened arrays in VHDL
             # port definitions. Improve VHDL code to get rid of it.
             context["index"] = index
@@ -273,16 +275,28 @@ class DesyListener(RDLListener):
     def gen_regtypes(self):
         for i, regx in enumerate(self.regtypes[-1].values()):
             fields = [f for f in self.gen_fields(regx)]
-
+            fields_count = len(fields)
+            reg_sign = self.get_data_type_sign(regx)
             context = dict()
 
             context["i"] = i
             context["regtype"] = regx
             context["fields"] = fields
-            context["fields_count"] = len(fields)
+            context["fields_count"] = fields_count
             context["name"] = regx.type_name
+            context["signed"] = reg_sign
+            context["fixedpoint"] = self.get_data_type_fixed(regx)
 
             context["desyrdl_access_channel"] = self.get_access_channel(regx)
+            if fields_count > 1:
+                map_out = 0
+            else:
+                if reg_sign == 0:
+                    map_out = 1
+                else:
+                    map_out = 2
+
+            context["map_out"] = map_out
 
             # add all non-native explicitly set properties
             for p in regx.list_properties(include_native=False):
@@ -321,16 +335,20 @@ class DesyListener(RDLListener):
             context["field"] = fldx
             context["ftype"] = self.get_ftype(fldx)
             context["width"] = fldx.get_property("fieldwidth")
+            context["low"] = fldx.low
+            context["high"] = fldx.high
             context["we"] = 0 if fldx.get_property("we") is False else 1
             context["sw"] = fldx.get_property("sw").name
             context["hw"] = fldx.get_property("hw").name
-            context["const"] = 1 if fldx.get_property("hw").name is "na" or fldx.get_property("hw").name is "r" else 0
+            context["const"] = 1 if fldx.get_property("hw").name == "na" or fldx.get_property("hw").name == "r" else 0
             context["reset"] = 0 if fldx.get_property("reset") is None else fldx.get_property("reset")
             context["decrwidth"] = fldx.get_property("decrwidth") if fldx.get_property("decrwidth") is not None else 1
             context["incrwidth"] = fldx.get_property("incrwidth") if fldx.get_property("incrwidth") is not None else 1
             context["name"] = fldx.type_name
             context["desyrdl_access_channel"] = self.get_access_channel(fldx)
-
+            # FIXME parent should be used as default if not defined in field
+            context["signed"] = self.get_data_type_sign(fldx)
+            context["fixedpoint"] = self.get_data_type_fixed(fldx)
             # add all non-native explicitly set properties
             for p in node.list_properties(include_native=False):
                 assert p not in context
@@ -373,6 +391,23 @@ class DesyListener(RDLListener):
             pass
 
         return ch
+
+    def get_data_type_sign(self, node):
+        datatype = str(node.get_property("desyrdl_data_type") or '')
+        pattern = '(^int.*|^fixed.*)'
+        if re.match(pattern, datatype):
+            return 1
+        else:
+            return 0
+
+    def get_data_type_fixed(self, node):
+        datatype = str(node.get_property("desyrdl_data_type") or '')
+        pattern = '.*fixed(\d+)'
+        srch = re.search(pattern, datatype)
+        if srch:
+            return int(srch.group(1))
+        else:
+            return 0
 
     def get_generated_files(self):
         return self.generated_files

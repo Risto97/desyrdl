@@ -197,8 +197,13 @@ end entity {node.type_name}_{{regtype.type_name}};
 architecture rtl of {node.type_name}_{{regtype.type_name}} is
   signal data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
 begin
-  po_decoder_data <= data_out;
-  --{{fields:repeat: {{{{context:if:eq:ftype:STORAGE:
+
+  -- resize field data out to the register bus width
+  -- do only if 1 field and signed{{context:if:eq:map_out:0:
+  po_decoder_data <= data_out;}}{{context:if:eq:map_out:1:
+  po_decoder_data <= data_out;}}{{context:if:eq:map_out:2:
+  po_decoder_data <= std_logic_vector(resize(signed(data_out(C_{{regtype.type_name:upper}}_FIELDS(0).upper downto C_{{regtype.type_name:upper}}_FIELDS(0).lower)),C_DATA_WIDTH));--}}
+  --{{fields:repeat:{{{{context:if:eq:ftype:STORAGE:
   {{{{{{{{name}}}}}}}}_storage : entity work.reg_field_storage
     generic map(
       g_info => C_{{name:upper}}_FIELDS({{{{{{{{i}}}}}}}})
@@ -215,7 +220,7 @@ begin
       po_hw_data   => pifo_reg.{{{{{{{{name}}}}}}}}.data({{{{{{{{field.width}}}}}}}}-1 downto 0),
       po_hw_swmod  => pifo_reg.{{{{{{{{name}}}}}}}}.swmod,
       po_hw_swacc  => pifo_reg.{{{{{{{{name}}}}}}}}.swacc
-    ); --}}}} {{{{context:if:eq:ftype:WIRE:
+    );--}}}}{{{{context:if:eq:ftype:WIRE:
   {{{{{{{{name}}}}}}}}_wire : block
     signal decoder_rd_stb_q : std_logic;
   begin
@@ -225,10 +230,11 @@ begin
     const : if  {{{{{{{{const}}}}}}}} = 1 generate
       data_out({{{{{{{{field.high}}}}}}}} downto {{{{{{{{field.low}}}}}}}}) <= std_logic_vector(to_unsigned({{{{{{{{reset}}}}}}}},{{{{{{{{field.width}}}}}}}}));
     end generate;
+    pifo_reg.{{{{{{{{name}}}}}}}}.data  <= data_out({{{{{{{{field.high}}}}}}}} downto {{{{{{{{field.low}}}}}}}});
     pifo_reg.{{{{{{{{name}}}}}}}}.swmod <= '0';
     pifo_reg.{{{{{{{{name}}}}}}}}.swacc <= '1' when pi_decoder_rd_stb = '1' and decoder_rd_stb_q = '0' else '0';
     decoder_rd_stb_q <= pi_decoder_rd_stb when rising_edge(pi_clock);
-  end block; --}}}}
+  end block;--}}}}
   --}}
 end rtl;
 --}

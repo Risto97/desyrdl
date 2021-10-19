@@ -340,7 +340,7 @@ begin
             --   ext_wstrb(ext_wsel) <= wstrb_q;
             --   ext_bready(ext_wsel) <= '1';
             else
-              state_write <= ST_WRITE_IDLE;
+              state_write <= ST_WRITE_RESP; -- every write transaction must end with response
             end if;
 
           when ST_WRITE_RESP =>
