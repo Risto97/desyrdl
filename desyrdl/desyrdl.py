@@ -110,6 +110,7 @@ def main():
 
         # try getting an ordered list of templates to use
         tpl_files = []
+        lib_files = []
         fname_in_list = Path(tpl_dir / out_format / 'include.txt')
         try:
             with fname_in_list.open('r') as f_in:
@@ -137,7 +138,10 @@ def main():
         fname_in_list = Path(lib_dir / out_format / 'include.txt')
         try:
             with fname_in_list.open('r') as f_in:
-                lib_files = [Path(lib_dir / out_format / fname.strip('\n')) for fname in f_in]
+                for line in f_in:
+                    if line[0] == '#':
+                        continue
+                    lib_files.append(Path(lib_dir / out_format / line.strip('\n')))
         except FileNotFoundError:
             print('Using glob to find libraries')
             lib_files = [fname for fname in Path(lib_dir / out_format).glob('*')]

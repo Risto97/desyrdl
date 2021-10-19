@@ -24,7 +24,8 @@ use ieee.std_logic_misc.all;
 use ieee.numeric_std.all;
 
 ------------------------------------------------------------------------------
-use work.common.all;
+library desyrdl;
+use desyrdl.common.all;
 
 ------------------------------------------------------------------------------
 --! @brief AXI4 to II translation
@@ -36,8 +37,8 @@ entity axi4l_to_ibus is
     pifi_s_decoder    : in  tif_axi4l_m2s;
     pifo_s_decoder    : out tif_axi4l_s2m;
     -- IBUS interface
-    pifo_m_ext        : out t_ibus_m2s;
-    pifi_m_ext        : in  t_ibus_s2m
+    pifo_m_ext        : out tif_ibus_m2s;
+    pifi_m_ext        : in  tif_ibus_s2m
   );
   -- preserve synthesis optimization which brakes handshaking functionality
   attribute KEEP_HIERARCHY : string;
@@ -75,8 +76,8 @@ begin
   -- unsed AXI4 Signals: SIG_M2S.AWSIZE  SIG_M2S.AWBURST  SIG_M2S.WSTRB
   -- unsed AXI4 Signals: SIG_M2S.ARSIZE  SIG_M2S.ARBURST  SIG_M2S.WLAST
 
-  pifo_s_adapter   <= sig_s2m;
-  sig_m2s          <= pifi_s_adapter;
+  pifo_s_decoder   <= sig_s2m;
+  sig_m2s          <= pifi_s_decoder;
   ------------------------------------
   sig_s2m.rresp    <=  axi4_resp_okay;
 
@@ -148,7 +149,7 @@ begin
 
             -------------------------------------
             when st_write_resp =>
-                if pi_adapter_m2s.bready = '1' then
+                if pi_decoder_m2s.bready = '1' then
                   sig_s2m.bvalid <= '0';
                   sig_state      <= ST_WAIT_AFTER_TRN ;
                 end if;

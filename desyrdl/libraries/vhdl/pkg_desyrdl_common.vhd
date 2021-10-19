@@ -90,30 +90,30 @@ package common is
   -- repository.
 
   -- Output signals of IBUS. Through this record the application send data/commands to the bus
-  type t_ibus_m2s is record
+  type tif_ibus_m2s is record
     addr   : std_logic_vector(31 downto 0);
     data   : std_logic_vector(31 downto 0);
     rena   : std_logic;
     wena   : std_logic;
     clk    : std_logic;
-  end record t_ibus_m2s;
+  end record tif_ibus_m2s;
 
   -- Output signals of IBUS. Through this record the application send data/commands to the bus
-  type t_ibus_s2m is record
+  type tif_ibus_s2m is record
     clk    : std_logic;
     data   : std_logic_vector(31 downto 0);
     rack   : std_logic;
     wack   : std_logic;
-  end record t_ibus_s2m;
+  end record tif_ibus_s2m;
 
   -- Array of IBUS outputs
-  type t_ibus_m2s_array is array (natural range<>) of t_ibus_m2s;
+  type tif_ibus_m2s_array is array (natural range<>) of tif_ibus_m2s;
 
   -- Array of IBUS inputs
-  type t_ibus_s2m_array is array (natural range<>) of t_ibus_s2m;
+  type tif_ibus_s2m_array is array (natural range<>) of tif_ibus_s2m;
 
   -- Default IBUS connections for the output (All entries equals 0)
-  constant C_IBUS_M2S_DEFAULT : t_ibus_m2s := (
+  constant C_IBUS_M2S_DEFAULT : tif_ibus_m2s := (
     addr => (others => '0'),
     data => (others => '0'),
     rena => '0',
@@ -121,7 +121,7 @@ package common is
     clk  => '0'
   );
   -- Default IBUS connections for the input (All entries equals 0)
-  constant C_IBUS_S2M_DEFAULT : t_ibus_s2m := (
+  constant C_IBUS_S2M_DEFAULT : tif_ibus_s2m := (
     clk  => '0',
     data => (others => '0'),
     rack => '0',
@@ -198,35 +198,80 @@ package common is
 
   constant C_EXT_NONE : t_ext_info := (0, 0, 0);
 
-  -- We can't have VHDL-2008 at the moment but maybe at some point we will
---  type t_field_signals_in is record
---    data : std_logic_vector; -- VHDL-2008
---    we : std_logic;
---    incr : std_logic;
---    decr : std_logic;
---  end record;
---  type t_field_signals_out is record
---    data : std_logic_vector; -- VHDL-2008
---    swacc : std_logic;
---    swmod : std_logic;
---  end record;
-
-  -- type tif_mem_in is record
-  --   ena  : std_logic;
-  --   wr   : std_logic;
-  --   addr : std_logic_vector(32-1 downto 0);
-  --   data : std_logic_vector(32-1 downto 0);
-  -- end record tif_mem_in;
-  -- type tif_mem_in_arr is array (natural range <>) of tif_mem_in;
-
-  -- -- TODO make this a record as well just to stay consistent
-  -- subtype tif_mem_out is std_logic_vector(32-1 downto 0);
-  -- type tif_mem_out_arr is array (natural range <>) of tif_mem_out;
-
   -- interface types
   type t_if_type Is (DPM, AXI4, AXI4L, IBUS, WISHBONE, AVALON, NONE);
   type t_if_type_array is array (natural range <>) of t_if_type;
 
+
+  -- components
+  component decoder_axi4l is
+    generic (
+      g_addr_width    : integer;
+      g_data_width    : integer;
+      g_register_info : t_reg_info_array;
+      g_regitems      : integer;
+      g_regcount      : integer;
+      g_mem_info      : t_mem_info_array;
+      g_memitems      : integer;
+      g_memcount      : integer;
+      g_ext_info      : t_ext_info_array;
+      g_extitems      : integer;
+      g_extcount      : integer);
+    port (
+      pi_clock      : in  std_logic;
+      pi_reset      : in  std_logic;
+      po_reg_rd_stb : out std_logic_vector(g_regcount-1 downto 0);
+      po_reg_wr_stb : out std_logic_vector(g_regcount-1 downto 0);
+      po_reg_data   : out std_logic_vector(g_data_width-1 downto 0);
+      pi_reg_data   : in  std_logic_vector(g_data_width-1 downto 0);
+      po_mem_stb    : out std_logic_vector(g_memcount-1 downto 0);
+      po_mem_we     : out std_logic;
+      po_mem_addr   : out std_logic_vector(g_addr_width-1 downto 0);
+      po_mem_data   : out std_logic_vector(g_data_width-1 downto 0);
+      pi_mem_data   : in  std_logic_vector(g_data_width-1 downto 0);
+      pi_mem_ack    : in  std_logic;
+      pifi_ext      : in  tif_axi4l_s2m_array(G_EXTCOUNT downto 0);
+      pifo_ext      : out tif_axi4l_m2s_array(G_EXTCOUNT downto 0);
+      pifi_s_top    : in  tif_axi4l_m2s;
+      pifo_s_top    : out tif_axi4l_s2m);
+  end component decoder_axi4l;
+
+  component reg_field_storage is
+    generic (
+      g_info : t_field_info);
+    port (
+      pi_clock     : in  std_logic;
+      pi_reset     : in  std_logic;
+      pi_sw_rd_stb : in  std_logic;
+      pi_sw_wr_stb : in  std_logic;
+      pi_sw_data   : in  std_logic_vector(g_info.len-1 downto 0);
+      po_sw_data   : out std_logic_vector(g_info.len-1 downto 0);
+      pi_hw_we     : in  std_logic;
+      pi_hw_data   : in  std_logic_vector(g_info.len-1 downto 0);
+      po_hw_data   : out std_logic_vector(g_info.len-1 downto 0);
+      po_hw_swmod  : out std_logic;
+      po_hw_swacc  : out std_logic);
+  end component reg_field_storage;
+
+  component axi4l_to_axi4l is
+    port (
+      pi_reset       : in  std_logic;
+      pi_clock       : in  std_logic;
+      pifi_s_decoder : in  tif_axi4l_m2s;
+      pifo_s_decoder : out tif_axi4l_s2m;
+      pifo_m_ext     : out tif_axi4l_m2s;
+      pifi_m_ext     : in  tif_axi4l_s2m);
+  end component axi4l_to_axi4l;
+
+  component axi4l_to_ibus is
+    port (
+      pi_reset       : in  std_logic;
+      pi_clock       : in  std_logic;
+      pifi_s_decoder : in  tif_axi4l_m2s;
+      pifo_s_decoder : out tif_axi4l_s2m;
+      pifo_m_ext     : out tif_ibus_m2s;
+      pifi_m_ext     : in  tif_ibus_s2m);
+  end component axi4l_to_ibus;
 end package common;
 
 package body common is
