@@ -26,14 +26,15 @@ end entity {node.type_name};
 
 architecture arch of {node.type_name} is
 
-  type t_reg_data_out is array (natural range<>) of std_logic_vector(C_DATA_WIDTH-1 downto 0) ;
-  signal reg_data_out_vect : t_reg_data_out({n_regcount}-1 downto 0);
+  type t_data_out is array (natural range<>) of std_logic_vector(C_DATA_WIDTH-1 downto 0) ;
+  signal reg_data_out_vect : t_data_out({n_regcount}-1 downto 0);
 
   signal reg_rd_stb   : std_logic_vector({n_regcount}-1 downto 0);
   signal reg_wr_stb   : std_logic_vector({n_regcount}-1 downto 0);
   signal reg_data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0);
   signal reg_data_in  : std_logic_vector(C_DATA_WIDTH-1 downto 0);
 
+  signal mem_data_out_vect : t_data_out({n_memitems}-1 downto 0);
   signal mem_stb      : std_logic_vector({n_memitems}-1 downto 0);
   signal mem_we       : std_logic;
   signal mem_addr     : std_logic_vector(C_ADDR_WIDTH-1 downto 0);
@@ -71,8 +72,8 @@ begin
       po_mem_stb    => mem_stb,
       po_mem_we     => mem_we,
       po_mem_addr   => mem_addr,
-      po_mem_data   => mem_data_out,
-      pi_mem_data   => mem_data_in,
+      po_mem_data   => mem_data_in,
+      pi_mem_data   => mem_data_out,
       pi_mem_ack    => mem_ack,
 
       pifi_ext      => ifi_ext,
@@ -92,11 +93,25 @@ begin
     end if;
   end process prs_reg_rd_mux;
 
-  --{regitems:repeat:
-  -- regname {{reg.inst_name}} regtype {{reg.type_name}}
+  prs_mem_rd_mux: process(pi_clock)
+  begin
+    if rising_edge(pi_clock) then
+      for idx in 0 to {n_memitems}-1 loop
+        if mem_stb(idx) = '1' then
+          mem_data_out <= mem_data_out_vect(idx);
+        end if;
+      end loop;
+    end if;
+  end process prs_mem_rd_mux;
+
+  -- ===========================================================================
+  -- generated registers instances{regitems:repeat:
+  -- ---------------------------------------------------------------------------
+  -- reg name: {{reg.inst_name}}  reg type: {{reg.type_name}}
+  -- ---------------------------------------------------------------------------
   blk_{{i}}_{{name}} : block
   begin  --{{context:if:eq:dim:1:
-    inst_{{i}}_{{name}}: entity desyrdl.{node.type_name}_{{reg.type_name}}
+    inst_{{name}}: entity desyrdl.{node.type_name}_{{reg.type_name}}
       port map(
         pi_clock        => pi_clock,
         pi_reset        => pi_reset,
@@ -109,8 +124,8 @@ begin
         pifi_reg  => pifi_addrmap.{{{{reg.inst_name}}}},
         pifo_reg  => pifo_addrmap.{{{{reg.inst_name}}}}
       );--}} --{{context:if:eq:dim:2:
-    gen_dim_m: for idx_m in 0 to {{dim_m}}-1 generate
-      inst_{{i}}_{{name}}: entity desyrdl.{node.type_name}_{{reg.type_name}}
+    gen_m: for idx_m in 0 to {{dim_m}}-1 generate
+      inst_{{name}}: entity desyrdl.{node.type_name}_{{reg.type_name}}
         port map(
           pi_clock        => pi_clock,
           pi_reset        => pi_reset,
@@ -124,11 +139,11 @@ begin
           pifo_reg  => pifo_addrmap.{{{{reg.inst_name}}}}(idx_m)
         );
     end generate;--}} --{{context:if:eq:dim:3:
-    gen_dim_n : for idx_n in 0 to {{dim_n}}-1 generate  -- outer dim, for 3D arrays
-      gen_dim_m: for idx_m in 0 to {{dim_m}}-1 generate -- inner dim, for 2D arrays
+    gen_n : for idx_n in 0 to {{dim_n}}-1 generate  -- outer dim, for 3D arrays
+      gen_m: for idx_m in 0 to {{dim_m}}-1 generate -- inner dim, for 2D arrays
         constant l_idx : natural := (idx_m + 1) * (idx_n + 1) - 1 ;
       begin
-        inst_{{i}}_{{reg.inst_name}}: entity desyrdl.{node.type_name}_{{reg.type_name}}
+        inst_{{reg.inst_name}}: entity desyrdl.{node.type_name}_{{reg.type_name}}
           port map(
             pi_clock        => pi_clock,
             pi_reset        => pi_reset,
@@ -143,8 +158,23 @@ begin
           );
       end generate;
     end generate;--}}
-
   end block; --}
 
+  -- ===========================================================================
+  --{memitems:repeat:
+  -- ---------------------------------------------------------------------------
+  -- mem name: {{mem.inst_name}}  mem type: {{mem.type_name}}
+  -- ---------------------------------------------------------------------------
+  blk_{{i}}_{{name}} : block
+  begin
+    mem_ack <= '1';
+    mem_data_out_vect({{i}})({{datawidth}}-1 downto 0) <= pifi_addrmap.{{mem.inst_name}}.data;{{context:if:lt:datawidth:32:
+    mem_data_out_vect({{{{i}}}})(C_DATA_WIDTH-1 downto {{{{datawidth}}}}) <= (others => '0');}}
+    pifo_addrmap.{{mem.inst_name}}.addr <= mem_addr({{addrwidth}}-1 downto 0);
+    pifo_addrmap.{{mem.inst_name}}.data <= mem_data_in({{datawidth}}-1 downto 0);
+    pifo_addrmap.{{mem.inst_name}}.en <= mem_stb({{i}});
+    pifo_addrmap.{{mem.inst_name}}.we <= mem_we;
+  end block;
+  --}
 
 end architecture;

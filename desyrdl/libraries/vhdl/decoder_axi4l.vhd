@@ -47,7 +47,7 @@ entity decoder_axi4l is
     po_mem_addr    : out std_logic_vector(g_addr_width-1 downto 0);
     po_mem_data    : out std_logic_vector(g_data_width-1 downto 0);
     pi_mem_data    : in  std_logic_vector(g_data_width-1 downto 0);
-    pi_mem_ack     : in std_logic;
+    pi_mem_ack     : in  std_logic;
 
     pifi_ext    : in  tif_axi4l_s2m_array(G_EXTCOUNT downto 0);
     pifo_ext    : out tif_axi4l_m2s_array(G_EXTCOUNT downto 0);
@@ -67,54 +67,50 @@ architecture arch of decoder_axi4l is
   ----------------------------------------------------------
   -- read
   type t_state_read is (
-    ST_READ_IDLE, ST_READ_SELECT, ST_READ_VALID,
+    ST_READ_IDLE,
+    ST_READ_SELECT,
+    ST_READ_VALID,
     ST_READ_REG_BUSY,
     ST_READ_MEM_BUSY,
     ST_READ_EXT_BUSY
   );
   signal state_read : t_state_read;
 
-  -- signal rdata_reg : std_logic_vector(g_data_width-1 downto 0);
-  -- signal rdata_mem : std_logic_vector(g_data_width-1 downto 0);
-  -- signal rdata_ext : std_logic_vector(g_data_width-1 downto 0);
+  signal rdata_reg : std_logic_vector(g_data_width-1 downto 0);
+  signal rdata_mem : std_logic_vector(g_data_width-1 downto 0);
+  signal rdata_ext : std_logic_vector(g_data_width-1 downto 0);
 
-  signal rdata     : std_logic_vector(31 downto 0);
-  signal raddr     : std_logic_vector(g_addr_width-1 downto 0);
+  signal rdata     : std_logic_vector(g_data_width-1 downto 0) := (others => '0');
+  signal raddr     : std_logic_vector(g_addr_width-1 downto 0) := (others => '0');
   signal raddr_int : integer;
+
+  -- select read
+  signal reg_rd_stb  : std_logic_vector(g_regcount downto 0) := (others => '0');
+  signal mem_rd_stb  : std_logic_vector(g_memcount downto 0) := (others => '0');
+  signal mem_rd_req  : std_logic := '0';
+  signal mem_rd_ack  : std_logic := '0';
 
   ----------------------------------------------------------
   -- write
   type t_state_write is (
-    ST_WRITE_IDLE, ST_WRITE_WAIT_DATA, ST_WRITE_WAIT_ADDR, ST_WRITE_SELECT, ST_WRITE_RESP
+    ST_WRITE_IDLE,
+    ST_WRITE_WAIT_DATA,
+    ST_WRITE_WAIT_ADDR,
+    ST_WRITE_SELECT,
+    ST_WRITE_MEM_BUSY,
+    ST_WRITE_RESP
   );
   signal state_write : t_state_write;
 
-  signal wdata : std_logic_vector(31 downto 0);
-  -- signal wstrb_q : std_logic_vector(3 downto 0);
-  -- signal waddr_q : std_logic_vector(g_addr_width-1 downto 0);
-  -- signal waddr_q_int : integer;
+  signal wdata     : std_logic_vector(g_data_width-1 downto 0) := (others => '0');
+  signal waddr     : std_logic_vector(g_addr_width-1 downto 0) := (others => '0');
   signal waddr_int : integer;
-
-  -- select read
-  signal reg_rd_stb  : std_logic_vector(g_regcount downto 0) := (others => '0');
-
-
-  signal reg_rsel : integer := 0;
-  signal mem_rsel : integer := 0;
-  signal ext_rsel : integer := 0;
-  signal reg_rsel_q : integer := 0;
-  signal mem_rsel_q : integer := 0;
-  signal ext_rsel_q : integer := 0;
 
   -- select write
   signal reg_wr_stb  : std_logic_vector(g_regcount downto 0) := (others => '0');
-
-  signal reg_wsel : integer := 0;
-  signal mem_wsel : integer := 0;
-  signal ext_wsel : integer := 0;
-  signal reg_wsel_q : integer := 0;
-  signal mem_wsel_q : integer := 0;
-  signal ext_wsel_q : integer := 0;
+  signal mem_wr_stb  : std_logic_vector(g_memcount downto 0) := (others => '0');
+  signal mem_wr_req  : std_logic := '0';
+  signal mem_wr_ack  : std_logic := '0';
 
   -- memories
   -- signal mem_ren : std_logic_vector(G_MEMNAMES downto 0) := (others => '0');
@@ -156,10 +152,6 @@ begin
 
   -- ### read logic
 
-  po_reg_rd_stb <= reg_rd_stb(g_regcount-1 downto 0);
-  po_reg_wr_stb <= reg_wr_stb(g_regcount-1 downto 0);
-
-
   -- state transitions, assignment of extended state variables and assignment
   -- of output signals in one process
   prs_state_read: process (pi_clock)
@@ -167,24 +159,21 @@ begin
     if rising_edge(pi_clock) then
       if pi_reset = '1' then
         state_read <= ST_READ_IDLE;
-        -- mem_ren   <= (others => '0');
-        -- rdata_reg <= (others => '0');
-        -- some AXI4 signals must be pi_reset here
+
       else
         case state_read is
           when ST_READ_IDLE =>
 
             if pifi_s_top.arvalid = '1' then
               state_read <= ST_READ_SELECT;
-              --raddr      <= pifi_s_top.araddr;
             end if;
 
           when ST_READ_SELECT =>
             if rtarget = REG then
               state_read    <= ST_READ_VALID;
 
-            -- elsif rtarget = MEM then
-            --   state_read <= ST_READ_MEM_BUSY;
+            elsif rtarget = MEM then
+               state_read <= ST_READ_MEM_BUSY;
             --   mem_rsel_q <= mem_rsel;
             --   mem_ren(mem_rsel) <= '1';
             -- elsif rtarget = EXT then
@@ -201,11 +190,10 @@ begin
             state_read <= ST_READ_VALID;
            -- rdata_reg <= pi_regs(reg_rsel_q);
 
-          -- when ST_READ_MEM_BUSY =>
-          --   if mem_rack(mem_rsel_q) = '1' then
-          --     state_read <= ST_READ_VALID;
-          --     mem_ren <= (others => '0');
-          --   end if;
+          when ST_READ_MEM_BUSY =>
+            if mem_rd_ack = '1' then
+               state_read <= ST_READ_VALID;
+            end if;
 
           -- when ST_READ_EXT_BUSY =>
           --   -- This state begins with ext_arvalid=1, so once we see a
@@ -224,7 +212,6 @@ begin
           --   end if;
 
           when ST_READ_VALID =>
-            pifo_s_top.rdata <= pi_reg_data ;
 
             if pifi_s_top.rready = '1' then
               state_read <= ST_READ_IDLE;
@@ -239,6 +226,17 @@ begin
       end if;
     end if;
   end process;
+
+  prs_rdata_mux: process(rtarget,rdata_reg,rdata_mem,rdata_ext)
+  begin
+    if rtarget = REG then
+      pifo_s_top.rdata <= rdata_reg ;
+    elsif rtarget = MEM then
+      pifo_s_top.rdata <= rdata_mem ;
+    else
+      pifo_s_top.rdata <= rdata_ext ;
+    end if;
+  end process prs_rdata_mux;
 
   -- ARREADY flag handling
   prs_axi_arready: process (state_read)
@@ -272,7 +270,9 @@ begin
       if state_read = ST_READ_IDLE and pifi_s_top.arvalid = '1' then
         rtarget    <= NONE;
         reg_rd_stb <= (others => '0');
-        for i in 0 to g_regitems-1 loop
+        raddr      <= pifi_s_top.araddr;
+
+        for i in 0 to g_regitems - 1 loop
           for j in 0 to g_register_info(i).dim_n-1 loop
             for k in 0 to g_register_info(i).dim_m-1 loop
               if raddr_int = g_register_info(i).address + 4 * (j * g_register_info(i).dim_m + k) then
@@ -284,10 +284,19 @@ begin
           end loop;
         end loop;
 
-      elsif state_read = ST_READ_VALID then
-        rtarget    <= NONE;
-        reg_rd_stb <= (others => '0');
+        for i in 0 to g_memitems - 1  loop
+          if raddr_int >= g_mem_info(i).address and raddr_int < g_mem_info(i).address + g_mem_info(i).entries then
+            rtarget <= MEM;
+            mem_rd_stb(i) <= '1';
+            mem_rd_req    <= '1';
+          end if;
+        end loop;
 
+      elsif state_read = ST_READ_VALID then
+        --rtarget    <= NONE;
+        reg_rd_stb <= (others => '0');
+        mem_rd_stb <= (others => '0');
+        mem_rd_req <= '0';
       end if;
     end if;
   end process prs_raddr_decoder;
@@ -324,10 +333,9 @@ begin
           when ST_WRITE_SELECT =>
             if wtarget = REG then
               state_write <= ST_WRITE_RESP;
-              --reg_wsel_q <= reg_wsel; -- unnecessary?
 
-            -- elsif wtarget = MEM then
-            --   state_write <= ST_WriteMemBusy;
+            elsif wtarget = MEM then
+              state_write <= ST_WRITE_MEM_BUSY;
             --   mem_wsel_q <= mem_wsel;
             --   mem_wen(mem_wsel) <= '1';
             -- elsif wtarget = EXT then
@@ -341,6 +349,11 @@ begin
             --   ext_bready(ext_wsel) <= '1';
             else
               state_write <= ST_WRITE_RESP; -- every write transaction must end with response
+            end if;
+
+          when ST_WRITE_MEM_BUSY =>
+            if mem_wr_ack = '1' then
+              state_write <= ST_WRITE_RESP;
             end if;
 
           when ST_WRITE_RESP =>
@@ -400,6 +413,8 @@ begin
       if (state_write = ST_WRITE_IDLE or state_write = ST_WRITE_WAIT_ADDR ) and pifi_s_top.awvalid = '1' then
         wtarget    <= NONE;
         reg_wr_stb <= (others => '0');
+        waddr      <= pifi_s_top.awaddr ;
+
         for i in 0 to g_regitems-1 loop
           for j in 0 to g_register_info(i).dim_n-1 loop
             for k in 0 to g_register_info(i).dim_m-1 loop
@@ -412,10 +427,19 @@ begin
           end loop;
         end loop;
 
+        for i in 0 to g_memitems - 1  loop
+          if waddr_int >= g_mem_info(i).address and raddr_int < g_mem_info(i).address + g_mem_info(i).entries then
+            wtarget       <= MEM;
+            mem_wr_stb(i) <= '1';
+            mem_wr_req    <= '1';
+          end if;
+        end loop;
+
       elsif state_write = ST_WRITE_RESP then
         wtarget    <= NONE;
         reg_wr_stb <= (others => '0');
-
+        mem_wr_stb <= (others => '0');
+        mem_wr_req <= '0';
       end if;
     end if;
   end process prs_waddr_decoder;
@@ -430,6 +454,84 @@ begin
     end if;
   end process prs_wdata_reg ;
 
-  po_reg_data <= wdata;
 
+
+  -- ===========================================================================
+  -- registers
+  --
+  po_reg_rd_stb <= reg_rd_stb(g_regcount-1 downto 0);
+  po_reg_wr_stb <= reg_wr_stb(g_regcount-1 downto 0);
+  po_reg_data   <= wdata;
+  rdata_reg     <= pi_reg_data ;
+
+  -- ===========================================================================
+  -- Dual-port memories
+  --
+  -- AXI address is addressing bytes
+  -- DPM address is addressing the memory data width (up to 4 bytes)
+  -- DPM data width is the same as the AXI data width
+  -- currently only DPM interface supported with read/write arbiter
+  -- write afer read
+  blk_mem : block
+    signal l_rwsel  : std_logic_vector(1 downto 0) := (others => '0');
+    signal l_wr     : std_logic := '0';
+    signal l_wr_trn : std_logic := '0';
+    signal l_rd_ack : std_logic := '0';
+    signal l_wr_ack : std_logic := '0';
+  begin
+    l_rwsel <= mem_rd_req & mem_wr_req;
+
+    prs_rdwr_arb: process(pi_clock)
+    begin
+      if rising_edge(pi_clock) then
+
+        -- write indicate transaction
+        if mem_wr_req = '1' and mem_rd_req = '0' then
+          l_wr_trn <= '1';
+        elsif mem_wr_req = '0' then
+          l_wr_trn <= '0';
+        end if;
+
+        -- read has higher priority, but do not disturb pending write transaction
+        -- mem_rd_req goes to 0 for 1 clock cycle after each read transaction - write grant
+        if mem_rd_req = '1' and l_wr_trn = '0' then
+          for i in 0 to g_memitems - 1  loop
+            if  mem_rd_stb(i) = '1' then
+              po_mem_addr(g_mem_info(i).addrwidth-3 downto 0) <= raddr(g_mem_info(i).addrwidth-1 downto 2);
+              po_mem_addr(g_addr_width-1 downto g_mem_info(i).addrwidth-2) <= (others => '0');
+            end if;
+          end loop;
+          po_mem_stb <= mem_rd_stb(g_memitems-1 downto 0);
+          po_mem_we  <= '0';
+          l_rd_ack <= '1';
+
+        elsif mem_wr_req = '1'  then
+          for i in 0 to g_memitems - 1  loop
+            if  mem_wr_stb(i) = '1' then
+              po_mem_addr(g_mem_info(i).addrwidth-3 downto 0) <= waddr(g_mem_info(i).addrwidth-1 downto 2);
+              po_mem_addr(g_addr_width-1 downto g_mem_info(i).addrwidth-2) <= (others => '0');
+            end if;
+          end loop;
+          po_mem_stb <= mem_wr_stb(g_memitems-1 downto 0);
+          po_mem_we  <= '1';
+          l_wr_ack   <= '1';
+
+        else
+          po_mem_stb <= (others => '0');
+          po_mem_we  <= '0';
+          l_rd_ack   <= '0';
+          l_wr_ack   <= '0';
+        end if;
+      end if;
+    end process prs_rdwr_arb;
+
+    mem_wr_ack <= l_wr_ack;
+    mem_rd_ack <= l_rd_ack when rising_edge(pi_clock);
+    -- delay read ack due to synch process of po_mem_addr and po_mem_stb,
+    -- read requires one more clock cycle to get data back from memory
+
+    po_mem_data <= wdata ;
+    rdata_mem   <= pi_mem_data ;
+
+  end block;
 end architecture;
