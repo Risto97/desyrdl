@@ -1,4 +1,20 @@
--- Copyright (c) 2020-2021 Deutsches Elektronen-Synchrotron DESY.
+-------------------------------------------------------------------------------
+--          ____  _____________  __                                          --
+--         / __ \/ ____/ ___/\ \/ /                 _   _   _                --
+--        / / / / __/  \__ \  \  /                 / \ / \ / \               --
+--       / /_/ / /___ ___/ /  / /               = ( M | S | K )=             --
+--      /_____/_____//____/  /_/                   \_/ \_/ \_/               --
+--                                                                           --
+-------------------------------------------------------------------------------
+--! @copyright  (c) 2021 DESY
+--! @license    SPDX-License-Identifier: Apache-2.0
+-------------------------------------------------------------------------------
+--! @file pkg_desyrdl_common.vhd
+--! @brief package with common DesyRdl components
+-------------------------------------------------------------------------------
+--! @author Michael Büchler <michael.buechler@desy.de>
+--! @author Lukasz Butkowski <lukasz.butkowski@desy.de>
+-------------------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -15,9 +31,9 @@ package common is
 
   ---------------------------------------------------------------------------
   -- common type definitions
-  type t_4b_slv_array  is array (natural range<>) of std_logic_vector( 3 downto 0) ;
-  type t_32b_slv_array is array (natural range<>) of std_logic_vector(31 downto 0) ;
-  type t_integer_array is array (natural range<>) of integer ;
+  -- type t_4b_slv_array  is array (natural range<>) of std_logic_vector( 3 downto 0) ;
+  -- type t_32b_slv_array is array (natural range<>) of std_logic_vector(31 downto 0) ;
+  -- type t_integer_array is array (natural range<>) of integer ;
 
   --============================================================================
   -- AXI4-Lite

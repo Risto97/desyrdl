@@ -3,18 +3,19 @@
 * ToDo list for DesyRDL
 
 ** VHDL side
-**** TODO generate fields instead of using entity (done for registers already)
-**** TODO field ports depended on config, now all fields have the same full
-**** TODO Generate Constant with information about all items
-now some infor available among C_REGISTER_INFO/MEM/EXT lists
-create C_ADDRMAP record info with items names
+ 1. generate fields instead of using entity (done for registers already)
+ 2. field ports depended on config, now all fields have the same full
+ 3. Generate Constant with information about all items
+    now some infor available among C_REGISTER_INFO/MEM/EXT lists
+    create C_ADDRMAP record info with items names
+    
+ 4. separate reset for registers and bus
+ 5. add reset to external bus, generate reset on timeout
 
-**** TODO separate reset for registers and bus
-**** TODO add reset to external bus, generate reset on timeout
+ 6. add signed info to fields
+ 7. add data type info to fields and fixed point
+ 8. default value to unsigned or signed based on signed info
 
-**** TODO add signed info to fields
-**** TODO add data type info to fields and fixed point
-**** TODO default value to unsigned or signed based on signed info
-
-
+ 9. add counter field type
+ 10. add interrupt field type
 

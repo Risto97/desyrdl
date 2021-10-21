@@ -6,16 +6,14 @@
 --      /_____/_____//____/  /_/                   \_/ \_/ \_/               --
 --                                                                           --
 -------------------------------------------------------------------------------
--- $Header$
+--! @copyright  (c) 2021 DESY
+--! @license    SPDX-License-Identifier: Apache-2.0
 -------------------------------------------------------------------------------
---! @file   axi4_to_ibus.vhd
---! @brief  AXI4 to II translation
---! @author Lukasz Butkowski
---! @author Holger Kay
---! @mail   holger.kay@desy.de
---! $Date$
---! $Revision$
---! $URL$
+--! @file axi4l_to_ibus.vhd
+--! @brief AXI4-Lite to II (IBUS) translation, part of DesyRdl
+-------------------------------------------------------------------------------
+--! @author Lukasz Butkowski <lukasz.butkowski@desy.de>
+--! @author Holger Kay <holger.kay@desy.de>
 -------------------------------------------------------------------------------
 
 library ieee;

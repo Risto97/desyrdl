@@ -1,8 +1,21 @@
--- BSD 3-Clause License
---
--- Copyright (c) 2020-2021 Deutsches Elektronen-Synchrotron DESY.
---
--- TODO Authors: Jan Marjanovic, Michael Buechler, Lukasz Butkowski
+-------------------------------------------------------------------------------
+--          ____  _____________  __                                          --
+--         / __ \/ ____/ ___/\ \/ /                 _   _   _                --
+--        / / / / __/  \__ \  \  /                 / \ / \ / \               --
+--       / /_/ / /___ ___/ /  / /               = ( M | S | K )=             --
+--      /_____/_____//____/  /_/                   \_/ \_/ \_/               --
+--                                                                           --
+-------------------------------------------------------------------------------
+--! @copyright  (c) 2021 DESY
+--! @license    SPDX-License-Identifier: Apache-2.0
+-------------------------------------------------------------------------------
+--! @file decoder_axi4l.vhd
+--! @brief ax4-lite address decoder for DesyRdl
+-------------------------------------------------------------------------------
+--! @author Michael Büchler <michael.buechler@desy.de>
+--! @author Lukasz Butkowski <lukasz.butkowski@desy.de>
+--! @author Jan Marjanovic <jan.marjanovic@desy.de>
+-------------------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;

@@ -6,15 +6,14 @@
 --      /_____/_____//____/  /_/                   \_/ \_/ \_/               --
 --                                                                           --
 -------------------------------------------------------------------------------
--- $Header: https://mskllrfredminesrv.desy.de/svn/utca_firmware_framework/branch/llrf_iq_rework/libraries/dsp/iq_slide.vhd 4109 2020-08-26 17:52:31Z mbuechl $
+--! @copyright  (c) 2021 DESY
+--! @license    SPDX-License-Identifier: Apache-2.0
 -------------------------------------------------------------------------------
---! @file   reg_field_storage.vhd
---! @brief  Storage type of a field. Part of MSK register generation.
---! @author Michael Buechler
---! @email  michael.buechler@desy.de
---! $Date: 2020-08-26 19:52:31 +0200 (Mi, 26 Aug 2020) $
---! $Revision: 4109 $
---! $URL: https://mskllrfredminesrv.desy.de/svn/utca_firmware_framework/branch/llrf_iq_rework/libraries/dsp/iq_slide.vhd $
+--! @file reg_field_storage.vhd
+--! @brief storage field component of DesyRdl
+-------------------------------------------------------------------------------
+--! @author Michael Büchler <michael.buechler@desy.de>
+--! @author Lukasz Butkowski <lukasz.butkowski@desy.de>
 -------------------------------------------------------------------------------
 
 library ieee;
