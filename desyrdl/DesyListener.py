@@ -183,6 +183,8 @@ class DesyListener(RDLListener):
             context["type"] = regx.type_name
             context["addrmap"] = addrmap
             context["addrmap_full"] = addrmap_full
+            context["addrmap_name"] = addrmap + "." + regx.inst_name
+            context["addrmap_full_name"] = addrmap_full + "." + regx.inst_name
             context["reladdr"] = regx.address_offset
             context["absaddr"] = regx.absolute_address
 
@@ -219,8 +221,11 @@ class DesyListener(RDLListener):
             addrmap_full = memx.owning_addrmap.get_path(array_suffix='.{index:d}', empty_array_suffix='')
 
             context["i"] = i
+            context["name"] = memx.type_name
             context["addrmap"] = addrmap
             context["addrmap_full"] = addrmap_full
+            context["addrmap_name"] = addrmap + "." + memx.inst_name
+            context["addrmap_full_name"] = addrmap_full + "." + memx.inst_name
             context["reladdr"] = memx.address_offset
             context["absaddr"] = memx.absolute_address
 
@@ -229,7 +234,6 @@ class DesyListener(RDLListener):
             context["addresses"] = memx.get_property("mementries") * 4
             context["datawidth"] = memx.get_property("memwidth")
             context["addrwidth"] = ceil(log2(memx.get_property("mementries") * 4))
-            context["name"] = memx.type_name
             context["sw"] = memx.get_property("sw").name
             # virtual registers, e.g. for DMA regions
             context["vregs"] = [x for x in self.gen_regitems(memx)]
@@ -253,8 +257,11 @@ class DesyListener(RDLListener):
             addrmap_full = extx.parent.get_path(array_suffix='.{index:d}', empty_array_suffix='')
 
             context["i"] = i
+            context["name"] = extx.inst_name
             context["addrmap"] = addrmap
             context["addrmap_full"] = addrmap_full
+            context["addrmap_name"] = addrmap + "." + extx.inst_name
+            context["addrmap_full_name"] = addrmap_full + "." + extx.inst_name
             context["reladdr"] = extx.address_offset
             context["absaddr"] = extx.absolute_address
 
