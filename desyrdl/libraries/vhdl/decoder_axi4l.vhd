@@ -61,8 +61,7 @@ end entity decoder_axi4l;
 architecture arch of decoder_axi4l is
 
   type t_target is (NONE, REG, MEM, EXT);
-  signal rtarget, wtarget     : t_target := NONE;
---  signal rtarget_q, wtarget_q : t_target;
+  signal rtarget, wtarget  : t_target := NONE;
 
   ----------------------------------------------------------
   -- read
@@ -128,8 +127,8 @@ architecture arch of decoder_axi4l is
   signal ext_bvalid  : std_logic := '0';
   signal ext_bready  : std_logic := '0';
 
-  constant read_timeout  : natural := 2047;
-  constant write_timeout : natural := 2047;
+  constant read_timeout  : natural := 1023;
+  constant write_timeout : natural := 1023;
   signal read_time_cnt   : natural := 0;
   signal write_time_cnt  : natural := 0;
 
@@ -145,8 +144,9 @@ begin
     if rising_edge(pi_clock) then
       if pi_reset = '1' then
         state_read <= ST_READ_IDLE;
-        ext_arvalid <= '0'; -- TODO move to separate process
+        ext_arvalid <= '0'; -- TODO axi ext move to separate process
         ext_rready  <= '0';
+        read_time_cnt <= 0;
       else
         case state_read is
           when ST_READ_IDLE =>
@@ -179,11 +179,15 @@ begin
             state_read <= ST_READ_VALID;
  
           when ST_READ_MEM_BUSY =>
+            read_time_cnt <= read_time_cnt + 1;
             if mem_rd_ack = '1' then
                state_read <= ST_READ_VALID;
+            elsif read_time_cnt >= read_timeout then
+              state_read <= ST_READ_VALID;
             end if;
 
           when ST_READ_EXT_BUSY =>
+            read_time_cnt <= read_time_cnt + 1;
 
             if ext_arready = '1' then
               ext_arvalid  <= '0';
@@ -191,6 +195,8 @@ begin
 
             if ext_rvalid = '1' then
               ext_rready <= '0';
+              state_read <= ST_READ_VALID;
+            elsif read_time_cnt >= read_timeout then
               state_read <= ST_READ_VALID;
             end if;
 
@@ -305,9 +311,10 @@ begin
     if rising_edge (pi_clock) then
       if pi_reset = '1' then
         state_write <= ST_WRITE_IDLE;
-        ext_awvalid <= '0';
+        ext_awvalid <= '0'; -- TODO move axi ext to separate process
         ext_wvalid  <= '0';
         ext_bready  <= '0';
+        write_time_cnt <= 0;
       else
         case state_write is
           when ST_WRITE_IDLE =>
@@ -323,6 +330,7 @@ begin
             ext_awvalid <= '0';
             ext_wvalid  <= '0';
             ext_bready  <= '0';
+            write_time_cnt <= 0;
 
           when ST_WRITE_WAIT_DATA =>
             if pifi_s_top.wvalid = '1' then
@@ -352,11 +360,17 @@ begin
             end if;
 
           when ST_WRITE_MEM_BUSY =>
+            write_time_cnt <= write_time_cnt + 1;
+
             if mem_wr_ack = '1' then
+              state_write <= ST_WRITE_RESP;
+            elsif write_time_cnt >= write_timeout then
               state_write <= ST_WRITE_RESP;
             end if;
 
           when ST_WRITE_EXT_BUSY =>
+            write_time_cnt <= write_time_cnt + 1;
+
             if ext_awready = '1' then
               ext_awvalid  <= '0';
             end if;
@@ -367,6 +381,8 @@ begin
 
             if ext_bvalid = '1' then
               ext_bready <= '0';
+              state_write <= ST_WRITE_RESP;
+            elsif write_time_cnt >= write_timeout then
               state_write <= ST_WRITE_RESP;
             end if;
 
