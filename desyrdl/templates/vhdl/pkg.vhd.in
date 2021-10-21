@@ -134,7 +134,7 @@ package pkg_{node.type_name} is
     --{memitems:repeat:
     {{mem.inst_name}} : tif_mem_{{mem.type_name}}_out; --}
     --{extitems:repeat:
-    {{ext.inst_name}} : tif_{{desyrdl_interface:lower}}_s2m; --}
+    {{ext.inst_name}} : tif_{{desyrdl_interface:lower}}_m2s; --}
   end record;
 
   -- ===========================================================================
@@ -152,6 +152,8 @@ package pkg_{node.type_name} is
       -- TOP interface
       pifi_s_top : in  tif_{node.type_name}_m2s;
       pifo_s_top : out tif_{node.type_name}_s2m;
+      -- pifi_s_top : in  tif_{desyrdl_interface:lower}_m2s;
+      -- pifo_s_top : out tif_{desyrdl_interface:lower}_s2m;
 
       -- logic
       pifi_addrmap : in  tif_addrmap_{node.type_name}_in;

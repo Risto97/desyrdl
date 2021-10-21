@@ -18,6 +18,8 @@ entity {node.type_name} is
     -- TOP subordinate memory mapped interface
     pifi_s_top  : in  tif_{node.type_name}_m2s;
     pifo_s_top  : out tif_{node.type_name}_s2m;
+    -- pifi_s_top  : in  tif_{desyrdl_interface:lower}_m2s;
+    -- pifo_s_top  : out tif_{desyrdl_interface:lower}{desyrdl_interface:lower}_s2m;
     -- to logic interface
     pifi_addrmap : in  tif_addrmap_{node.type_name}_in;
     pifo_addrmap : out tif_addrmap_{node.type_name}_out
@@ -78,6 +80,7 @@ begin
 
       pifi_ext      => ifi_ext,
       pifo_ext      => ifo_ext,
+
       pifi_s_top    => pifi_s_top,
       pifo_s_top    => pifo_s_top
     );
@@ -130,8 +133,8 @@ begin
           pi_clock        => pi_clock,
           pi_reset        => pi_reset,
           -- to/from adapter
-          pi_decoder_rd_stb => reg_rd_stb({{index}}),
-          pi_decoder_wr_stb => reg_wr_stb({{index}}),
+          pi_decoder_rd_stb => reg_rd_stb({{index}}+idx_m),
+          pi_decoder_wr_stb => reg_wr_stb({{index}}+idx_m),
           pi_decoder_data   => reg_data_in,
           po_decoder_data   => reg_data_out_vect({{index}}+idx_m),
 
@@ -148,8 +151,8 @@ begin
             pi_clock        => pi_clock,
             pi_reset        => pi_reset,
             -- to/from adapter
-            pi_decoder_rd_stb => reg_rd_stb({{index}}),
-            pi_decoder_wr_stb => reg_wr_stb({{index}}),
+            pi_decoder_rd_stb => reg_rd_stb({{index}}+l_idx),
+            pi_decoder_wr_stb => reg_wr_stb({{index}}+l_idx),
             pi_decoder_data   => reg_data_in,
             po_decoder_data   => reg_data_out_vect({{index}}+l_idx),
 
@@ -174,6 +177,25 @@ begin
     pifo_addrmap.{{mem.inst_name}}.data <= mem_data_in({{datawidth}}-1 downto 0);
     pifo_addrmap.{{mem.inst_name}}.en <= mem_stb({{i}});
     pifo_addrmap.{{mem.inst_name}}.we <= mem_we;
+  end block;
+  --}
+
+  -- ===========================================================================
+  --{extitems:repeat:
+  -- ---------------------------------------------------------------------------
+  -- ext name: {{ext.inst_name}}  ext type: {{ext.type_name}}
+  -- ---------------------------------------------------------------------------
+  blk_{{i}}_{{ext.inst_name}} : block
+  begin
+    ins_{desyrdl_interface:lower}_to_{{desyrdl_interface:lower}} : entity desyrdl.{desyrdl_interface:lower}_to_{{desyrdl_interface:lower}}
+      port map (
+        pi_clock => pi_clock,
+        pi_reset => pi_reset,
+        pifi_s_decoder => ifo_ext({{i}}),
+        pifo_s_decoder => ifi_ext({{i}}),
+        pifo_m_ext     => pifo_addrmap.{{ext.inst_name}},
+        pifi_m_ext     => pifi_addrmap.{{ext.inst_name}}
+      );
   end block;
   --}
 

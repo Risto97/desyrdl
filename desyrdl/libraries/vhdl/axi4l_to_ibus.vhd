@@ -79,11 +79,9 @@ begin
   pifo_s_decoder   <= sig_s2m;
   sig_m2s          <= pifi_s_decoder;
   ------------------------------------
-  sig_s2m.rresp    <=  axi4_resp_okay;
+  sig_s2m.rresp    <=  "00";
 
-  sig_s2m.bresp    <=  axi4_resp_okay;
-
-  sig_s2m.aclk     <=  pi_clock;
+  sig_s2m.bresp    <=  "00";
 
   pifo_m_ext.clk    <=  pi_clock;
 
@@ -93,135 +91,126 @@ begin
 
   process(pi_clock)
   begin
-      if rising_edge(pi_clock) then
-        if (pi_reset = '1') then
-          sig_state        <= ST_IDLE ;
-          sig_rena         <= '0';
-          sig_wena         <= '0';
-          sig_s2m.areset_n <= '0';
-          sig_s2m.bvalid   <= '0';
-        else
-          sig_rena         <= '0'  ;
-          sig_wena         <= '0'  ;
+    if rising_edge(pi_clock) then
+      if (pi_reset = '1') then
+        sig_state      <= ST_IDLE;
+        sig_rena       <= '0';
+        sig_wena       <= '0';
+        sig_s2m.bvalid <= '0';
+      else
+        sig_rena <= '0';
+        sig_wena <= '0';
 
-          case sig_state is
-            -------------------------------------
-            when ST_IDLE =>
+        case sig_state is
+          -------------------------------------
+          when ST_IDLE =>
 
-              sig_s2m.areset_n <= '1'  ;
+            if (sig_m2s.arvalid = '1') then
+              sig_state <= ST_READ_DATA_ADDR;
 
-              -- sig_addr_cnt <= 0;
-              -- sig_wait_cnt <= 0;
+            elsif (sig_m2s.awvalid = '1') then
+              sig_state <= ST_WRITE_DATA_ADDR;
 
-              if ( sig_m2s.arvalid = '1' ) then
-                  sig_state   <= ST_READ_DATA_ADDR ;
+            end if;
 
-              elsif ( sig_m2s.awvalid  = '1' ) then
-                  sig_state   <= ST_WRITE_DATA_ADDR;
+          -------------------------------------
+          when ST_WRITE_DATA_ADDR =>
 
-              end if;
+            if (sig_m2s.awvalid = '1') then
+              sig_addr  <= sig_m2s.awaddr;
+              sig_state <= ST_WRITE_DATA;
+            end if;
 
-            -------------------------------------
-            when ST_WRITE_DATA_ADDR =>
+          -------------------------------------
+          when ST_WRITE_DATA =>
 
-              if ( sig_m2s.awvalid  = '1' ) then
-                sig_len     <= sig_m2s.awlen ;
-                sig_addr    <= sig_m2s.awaddr;
-                sig_state   <= ST_WRITE_DATA;
-              end if;
+            if (sig_m2s.wvalid = '1') then
+              pifo_m_ext.data <= sig_m2s.wdata(31 downto 0);
+              sig_wena        <= '1';
+              sig_state       <= ST_WRITE_DATA_WAIT;
+            end if;
 
-            -------------------------------------
-            when ST_WRITE_DATA =>
+          -------------------------------------
+          when ST_WRITE_DATA_WAIT =>
 
-                if ( sig_m2s.wvalid  = '1' ) then
-                    po_ext_m2s.data <= sig_m2s.wdata(31 downto 0);
-                    sig_wena      <= '1';
-                    sig_state     <= ST_WRITE_DATA_WAIT;
-                end if;
+            if pifi_m_ext.wack = '1' then
+              sig_state      <= ST_WRITE_RESP;
+              sig_s2m.bvalid <= '1';
+            end if;
 
-            -------------------------------------
-            when ST_WRITE_DATA_WAIT =>
+          -------------------------------------
+          when st_write_resp =>
+            if sig_m2s.bready = '1' then
+              sig_s2m.bvalid <= '0';
+              sig_state      <= ST_WAIT_AFTER_TRN;
+            end if;
 
-                if pi_ext_s2m.wack = '1' then
-                    sig_state      <= ST_WRITE_RESP ;
-                    sig_s2m.bvalid <= '1';
-                end if;
+          -------------------------------------
+          when ST_READ_DATA_ADDR =>
 
-            -------------------------------------
-            when st_write_resp =>
-                if pi_decoder_m2s.bready = '1' then
-                  sig_s2m.bvalid <= '0';
-                  sig_state      <= ST_WAIT_AFTER_TRN ;
-                end if;
+            if (sig_m2s.arvalid = '1') then
+              sig_addr  <= sig_m2s.araddr;
+              sig_state <= ST_READ_DATA;
+            end if;
 
-            -------------------------------------
-            when ST_READ_DATA_ADDR =>
+          -------------------------------------
+          when ST_READ_DATA =>
 
-              if ( sig_m2s.arvalid = '1' ) then
-                sig_len     <= sig_m2s.arlen;
-                sig_addr    <= sig_m2s.araddr;
-                sig_state   <= ST_READ_DATA;
-              end if;
+            sig_rena  <= '1';
+            sig_state <= ST_READ_DATA_WAIT;
 
-            -------------------------------------
-            when ST_READ_DATA =>
+          -------------------------------------
+          when ST_READ_DATA_WAIT =>
 
-                sig_rena <= '1';
-                sig_state  <= ST_READ_DATA_WAIT ;
+            if pifi_m_ext.rack = '1' then
+              sig_s2m.rdata(31 downto 0) <= pifi_m_ext.data;
+              sig_state                  <= ST_READ_DATA_PUSH;
+            end if;
 
-            -------------------------------------
-            when ST_READ_DATA_WAIT =>
+          -------------------------------------
+          when ST_READ_DATA_PUSH =>
 
-                if pi_ext_s2m.rack = '1' then
-                    sig_s2m.rdata(31 downto 0)  <= pi_ext_s2m.data;
-                    sig_state      <= ST_READ_DATA_PUSH ;
-                end if;
+            if sig_m2s.rready = '1' then
+              -- if std_logic_vector(to_unsigned(sig_addr_cnt,8)) = sig_len then
+              sig_state <= ST_WAIT_AFTER_TRN;
+            -- else
+            -- sig_addr_cnt <= sig_addr_cnt + 1 ;
+            -- sig_addr   <= std_logic_vector(unsigned(sig_addr) + 4);
+            -- sig_state  <= st_read_data ;
+            -- end if;
+            end if;
 
-            -------------------------------------
-            when ST_READ_DATA_PUSH =>
-
-                if sig_m2s.rready = '1' then
-                    -- if std_logic_vector(to_unsigned(sig_addr_cnt,8)) = sig_len then
-                  sig_state <= ST_WAIT_AFTER_TRN ;
-                    -- else
-                        -- sig_addr_cnt <= sig_addr_cnt + 1 ;
-                        -- sig_addr   <= std_logic_vector(unsigned(sig_addr) + 4);
-                        -- sig_state  <= st_read_data ;
-                    -- end if;
-                end if;
-
-            -------------------------------------
-            when ST_WAIT_AFTER_TRN =>
-              -- if sig_wait_cnt >= 3 then
-                sig_state <= ST_IDLE ;
-              -- else
-                -- sig_wait_cnt <= sig_wait_cnt + 1;
-              -- end if;
-          end case ;
-        end if;
+          -------------------------------------
+          when ST_WAIT_AFTER_TRN =>
+            -- if sig_wait_cnt >= 3 then
+            sig_state <= ST_IDLE;
+        -- else
+        -- sig_wait_cnt <= sig_wait_cnt + 1;
+        -- end if;
+        end case;
       end if;
+    end if;
   end process;
 
-  proc_axi_hds:process(sig_state, sig_m2s)
+  proc_axi_hds : process(sig_state, sig_m2s)
   begin
-    sig_s2m.arready  <= '0' ;
-    sig_s2m.awready  <= '0' ;
-    sig_s2m.wready   <= '0' ;
-    sig_s2m.rvalid   <= '0' ;
-    sig_s2m.rlast    <= '1' ;
+    sig_s2m.arready <= '0';
+    sig_s2m.awready <= '0';
+    sig_s2m.wready  <= '0';
+    sig_s2m.rvalid  <= '0';
 
     case sig_state is
       when st_read_data_addr =>
-          sig_s2m.arready <= sig_m2s.arvalid ;
+        sig_s2m.arready <= sig_m2s.arvalid;
 
       when st_write_data_addr =>
-          sig_s2m.awready <= sig_m2s.awvalid ;
+        sig_s2m.awready <= sig_m2s.awvalid;
 
       when st_write_data =>
-          sig_s2m.wready <= sig_m2s.wvalid ;
+        sig_s2m.wready <= sig_m2s.wvalid;
 
       when st_read_data_push =>
-          sig_s2m.rvalid <= '1';
+        sig_s2m.rvalid <= '1';
 
       when others =>
     end case;
