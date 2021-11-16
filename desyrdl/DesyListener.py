@@ -173,8 +173,10 @@ class DesyListener(RDLListener):
 
             context = dict()
 
-            addrmap = regx.owning_addrmap.get_path_segment(array_suffix='.{index:d}', empty_array_suffix='')
-            addrmap_full = regx.owning_addrmap.get_path(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap_segments = regx.owning_addrmap.get_path_segments(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap = addrmap_segments[-1]
+            addrmap_full = ".".join([x for i,x in enumerate(addrmap_segments)])
+            addrmap_full_notop = ".".join([x for i,x in enumerate(addrmap_segments) if i > 0])
 
             fields = [f for f in self.gen_fields(regx)]
 
@@ -185,6 +187,8 @@ class DesyListener(RDLListener):
             context["addrmap_full"] = addrmap_full
             context["addrmap_name"] = addrmap + "." + regx.inst_name
             context["addrmap_full_name"] = addrmap_full + "." + regx.inst_name
+            context["addrmap_full_notop"] = addrmap_full_notop
+            context["addrmap_full_notop_name"] = addrmap_full_notop + "." + regx.inst_name
             context["reladdr"] = regx.address_offset
             context["absaddr"] = regx.absolute_address
 
@@ -217,8 +221,10 @@ class DesyListener(RDLListener):
 
             context = dict()
 
-            addrmap = memx.owning_addrmap.get_path_segment(array_suffix='.{index:d}', empty_array_suffix='')
-            addrmap_full = memx.owning_addrmap.get_path(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap_segments = memx.owning_addrmap.get_path_segments(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap = addrmap_segments[-1]
+            addrmap_full = ".".join([x for i,x in enumerate(addrmap_segments)])
+            addrmap_full_notop = ".".join([x for i,x in enumerate(addrmap_segments) if i > 0])
 
             context["i"] = i
             context["name"] = memx.type_name
@@ -226,6 +232,8 @@ class DesyListener(RDLListener):
             context["addrmap_full"] = addrmap_full
             context["addrmap_name"] = addrmap + "." + memx.inst_name
             context["addrmap_full_name"] = addrmap_full + "." + memx.inst_name
+            context["addrmap_full_notop"] = addrmap_full_notop
+            context["addrmap_full_notop_name"] = addrmap_full_notop + "." + memx.inst_name
             context["reladdr"] = memx.address_offset
             context["absaddr"] = memx.absolute_address
 
@@ -253,8 +261,10 @@ class DesyListener(RDLListener):
 
             context = dict()
 
-            addrmap = extx.parent.get_path_segment(array_suffix='.{index:d}', empty_array_suffix='')
-            addrmap_full = extx.parent.get_path(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap_segments = extx.parent.get_path_segments(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap = addrmap_segments[-1]
+            addrmap_full = ".".join([x for i,x in enumerate(addrmap_segments)])
+            addrmap_full_notop = ".".join([x for i,x in enumerate(addrmap_segments) if i > 0])
 
             context["i"] = i
             context["name"] = extx.inst_name
@@ -262,6 +272,8 @@ class DesyListener(RDLListener):
             context["addrmap_full"] = addrmap_full
             context["addrmap_name"] = addrmap + "." + extx.inst_name
             context["addrmap_full_name"] = addrmap_full + "." + extx.inst_name
+            context["addrmap_full_notop"] = addrmap_full_notop
+            context["addrmap_full_notop_name"] = addrmap_full_notop + "." + extx.inst_name
             context["reladdr"] = extx.address_offset
             context["absaddr"] = extx.absolute_address
 
@@ -271,6 +283,15 @@ class DesyListener(RDLListener):
             context["addrwidth"] = ceil(log2(extx.size))
 
             context["desyrdl_access_channel"] = self.get_access_channel(extx)
+
+            if "desyrdl_hidden" in extx.list_properties(include_native=False):
+                hidden =  extx.get_property("desyrdl_hidden")
+                if hidden:
+                    context["desyrdl_hidden"] = 1
+                else:
+                    context["desyrdl_hidden"] = 0
+            else:
+                context["desyrdl_hidden"] = 0
 
             # add all non-native explicitly set properties
             for p in extx.list_properties(include_native=False):

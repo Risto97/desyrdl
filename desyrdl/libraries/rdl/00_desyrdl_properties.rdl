@@ -2,3 +2,4 @@ property desyrdl_generate_hdl { type = boolean; component = addrmap | regfile | 
 property desyrdl_interface { type = string; component = addrmap | regfile | reg | mem; };
 property desyrdl_access_channel {type = longint unsigned; component = addrmap; };
 property desyrdl_data_type {type = string; component = field | reg | mem; };
+property desyrdl_hidden {type = boolean; component = addrmap | regfile | reg | mem; };

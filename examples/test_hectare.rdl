@@ -1,5 +1,16 @@
 `include "test_hectare.sv"
 
+addrmap nextlevel {
+  reg {
+    field {
+      desc = "whatever status" ;
+      sw = r ;
+      hw = rw ;
+      we ; // TODO make hw=r and no we once the WIRE type of register is done
+    } data[32] = 32'h1234b70b;
+  } status ;
+} ;
+
 addrmap something_downstream {
   reg {
     field {
@@ -9,10 +20,15 @@ addrmap something_downstream {
       we ; // TODO make hw=r and no we once the WIRE type of register is done
     } data[32] = 32'h7000BEEF;
   } ds_reg @0x100 ;
+
+  nextlevel i_nextlevel;
 } ;
 
 addrmap test_hectare {
   addressing = regalign; // this is the default
+
+  desyrdl_interface = "AXI4L";
+  desyrdl_access_channel = 0;
 
   reg {
     field {sw=rw; hw=r; swmod; } data[31:0];
@@ -42,13 +58,13 @@ addrmap test_hectare {
   coolmem->desyrdl_interface = "DPM";
 
   external spi_ad9510 spi_ad9510_a @0x10000;
-  spi_ad9510_a->desyrdl_interface = "AXI4";
+  spi_ad9510_a->desyrdl_interface = "AXI4L";
 
   // test_hectare.sv holds size and address information for downstream IBUS
   // modules
   external generic_ibus #(.SIZE(`C_SIZE_LLRF_CTABLES)) llrf_ctables @`C_ADDR_LLRF_CTABLES;
 
-  something_downstream ds;
-  ds->desyrdl_interface = "AXI4";
+  something_downstream i_ds;
+  i_ds->desyrdl_interface = "AXI4L";
 
 };
