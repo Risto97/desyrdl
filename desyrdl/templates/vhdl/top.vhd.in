@@ -4,27 +4,27 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-library work;
-use work.common.all;
-use work.pkg_reg_{node.type_name}.all;
+library desyrdl;
+use desyrdl.common.all;
+use desyrdl.pkg_{node.type_name}.all;
 
-entity top_reg_{node.type_name} is
+entity {node.type_name} is
   port (
-    pi_clock           : in std_logic;
-    pi_reset         : in std_logic;
+    pi_clock : in std_logic;
+    pi_reset : in std_logic;
 
     -- AXI4
     pi_s_axi4 : in  t_axi4_m2s;
     po_s_axi4 : out t_axi4_s2m;
 
     -- logic
-    pi_addrmap : in t_addrmap_{node.type_name}_in;
+    pi_addrmap : in  t_addrmap_{node.type_name}_in;
     po_addrmap : out t_addrmap_{node.type_name}_out
 
   );
-end entity top_reg_{node.type_name};
+end entity {node.type_name};
 
-architecture arch of top_reg_{node.type_name} is
+architecture arch of {node.type_name} is
   signal adapter_stb : std_logic_vector(C_REGCOUNT-1 downto 0);
   signal adapter_we  : std_logic;
   signal adapter_err : std_logic;
@@ -38,7 +38,7 @@ architecture arch of top_reg_{node.type_name} is
   signal adapter_to_ext : t_axi4_m2s_array(C_EXTCOUNT downto 0);
 
 begin
-  ins_adapter: entity work.adapter_axi4
+  ins_adapter: entity desyrdl.decoder_axi4
   generic map (
                 G_ADDR_W     => C_ADDR_W,
                 G_REGISTER_INFO => C_REGISTER_INFO,
@@ -95,7 +95,7 @@ begin
   -- downstream interface assignments
   blk_ext_ports : block
   begin
-  --{extnames:repeat:extnames:
+  --{extnames:repeat:
     ins_{{i}}_{{ext.inst_name}} : entity work.axi4_to_{{desyrdl_interface}}
       port map (
         pi_clock => pi_clock,
@@ -116,7 +116,7 @@ begin
   -- rely on separate instances for now.
   blk_mem_ports : block
   begin
-  --{memnames:repeat:memnames:
+  --{memnames:repeat:
     po_addrmap.{{mem.inst_name}}.ena  <= adapter_to_dpm({{i}}).ena;
     po_addrmap.{{mem.inst_name}}.wr   <= adapter_to_dpm({{i}}).wr;
     po_addrmap.{{mem.inst_name}}.addr <= adapter_to_dpm({{i}}).addr({{aw}}-1 downto 0);
@@ -124,7 +124,7 @@ begin
     adapter_from_dpm({{i}})({{memwidth}}-1 downto 0) <= pi_addrmap.{{mem.inst_name}}; --}
   end block;
 
-  --{regnames:repeat:regnames:
+  --{regnames:repeat:
   -- regname {{reg.inst_name}} regtype {{reg.type_name}}
   blk_{{i}}_{{reg.inst_name}} : block
     constant l_r : integer := {{i}};
@@ -162,11 +162,11 @@ begin
                    pi_reset => pi_reset,
 
                    -- to/from adapter
-                   pi_adapter_stb  => adapter_stb(l_reg_info.base+i*l_reg_info.M+j),
+                   pi_adapter_stb  => adapter_stb(l_reg_info.internal_offset+i*l_reg_info.M+j),
                    pi_adapter_we   => adapter_we,
                    po_adapter_err  => adapter_err,
                    pi_adapter_data => adapter_wdata,
-                   po_adapter_data => adapter_rdata(l_reg_info.base+i*l_reg_info.M+j),
+                   po_adapter_data => adapter_rdata(l_reg_info.internal_offset+i*l_reg_info.M+j),
 
                    -- to/from our IP
                    pi_logic_incr => l_reg_incr,

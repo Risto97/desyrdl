@@ -1,0 +1,4 @@
+# lines starting with a '#' are ignored
+# format: <template file> <output file string template>
+pkg.vhd.in pkg_{node.type_name}.vhd
+top.vhd.in {node.type_name}.vhd

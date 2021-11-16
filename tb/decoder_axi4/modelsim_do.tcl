@@ -9,7 +9,7 @@ analyze ../../dual_port_memory.vhd
 analyze ../../pkg_reg_marsupials.vhd
 analyze ../../reg_field_storage.vhd
 analyze ../../generic_register.vhd
-analyze ../../adapter_axi4.vhd
+analyze ../../decoder_axi4.vhd
 analyze ../../top2.vhd
 analyze tb_TestCtrl.vhd
 analyze tb_top.vhd

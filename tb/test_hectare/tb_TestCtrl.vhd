@@ -12,7 +12,8 @@ library osvvm_Axi4 ;
   context osvvm_Axi4.Axi4LiteContext ; 
 
 library desyrdl ;
-  use desyrdl.pkg_reg_test_hectare.all;
+  use desyrdl.pkg_test_hectare.all;
+  use desyrdl.pkg_something_downstream_desyrdl_interface_bbf87faf;
 
 entity TestCtrl is
   port (
@@ -66,28 +67,28 @@ begin
 
     -- test ID 1
     -- WORD_HECTARE(0,0)
-    MasterReadCheck(AxiSuperTransRec, std_logic_vector(to_unsigned(C_REGISTER_INFO(0).addr, AXI_ADDR_WIDTH)), X"0000_0000"); -- should be default values before any writes
-    MasterWrite(    AxiSuperTransRec, std_logic_vector(to_unsigned(C_REGISTER_INFO(0).addr, AXI_ADDR_WIDTH)), X"5555_BEEF");
+    MasterReadCheck(AxiSuperTransRec, std_logic_vector(to_unsigned(C_HECTARE.addr, AXI_ADDR_WIDTH)), X"0000_0000"); -- should be default values before any writes
+    MasterWrite(    AxiSuperTransRec, std_logic_vector(to_unsigned(C_HECTARE.addr, AXI_ADDR_WIDTH)), X"5555_BEEF");
     WaitForClock(   AxiSuperTransRec, 2);
-    MasterReadCheck(AxiSuperTransRec, std_logic_vector(to_unsigned(C_REGISTER_INFO(0).addr, AXI_ADDR_WIDTH)), X"5555_BEEF");
+    MasterReadCheck(AxiSuperTransRec, std_logic_vector(to_unsigned(C_HECTARE.addr, AXI_ADDR_WIDTH)), X"5555_BEEF");
     assert ModuleAddrmapOut.hectare(0,0).data.data = X"5555_BEEF" report "Wrong data on hectare.data.data (TODO make me a transcation!)" severity note;
 
     -- test ID 0
     -- iitoh(0,0)
     WaitForClock(   AxiSuperTransRec, 2);
-    MasterReadCheck(AxiSuperTransRec, std_logic_vector(to_unsigned(C_REGISTER_INFO(2).addr, AXI_ADDR_WIDTH)), X"1BEE_F4A1");
+    MasterReadCheck(AxiSuperTransRec, std_logic_vector(to_unsigned(C_IITOH.addr, AXI_ADDR_WIDTH)), X"1BEE_F4A1");
 
     -- memory test 2: write from AXI, read from user logic
     -- write mem from AXI
     WaitForBarrier(Sync);
     WaitForClock(   AxiSuperTransRec, 2);
-    MasterWrite(AxiSuperTransRec, std_logic_vector(to_unsigned(C_MEM_START(0)+3*4, AXI_ADDR_WIDTH)), X"BB");
+    MasterWrite(AxiSuperTransRec, std_logic_vector(to_unsigned(C_COOLMEM_START+3*4, AXI_ADDR_WIDTH)), X"BB");
 
     -- memory test 1: write from user logic, read from AXI
     -- put something at offset 12 and try reading that from AXI4
     WaitForBarrier(Sync);
     WaitForClock(AxiSuperTransRec, 4);
-    MasterReadCheck(AxiSuperTransRec, std_logic_vector(to_unsigned(C_MEM_START(0)+12*4, AXI_ADDR_WIDTH)), X"AA");
+    MasterReadCheck(AxiSuperTransRec, std_logic_vector(to_unsigned(C_COOLMEM_START+12*4, AXI_ADDR_WIDTH)), X"AA");
 
     -- Downstream AXI4-Lite test
     -- Write to offset 0x5A on the downstream adapter, assumed to be axi4_spi
@@ -95,7 +96,10 @@ begin
     WaitForClock(AxiSuperTransRec, 4);
     -- The axi4_spi component maps the address of the request directly to the
     -- SPI interface, so don't multiply the address by 4 in the request.
-    Write(AxiSuperTransRec, std_logic_vector(to_unsigned(C_EXT_START(0)+16#40#, AXI_ADDR_WIDTH)), X"01010101");
+    Write(AxiSuperTransRec, std_logic_vector(to_unsigned(C_SPI_AD9510_A_START+16#40#, AXI_ADDR_WIDTH)), X"01010101");
+
+    -- Downstream addrmap
+    ReadCheck(AxiSuperTransRec, std_logic_vector(to_unsigned(C_DS_START+pkg_something_downstream_desyrdl_interface_bbf87faf.C_DS_REG.addr, AXI_ADDR_WIDTH)), X"7000_BEEF");
 
 
     -- Wait for test to finish
@@ -116,12 +120,12 @@ begin
   end process ControlProc ; 
 
   ResponderProc : process
-    variable ReadAddr_coolmem    : std_logic_vector(C_MEM_AW(0)-1 downto 0);
-    variable WrittenAddr_coolmem : std_logic_vector(C_MEM_AW(0)-1 downto 0);
+    variable ReadAddr_coolmem    : std_logic_vector(C_COOLMEM_AW-1 downto 0);
+    variable WrittenAddr_coolmem : std_logic_vector(C_COOLMEM_AW-1 downto 0);
     variable WrittenData_coolmem : std_logic_vector(32-1 downto 0);
 
-    variable ReadAddr_spi_ad9510_a : std_logic_vector(C_EXT_AW(0)-1 downto 0);
-    variable WrittenAddr_spi_ad9510_a : std_logic_vector(C_EXT_AW(0)-1 downto 0);
+    variable ReadAddr_spi_ad9510_a : std_logic_vector(C_SPI_AD9510_A_AW-1 downto 0);
+    variable WrittenAddr_spi_ad9510_a : std_logic_vector(C_SPI_AD9510_A_AW-1 downto 0);
     variable WrittenData_spi_ad9510_a : std_logic_vector(32-1 downto 0);
   begin
     WaitForClock(DpmTransRec_coolmem, 2);
@@ -137,14 +141,14 @@ begin
     WaitForBarrier(Sync);
     WaitForClock(DpmTransRec_coolmem, 2);
     SendRead(DpmTransRec_coolmem, ReadAddr_coolmem, x"AA");
-    AffirmIfEqual(ReadAddr_coolmem, std_logic_vector(to_unsigned(12, C_MEM_AW(0))));
+    AffirmIfEqual(ReadAddr_coolmem, std_logic_vector(to_unsigned(12, C_COOLMEM_AW)));
 
     -- Downstream AXI4-Lite test
     -- Write to offset 0x5A on the downstream adapter
     WaitForBarrier(Sync);
     WaitForClock(AxiMinionTransRec_spi_ad9510_a, 1);
     GetWrite(AxiMinionTransRec_spi_ad9510_a, WrittenAddr_spi_ad9510_a, WrittenData_spi_ad9510_a);
-    AffirmIfEqual(WrittenAddr_spi_ad9510_a, std_logic_vector(to_unsigned(16#40#, C_EXT_AW(0))));
+    AffirmIfEqual(WrittenAddr_spi_ad9510_a, std_logic_vector(to_unsigned(16#40#, C_SPI_AD9510_A_AW)));
     AffirmIfEqual(WrittenData_spi_ad9510_a(8-1 downto 0), x"01");
 
     -- Wait for test to finish

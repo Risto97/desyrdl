@@ -11,7 +11,7 @@ use ieee.numeric_std.all;
 library work;
 use work.common.all;
 
-entity adapter_axi4 is
+entity decoder_axi4 is
   generic (
     G_ADDR_W    : integer := 8;
     G_REGISTER_INFO : t_reg_info_array;
@@ -66,9 +66,9 @@ entity adapter_axi4 is
     S_AXI_RREADY  : in std_logic;
     S_AXI_RID     : out std_logic_vector(16-1 downto 0)
 );
-end entity adapter_axi4;
+end entity decoder_axi4;
 
-architecture arch of adapter_axi4 is
+architecture arch of decoder_axi4 is
 
   type t_target is (NONE, REG, MEM, EXT);
   signal rtarget, wtarget : t_target;
@@ -301,7 +301,7 @@ begin
         for k in 0 to G_REGISTER_INFO(i).M-1 loop
           if raddr_q_int = G_REGISTER_INFO(i).addr+4*(j*G_REGISTER_INFO(i).M+k) then
             rtarget <= REG;
-            reg_rsel <= G_REGISTER_INFO(i).base+j*G_REGISTER_INFO(i).M+k;
+            reg_rsel <= G_REGISTER_INFO(i).internal_offset+j*G_REGISTER_INFO(i).M+k;
           end if;
         end loop;
       end loop;
@@ -537,7 +537,7 @@ begin
         for k in 0 to G_REGISTER_INFO(i).M-1 loop
           if waddr_q_int = G_REGISTER_INFO(i).addr+4*(j*G_REGISTER_INFO(i).M+k) then
             wtarget <= REG;
-            reg_wsel <= G_REGISTER_INFO(i).base+j*G_REGISTER_INFO(i).M+k;
+            reg_wsel <= G_REGISTER_INFO(i).internal_offset+j*G_REGISTER_INFO(i).M+k;
           end if;
         end loop;
       end loop;

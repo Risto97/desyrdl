@@ -21,8 +21,8 @@
 *** regwidth: number of bits that a single register uses (up to 32)
 *** rw: either "RW" or "RO"
 * for pkg
-** n_regnames -> C_REGNAMES -> adapter_axi4
-** n_regcount -> C_REGCOUNT -> adapter_axi4, top
+** n_regnames -> C_REGNAMES -> decoder_axi4
+** n_regcount -> C_REGCOUNT -> decoder_axi4, top
 ** regtypes: list of nodes with individual type_name
 *** type_name:upper
 *** fields of that type
@@ -65,7 +65,7 @@
 *** addr: absolute_address minus the offset of the BAR
 *** rw: either "RW" or "RO" (for now only "RW")
 * for pkg file:
-** n_memnames: goes to C_MEMNAMES -> pkg, top, adapter_axi4
+** n_memnames: goes to C_MEMNAMES -> pkg, top, decoder_axi4
 ** memtypes: UNUSED list of nodes with individual type_name
 ** memnames: loop over all instances of a memory
 *** index
@@ -100,7 +100,7 @@
 ** extnames: loop over all instances of a downstream interface
 *** inst_name
 *** index
-* for adapter_axi4:
+* for decoder_axi4:
 ** n_extnames: for ifgtzero
 ** extnames: loop over all instances of a downstream interface
 
