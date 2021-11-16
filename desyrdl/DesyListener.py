@@ -352,7 +352,6 @@ class DesyListener(RDLListener):
             context["decrwidth"] = fldx.get_property("decrwidth") if fldx.get_property("decrwidth") is not None else 1
             context["incrwidth"] = fldx.get_property("incrwidth") if fldx.get_property("incrwidth") is not None else 1
             context["name"] = fldx.type_name
-            context["desyrdl_access_channel"] = self.get_access_channel(fldx)
             # FIXME parent should be used as default if not defined in field
             context["signed"] = self.get_data_type_sign(fldx)
             context["fixedpoint"] = self.get_data_type_fixed(fldx)
@@ -377,25 +376,27 @@ class DesyListener(RDLListener):
             return "WIRE"
         else:
             # error (TODO: handle as such)
-            print("error: can't make out the type of field for {}".format(node.get_path()))
+            print("ERROR: can't make out the type of field for {}".format(node.get_path()))
             return "WIRE"
 
     def get_access_channel(self, node):
 
         # Starting point for finding the top node
-        ancestor = node.owning_addrmap
+        cur_node = node
 
-        while not isinstance(ancestor.parent, RootNode):
-            ancestor = ancestor.parent
-        assert isinstance(ancestor.parent, RootNode)
-
-        try:
-            ch = ancestor.get_property("desyrdl_access_channel")
-        except LookupError:
-            # handle standalone modules in a temporary way
-            ch = 0
-            print(f"Couldn't find access channel, setting {ch}")
-            pass
+        ch = None
+        while ch is None:
+            try:
+                ch = cur_node.get_property("desyrdl_access_channel")
+                # The line above can return 'None' without raising an exception
+                assert ch is not None
+            except (LookupError,AssertionError):
+                cur_node = cur_node.parent
+                # The RootNode is above the top node and can't have the property
+                # we are looking for.
+                if isinstance(cur_node, RootNode):
+                    print("ERROR: Couldn't find the access channel for " + node.inst_name)
+                    raise
 
         return ch
 
