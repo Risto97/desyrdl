@@ -9,8 +9,8 @@
 --! @copyright  (c) 2021 DESY
 --! @license    SPDX-License-Identifier: Apache-2.0
 -------------------------------------------------------------------------------
---! @file pkg_{node.type_name}.vhd
---! @brief package of DesyRdl for address space decoder for {node.type_name}
+--! @file pkg_{node.orig_type_name}.vhd
+--! @brief package of DesyRdl for address space decoder for {node.orig_type_name}
 -------------------------------------------------------------------------------
 --! @author Michael Büchler <michael.buechler@desy.de>
 --! @author Lukasz Butkowski <lukasz.butkowski@desy.de>
@@ -26,7 +26,7 @@ use desyrdl.common.all;
 -- library desy;
 -- use desy.common_axi.all;
 
-package pkg_{node.type_name} is
+package pkg_{node.orig_type_name} is
 
   -----------------------------------------------
   -- per addrmap / module
@@ -129,9 +129,9 @@ package pkg_{node.type_name} is
   --}
 
   -- ===========================================================================
-  -- {node.type_name} : Top module address map interface
+  -- {node.orig_type_name} : Top module address map interface
   -- ---------------------------------------------------------------------------
-  type tif_addrmap_{node.type_name}_in is record
+  type tif_addrmap_{node.orig_type_name}_in is record
     --{regitems:repeat:{{context:if:eq:dim:1:
     {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_in; --}}{{context:if:eq:dim:2:
     {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_2d_in(0 to {{{{dim_m}}}}-1); --}}{{context:if:eq:dim:3:
@@ -142,7 +142,7 @@ package pkg_{node.type_name} is
     {{ext.inst_name}} : tif_{{desyrdl_interface:lower}}_s2m; --}
   end record;
 
-  type tif_addrmap_{node.type_name}_out is record
+  type tif_addrmap_{node.orig_type_name}_out is record
     --{regitems:repeat:{{context:if:eq:dim:1:
     {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_out; --}}{{context:if:eq:dim:2:
     {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_2d_out(0 to {{{{dim_m}}}}-1); --}}{{context:if:eq:dim:3:
@@ -157,29 +157,29 @@ package pkg_{node.type_name} is
   -- top level component declaration
   -- must come after defining the interfaces
   -- ---------------------------------------------------------------------------
-  subtype tif_{node.type_name}_m2s is tif_{desyrdl_interface:lower}_m2s;
-  subtype tif_{node.type_name}_s2m is tif_{desyrdl_interface:lower}_s2m;
+  subtype tif_{node.orig_type_name}_m2s is tif_{desyrdl_interface:lower}_m2s;
+  subtype tif_{node.orig_type_name}_s2m is tif_{desyrdl_interface:lower}_s2m;
 
-  component {node.type_name} is
+  component {node.orig_type_name} is
     port (
       pi_clock : in std_logic;
       pi_reset : in std_logic;
 
       -- TOP interface
-      pifi_s_top : in  tif_{node.type_name}_m2s;
-      pifo_s_top : out tif_{node.type_name}_s2m;
+      pifi_s_top : in  tif_{node.orig_type_name}_m2s;
+      pifo_s_top : out tif_{node.orig_type_name}_s2m;
       -- pifi_s_top : in  tif_{desyrdl_interface:lower}_m2s;
       -- pifo_s_top : out tif_{desyrdl_interface:lower}_s2m;
 
       -- logic
-      pifi_addrmap : in  tif_addrmap_{node.type_name}_in;
-      pifo_addrmap : out tif_addrmap_{node.type_name}_out
+      pifi_addrmap : in  tif_addrmap_{node.orig_type_name}_in;
+      pifo_addrmap : out tif_addrmap_{node.orig_type_name}_out
     );
-  end component {node.type_name};
+  end component {node.orig_type_name};
 
-end package pkg_{node.type_name};
+end package pkg_{node.orig_type_name};
 
-package body pkg_{node.type_name} is
+package body pkg_{node.orig_type_name} is
 
 end package body;
 
@@ -195,7 +195,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library desyrdl;
-use desyrdl.pkg_{node.type_name}.all;
+use desyrdl.pkg_{node.orig_type_name}.all;
 
 entity {node.type_name}_{{regtype.type_name}} is
   port (

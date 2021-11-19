@@ -22,27 +22,27 @@ use ieee.numeric_std.all;
 
 library desyrdl;
 use desyrdl.common.all;
-use desyrdl.pkg_{node.type_name}.all;
+use desyrdl.pkg_{node.orig_type_name}.all;
 
 -- library desy;
 -- use desy.common_axi.all;
 
-entity {node.type_name} is
+entity {node.orig_type_name} is
   port (
     pi_clock : in std_logic;
     pi_reset : in std_logic;
     -- TOP subordinate memory mapped interface
-    pifi_s_top  : in  tif_{node.type_name}_m2s;
-    pifo_s_top  : out tif_{node.type_name}_s2m;
+    pifi_s_top  : in  tif_{node.orig_type_name}_m2s;
+    pifo_s_top  : out tif_{node.orig_type_name}_s2m;
     -- pifi_s_top  : in  tif_{desyrdl_interface:lower}_m2s;
     -- pifo_s_top  : out tif_{desyrdl_interface:lower}{desyrdl_interface:lower}_s2m;
     -- to logic interface
-    pifi_addrmap : in  tif_addrmap_{node.type_name}_in;
-    pifo_addrmap : out tif_addrmap_{node.type_name}_out
+    pifi_addrmap : in  tif_addrmap_{node.orig_type_name}_in;
+    pifo_addrmap : out tif_addrmap_{node.orig_type_name}_out
   );
-end entity {node.type_name};
+end entity {node.orig_type_name};
 
-architecture arch of {node.type_name} is
+architecture arch of {node.orig_type_name} is
 
   type t_data_out is array (natural range<>) of std_logic_vector(C_DATA_WIDTH-1 downto 0) ;
   signal reg_data_out_vect : t_data_out({n_regcount}-1 downto 0);
