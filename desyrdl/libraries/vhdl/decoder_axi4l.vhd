@@ -228,6 +228,8 @@ begin
     end if;
   end process;
 
+  pifo_s_top.rresp <= "00";
+
   ------------------------------------------------------------------------------
   -- read data mux
   prs_rdata_mux: process(rtarget,rdata_reg,rdata_mem,rdata_ext)
