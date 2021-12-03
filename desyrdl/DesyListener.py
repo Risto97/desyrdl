@@ -282,15 +282,6 @@ class DesyListener(RDLListener):
 
             context["desyrdl_access_channel"] = self.get_access_channel(extx)
 
-            if "desyrdl_hidden" in extx.list_properties(include_native=False):
-                hidden =  extx.get_property("desyrdl_hidden")
-                if hidden:
-                    context["desyrdl_hidden"] = 1
-                else:
-                    context["desyrdl_hidden"] = 0
-            else:
-                context["desyrdl_hidden"] = 0
-
             # add all non-native explicitly set properties
             for p in extx.list_properties(include_native=False):
                 if p not in context:
