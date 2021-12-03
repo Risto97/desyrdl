@@ -171,10 +171,13 @@ class DesyListener(RDLListener):
 
             context = dict()
 
-            addrmap_segments = regx.owning_addrmap.get_path_segments(array_suffix='.{index:d}', empty_array_suffix='')
-            addrmap = addrmap_segments[-1]
-            addrmap_full = ".".join([x for i,x in enumerate(addrmap_segments)])
-            addrmap_full_notop = ".".join([x for i,x in enumerate(addrmap_segments) if i > 0])
+            addrmap_segments = regx.get_path_segments(array_suffix='', empty_array_suffix='')
+            addrmap = addrmap_segments[-2]
+            addrmap_name = ".".join([x for i,x in enumerate(addrmap_segments[-2:])])
+            addrmap_full = ".".join([x for i,x in enumerate(addrmap_segments[:-1])])
+            addrmap_full_name = ".".join([x for i,x in enumerate(addrmap_segments)])
+            addrmap_full_notop = ".".join([x for i,x in enumerate(addrmap_segments[1:-1])])
+            addrmap_full_notop_name = ".".join([x for i,x in enumerate(addrmap_segments[1:])])
 
             fields = [f for f in self.gen_fields(regx)]
 
@@ -183,10 +186,10 @@ class DesyListener(RDLListener):
             context["type"] = regx.type_name
             context["addrmap"] = addrmap
             context["addrmap_full"] = addrmap_full
-            context["addrmap_name"] = addrmap + "." + regx.inst_name
-            context["addrmap_full_name"] = addrmap_full + "." + regx.inst_name
+            context["addrmap_name"] = addrmap_name
+            context["addrmap_full_name"] = addrmap_full_name
             context["addrmap_full_notop"] = addrmap_full_notop
-            context["addrmap_full_notop_name"] = addrmap_full_notop + "." + regx.inst_name
+            context["addrmap_full_notop_name"] = addrmap_full_notop_name
             context["reladdr"] = regx.address_offset
             context["absaddr"] = regx.absolute_address
 
@@ -219,19 +222,22 @@ class DesyListener(RDLListener):
 
             context = dict()
 
-            addrmap_segments = memx.owning_addrmap.get_path_segments(array_suffix='.{index:d}', empty_array_suffix='')
-            addrmap = addrmap_segments[-1]
-            addrmap_full = ".".join([x for i,x in enumerate(addrmap_segments)])
-            addrmap_full_notop = ".".join([x for i,x in enumerate(addrmap_segments) if i > 0])
+            addrmap_segments = memx.get_path_segments(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap = addrmap_segments[-2]
+            addrmap_name = ".".join([x for i,x in enumerate(addrmap_segments[-2:])])
+            addrmap_full = ".".join([x for i,x in enumerate(addrmap_segments[:-1])])
+            addrmap_full_name = ".".join([x for i,x in enumerate(addrmap_segments)])
+            addrmap_full_notop = ".".join([x for i,x in enumerate(addrmap_segments[1:-1])])
+            addrmap_full_notop_name = ".".join([x for i,x in enumerate(addrmap_segments[1:])])
 
             context["i"] = i
             context["name"] = memx.type_name
             context["addrmap"] = addrmap
             context["addrmap_full"] = addrmap_full
-            context["addrmap_name"] = addrmap + "." + memx.inst_name
-            context["addrmap_full_name"] = addrmap_full + "." + memx.inst_name
+            context["addrmap_name"] = addrmap_name
+            context["addrmap_full_name"] = addrmap_full_name
             context["addrmap_full_notop"] = addrmap_full_notop
-            context["addrmap_full_notop_name"] = addrmap_full_notop + "." + memx.inst_name
+            context["addrmap_full_notop_name"] = addrmap_full_notop_name
             context["reladdr"] = memx.address_offset
             context["absaddr"] = memx.absolute_address
 
@@ -259,19 +265,22 @@ class DesyListener(RDLListener):
 
             context = dict()
 
-            addrmap_segments = extx.parent.get_path_segments(array_suffix='.{index:d}', empty_array_suffix='')
-            addrmap = addrmap_segments[-1]
-            addrmap_full = ".".join([x for i,x in enumerate(addrmap_segments)])
-            addrmap_full_notop = ".".join([x for i,x in enumerate(addrmap_segments) if i > 0])
+            addrmap_segments = extx.get_path_segments(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap = addrmap_segments[-2]
+            addrmap_name = ".".join([x for i,x in enumerate(addrmap_segments[-2:])])
+            addrmap_full = ".".join([x for i,x in enumerate(addrmap_segments[:-1])])
+            addrmap_full_name = ".".join([x for i,x in enumerate(addrmap_segments)])
+            addrmap_full_notop = ".".join([x for i,x in enumerate(addrmap_segments[1:-1])])
+            addrmap_full_notop_name = ".".join([x for i,x in enumerate(addrmap_segments[1:])])
 
             context["i"] = i
             context["name"] = extx.inst_name
             context["addrmap"] = addrmap
             context["addrmap_full"] = addrmap_full
-            context["addrmap_name"] = addrmap + "." + extx.inst_name
-            context["addrmap_full_name"] = addrmap_full + "." + extx.inst_name
+            context["addrmap_name"] = addrmap_name
+            context["addrmap_full_name"] = addrmap_full_name
             context["addrmap_full_notop"] = addrmap_full_notop
-            context["addrmap_full_notop_name"] = addrmap_full_notop + "." + extx.inst_name
+            context["addrmap_full_notop_name"] = addrmap_full_notop_name
             context["reladdr"] = extx.address_offset
             context["absaddr"] = extx.absolute_address
 
