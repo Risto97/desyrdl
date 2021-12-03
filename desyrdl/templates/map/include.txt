@@ -1,0 +1,4 @@
+# lines starting with a '#' are ignored
+# format: <template file> <output file string template>
+mapfile.mapp.in mapfile.mapp
+mapfile.mapt.in mapfile.mapt

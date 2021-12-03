@@ -37,8 +37,6 @@ class DesyListener(RDLListener):
                 except FileNotFoundError:
                     pass
 
-
-
     def init_context(self):
         self.regitems = list()
         self.memitems = list()
