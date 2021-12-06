@@ -177,7 +177,7 @@ package common is
 
   type t_reg_info is record
     -- index    : integer;
-    address  : integer;
+    address  : unsigned(C_AXI4L_ADDR_WIDTH-1 downto 0);
     elements : integer;
     index    : integer;
     fields   : t_field_info_array(31 downto 0);
@@ -188,11 +188,11 @@ package common is
 
   type t_reg_info_array is array (natural range <>) of t_reg_info;
 
-  constant C_REG_NONE : t_reg_info := (0, 0, 0,(others => C_FIELD_NONE),1,1);
+  constant C_REG_NONE : t_reg_info := (x"0000_0000", 0, 0,(others => C_FIELD_NONE),1,1);
 
   type t_mem_info is record
     -- index      : integer;
-    address    : integer;
+    address    : unsigned(C_AXI4L_ADDR_WIDTH-1 downto 0);
     addrwidth  : integer;
     datawidth  : integer;
     entries    : integer;
@@ -201,18 +201,18 @@ package common is
 
   type t_mem_info_array is array (natural range <>) of t_mem_info;
 
-  constant C_MEM_NONE : t_mem_info := (0, 0, 0, 0, C_NA);
+  constant C_MEM_NONE : t_mem_info := (x"0000_0000", 0, 0, 0, C_NA);
 
   type t_ext_info is record
     -- index      : integer;
-    address    : integer;
+    address    : unsigned(C_AXI4L_ADDR_WIDTH-1 downto 0);
     addrwidth  : integer;
     size       : integer;
   end record;
 
   type t_ext_info_array is array (natural range <>) of t_ext_info;
 
-  constant C_EXT_NONE : t_ext_info := (0, 0, 0);
+  constant C_EXT_NONE : t_ext_info := (x"0000_0000", 0, 0);
 
   -- interface types
   type t_if_type Is (DPM, AXI4, AXI4L, IBUS, WISHBONE, AVALON, NONE);

@@ -54,7 +54,7 @@ package pkg_{node.orig_type_name} is
 
   -- register items
   constant C_REGISTER_INFO : t_reg_info_array(0 to {n_regitems}) := ( --{regitems:repeat:
-    {{i}} => (address => {{reladdr}}, fields => C_{{type:upper}}_FIELDS, dim_n => {{dim_n}}, dim_m => {{dim_m}}, elements => {{elements}}, index => {{index}}), --}
+    {{i}} => (address => x"{{reladdr:08x}}", fields => C_{{type:upper}}_FIELDS, dim_n => {{dim_n}}, dim_m => {{dim_m}}, elements => {{elements}}, index => {{index}}), --}
     others => C_REG_NONE
   );
 
@@ -65,7 +65,7 @@ package pkg_{node.orig_type_name} is
   constant C_MEMITEMS_COUNT : integer := {n_memitems};
 
   constant C_MEM_INFO : t_mem_info_array(0 to {n_memitems}) := ( --{memitems:repeat:
-    {{i}} => (address => {{reladdr}}, addrwidth => {{addrwidth}}, datawidth => {{datawidth}}, entries => {{entries}}, sw => C_{{sw:upper}}), --}
+    {{i}} => (address => x"{{reladdr:08x}}", addrwidth => {{addrwidth}}, datawidth => {{datawidth}}, entries => {{entries}}, sw => C_{{sw:upper}}), --}
     others => C_MEM_NONE
   );
 
@@ -76,7 +76,7 @@ package pkg_{node.orig_type_name} is
   constant C_EXTITEMS_COUNT : integer := {n_extitems};
 
   constant C_EXT_INFO : t_ext_info_array(0 to {n_extitems}) := ( --{extitems:repeat:
-    {{i}} => (address => {{reladdr}}, addrwidth => {{addrwidth}}, size => {{size}}), --}
+    {{i}} => (address => x"{{reladdr:08x}}", addrwidth => {{addrwidth}}, size => {{size}}), --}
     others => C_EXT_NONE
   );
 
