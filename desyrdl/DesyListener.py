@@ -1,5 +1,25 @@
+#!/usr/bin/env python
+# --------------------------------------------------------------------------- #
+#           ____  _____________  __                                           #
+#          / __ \/ ____/ ___/\ \/ /                 _   _   _                 #
+#         / / / / __/  \__ \  \  /                 / \ / \ / \                #
+#        / /_/ / /___ ___/ /  / /               = ( M | S | K )=              #
+#       /_____/_____//____/  /_/                   \_/ \_/ \_/                #
+#                                                                             #
+# --------------------------------------------------------------------------- #
+# @copyright Copyright 2021 DESY
+# SPDX-License-Identifier: Apache-2.0
+# --------------------------------------------------------------------------- #
+# @date 2021-04-07
+# @author Michael Buechler <michael.buechler@desy.de>
+# @author Lukasz Butkowski <lukasz.butkowski@desy.de>
+# --------------------------------------------------------------------------- #
+"""DesyRdl main class.
 
-# import string
+Create context dictionaries for each address space node.
+Context dictionaries are used by the template engine.
+"""
+
 import re
 from math import ceil, log2
 from pathlib import Path  # get filenames

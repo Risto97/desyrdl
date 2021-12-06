@@ -7,12 +7,12 @@
 --                                                                           --
 -------------------------------------------------------------------------------
 --! @copyright  (c) 2021 DESY
---! @license    SPDX-License-Identifier: Apache-2.0
+--! SPDX-License-Identifier: Apache-2.0
 -------------------------------------------------------------------------------
---! @file axi4l_to_axi4l.vhd
---! @brief dummy entity just to pass through interface, part of DesyRdl
--------------------------------------------------------------------------------
+--! @date 2021-10-12
 --! @author Michael Büchler <michael.buechler@desy.de>
+-------------------------------------------------------------------------------
+--! @brief Dummy entity just to pass through interface, part of DesyRdl
 -------------------------------------------------------------------------------
 
 library ieee;

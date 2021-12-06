@@ -1,27 +1,47 @@
+#!/usr/bin/env python
+# --------------------------------------------------------------------------- #
+#           ____  _____________  __                                           #
+#          / __ \/ ____/ ___/\ \/ /                 _   _   _                 #
+#         / / / / __/  \__ \  \  /                 / \ / \ / \                #
+#        / /_/ / /___ ___/ /  / /               = ( M | S | K )=              #
+#       /_____/_____//____/  /_/                   \_/ \_/ \_/                #
+#                                                                             #
+# --------------------------------------------------------------------------- #
+# @copyright Copyright 2021 DESY
+# SPDX-License-Identifier: Apache-2.0
+# --------------------------------------------------------------------------- #
+# @date 2021-04-07
+# @author Michael Buechler <michael.buechler@desy.de>
+# @author Lukasz Butkowski <lukasz.butkowski@desy.de>
+# --------------------------------------------------------------------------- #
+"""DesyRDL tool.
 
+Use of Python SystemRDL compiler to generate VHDL and address map artifacts.
+"""
 
 import argparse
 import sys
 from pathlib import Path
 from shutil import copy
 
+from desyrdl.DesyListener import MapfileListener, VhdlListener
+from desyrdl.RdlFormatter import RdlFormatter
 from systemrdl import RDLCompileError, RDLCompiler, RDLWalker  # RDLListener
 from systemrdl.node import (AddrmapNode, FieldNode, MemNode,  # AddressableNode
                             RegfileNode, RegNode, RootNode)
 
-from desyrdl.DesyListener import MapfileListener, VhdlListener
-from desyrdl.RdlFormatter import RdlFormatter
-
 
 def main():
-    # All input arguments are SystemRDL source files and must be provided in
-    # the correct order.
+    """Run main process of DesyRDL tool.
 
-    # ----------------------------------
-    # Parse arguments
-    # desyrdl  <input file/s>
-    # desyrdl -f vhdl -i <input file/s> -t <template folder> -o <output_dir> -h <help>
+    All input arguments are SystemRDL source files and must be provided in
+    the correct order.
 
+    ----------------------------------
+    Parse arguments
+    desyrdl  <input file/s>
+    desyrdl -f vhdl -i <input file/s> -t <template folder> -o <output_dir> -h <help>
+    """
     argParser = argparse.ArgumentParser('DesyRDL command line options')
     # argParser.add_argument('input_files',
     #                        metavar='file.rdl',
@@ -129,7 +149,7 @@ def main():
             tpl_in = [fname for fname in Path(tpl_dir / out_format).glob('*')]
             for fname in tpl_in:
                 tpl_name = ''.join([fname.name.partition('.')[0], '_', '{node.type_name}'])
-                tpl_suffixes = ''.join(fname.suffixes[:-1]) # just leave out the ".in"
+                tpl_suffixes = ''.join(fname.suffixes[:-1])  # just leave out the ".in"
                 tpl_tplstr = ''.join([tpl_name, tpl_suffixes])
                 # add a tuple (template, template string)
                 tpl_files.append((Path(tpl_dir / out_format / fname), tpl_tplstr))

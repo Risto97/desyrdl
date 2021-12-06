@@ -9,11 +9,11 @@
 --! @copyright  (c) 2021 DESY
 --! @license    SPDX-License-Identifier: Apache-2.0
 -------------------------------------------------------------------------------
---! @file reg_field_storage.vhd
---! @brief storage field component of DesyRdl
--------------------------------------------------------------------------------
+--! @date 2021-08-04
 --! @author Michael Büchler <michael.buechler@desy.de>
 --! @author Lukasz Butkowski <lukasz.butkowski@desy.de>
+-------------------------------------------------------------------------------
+--! @brief Storage field component of DesyRdl
 -------------------------------------------------------------------------------
 
 library ieee;

@@ -7,13 +7,13 @@
 --                                                                           --
 -------------------------------------------------------------------------------
 --! @copyright  (c) 2021 DESY
---! @license    SPDX-License-Identifier: Apache-2.0
+--! SPDX-License-Identifier: Apache-2.0
 -------------------------------------------------------------------------------
---! @file pkg_desyrdl_common.vhd
---! @brief package with common DesyRdl components
--------------------------------------------------------------------------------
+--! @date 2021-08-04
 --! @author Michael Büchler <michael.buechler@desy.de>
 --! @author Lukasz Butkowski <lukasz.butkowski@desy.de>
+-------------------------------------------------------------------------------
+--! @brief Package with common DesyRdl components
 -------------------------------------------------------------------------------
 
 library ieee;
