@@ -59,7 +59,7 @@ package pkg_{node.orig_type_name} is
   );
 
   -- ---------------------------------------------------------------------------
-  -- memoriers
+  -- memories
   -- ---------------------------------------------------------------------------
   -- always add +1 for the dummy
   constant C_MEMITEMS_COUNT : integer := {n_memitems};

@@ -251,7 +251,8 @@ class DesyListener(RDLListener):
             addrmap_full_notop_name = ".".join([x for i,x in enumerate(addrmap_segments[1:])])
 
             context["i"] = i
-            context["name"] = memx.type_name
+            context["name"] = memx.inst_name
+            context["type"] = memx.type_name
             context["addrmap"] = addrmap
             context["addrmap_full"] = addrmap_full
             context["addrmap_name"] = addrmap_name
@@ -295,6 +296,7 @@ class DesyListener(RDLListener):
 
             context["i"] = i
             context["name"] = extx.inst_name
+            context["type"] = extx.type_name
             context["addrmap"] = addrmap
             context["addrmap_full"] = addrmap_full
             context["addrmap_name"] = addrmap_name
