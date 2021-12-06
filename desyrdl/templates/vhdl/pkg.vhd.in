@@ -82,6 +82,17 @@ package pkg_{node.orig_type_name} is
 
 
   -- ===========================================================================
+  -- Writing a custom testbench is easier when there is a mapping from name to
+  -- index. It can be used to access the INFO arrays.
+  --{regitems:repeat:
+  constant C_{{name:upper}}_ID : integer := {{i}}; --}
+  --{memitems:repeat:
+  constant C_{{name:upper}}_ID : integer := {{i}}; --}
+  --{extitems:repeat:
+  constant C_{{name:upper}}_ID : integer := {{i}}; --}
+
+
+  -- ===========================================================================
   -- REGISTERS interface
   -- ---------------------------------------------------------------------------
   -- TODO: in fields --{{{{context:if:eq:we:1: we : std_logic;--}}}}
