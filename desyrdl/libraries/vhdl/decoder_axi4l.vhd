@@ -475,7 +475,7 @@ begin
         end loop;
 
         for i in 0 to g_memitems - 1  loop
-          if waddr_int >= g_mem_info(i).address and raddr_int < g_mem_info(i).address + g_mem_info(i).entries * 4 then
+          if waddr_int >= g_mem_info(i).address and waddr_int < g_mem_info(i).address + g_mem_info(i).entries * 4 then
             wtarget       <= MEM;
             mem_wr_stb(i) <= '1';
             mem_wr_req    <= '1';
