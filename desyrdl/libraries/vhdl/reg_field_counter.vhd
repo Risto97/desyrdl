@@ -6,23 +6,21 @@
 --      /_____/_____//____/  /_/                   \_/ \_/ \_/               --
 --                                                                           --
 -------------------------------------------------------------------------------
--- $Header: https://mskllrfredminesrv.desy.de/svn/utca_firmware_framework/branch/llrf_iq_rework/libraries/dsp/iq_slide.vhd 4109 2020-08-26 17:52:31Z mbuechl $
+--! @copyright  (c) 2021 DESY
+--! SPDX-License-Identifier: Apache-2.0
 -------------------------------------------------------------------------------
---! @file   reg_field_counter.vhd
---! @brief  Storage type of a field. Part of MSK register generation.
---! @author Michael Buechler
---! @email  michael.buechler@desy.de
---! $Date: 2020-08-26 19:52:31 +0200 (Mi, 26 Aug 2020) $
---! $Revision: 4109 $
---! $URL: https://mskllrfredminesrv.desy.de/svn/utca_firmware_framework/branch/llrf_iq_rework/libraries/dsp/iq_slide.vhd $
+--! @date 2021-08-04
+--! @author Michael Büchler <michael.buechler@desy.de>
+-------------------------------------------------------------------------------
+--! @brief storage field component of DesyRdl
 -------------------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-library work;
-use work.common.all;
+library desyrdl;
+use desyrdl.common.all;
 
 entity reg_field_counter is
   generic (

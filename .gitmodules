@@ -1,3 +1,0 @@
-[submodule "tb/test_hectare/OsvvmLibraries"]
-	path = tb/test_hectare/OsvvmLibraries
-	url = https://github.com/OSVVM/OsvvmLibraries.git
