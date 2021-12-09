@@ -1,4 +1,4 @@
 # lines starting with a '#' are ignored
 # format: <template file> <output file string template>
-mapfile.mapp.in mapfile.mapp
-mapfile.mapt.in mapfile.mapt
+mapfile.mapp.in mapfile_ch{desyrdl_access_channel}.mapp
+mapfile.mapt.in mapfile_ch{desyrdl_access_channel}.mapt

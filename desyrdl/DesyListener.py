@@ -135,6 +135,11 @@ class DesyListener(RDLListener):
             print(f"exit_Addrmap {node.inst_name}: Adding non-native property {p}")
             self.context[p] = node.get_property(p)
 
+        # The mapfile output filename is a template and relies on the access
+        # channel property. That's why it must be known for all addrmaps.
+        if "desyrdl_access_channel" not in self.context:
+            self.context["desyrdl_access_channel"] = self.get_access_channel(node)
+
         print(f"path_segment = {node.get_path_segment()}")
         print(f"node.inst_name = {node.inst_name}")
         print(f"node.type_name = {node.type_name}")
