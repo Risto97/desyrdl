@@ -99,7 +99,7 @@ architecture arch of decoder_axi4l is
 
   -- select read
   signal reg_rd_stb  : std_logic_vector(g_regcount downto 0) := (others => '0');
-  signal ext_rd_stb  : std_logic_vector(g_memcount downto 0) := (others => '0');
+  signal ext_rd_stb  : std_logic_vector(g_extcount downto 0) := (others => '0');
   signal mem_rd_stb  : std_logic_vector(g_memcount downto 0) := (others => '0');
   signal mem_rd_req  : std_logic := '0';
   signal mem_rd_ack  : std_logic := '0';
@@ -124,7 +124,7 @@ architecture arch of decoder_axi4l is
 
   -- select write
   signal reg_wr_stb  : std_logic_vector(g_regcount downto 0) := (others => '0');
-  signal ext_wr_stb  : std_logic_vector(g_memcount downto 0) := (others => '0');
+  signal ext_wr_stb  : std_logic_vector(g_extcount downto 0) := (others => '0');
   signal mem_wr_stb  : std_logic_vector(g_memcount downto 0) := (others => '0');
   signal mem_wr_req  : std_logic := '0';
   signal mem_wr_ack  : std_logic := '0';
