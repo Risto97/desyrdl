@@ -50,13 +50,13 @@ entity decoder_axi4l is
     pi_reset  : in std_logic;
     -- one element for each register, so N elements for a 2D register with length N
 
-    po_reg_rd_stb  : out std_logic_vector(g_regcount-1 downto 0);
-    po_reg_wr_stb  : out std_logic_vector(g_regcount-1 downto 0);
+    po_reg_rd_stb  : out std_logic_vector(g_regcount downto 0);
+    po_reg_wr_stb  : out std_logic_vector(g_regcount downto 0);
     po_reg_data    : out std_logic_vector(g_data_width-1 downto 0);
     pi_reg_data    : in  std_logic_vector(g_data_width-1 downto 0);
     --pi_reg_ack  : in  std_logic;
 
-    po_mem_stb     : out std_logic_vector(g_memcount-1 downto 0);
+    po_mem_stb     : out std_logic_vector(g_memcount downto 0);
     po_mem_we      : out std_logic;
     po_mem_addr    : out std_logic_vector(g_addr_width-1 downto 0);
     po_mem_data    : out std_logic_vector(g_data_width-1 downto 0);
@@ -517,8 +517,8 @@ begin
   -- ===========================================================================
   -- registers
   ------------------------------------------------------------------------------
-  po_reg_rd_stb <= reg_rd_stb(g_regcount-1 downto 0);
-  po_reg_wr_stb <= reg_wr_stb(g_regcount-1 downto 0);
+  po_reg_rd_stb <= reg_rd_stb;
+  po_reg_wr_stb <= reg_wr_stb;
   po_reg_data   <= wdata;
   rdata_reg     <= pi_reg_data ;
 
@@ -557,7 +557,7 @@ begin
               po_mem_addr(g_addr_width-1 downto g_mem_info(i).addrwidth-2) <= (others => '0');
             end if;
           end loop;
-          po_mem_stb <= mem_rd_stb(g_memitems-1 downto 0);
+          po_mem_stb <= mem_rd_stb;
           po_mem_we  <= '0';
           l_rd_ack <= '1';
 
@@ -568,7 +568,7 @@ begin
               po_mem_addr(g_addr_width-1 downto g_mem_info(i).addrwidth-2) <= (others => '0');
             end if;
           end loop;
-          po_mem_stb <= mem_wr_stb(g_memitems-1 downto 0);
+          po_mem_stb <= mem_wr_stb;
           po_mem_we  <= '1';
           l_wr_ack   <= '1';
 
