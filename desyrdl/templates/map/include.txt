@@ -2,3 +2,4 @@
 # format: <template file> <output file string template>
 mapfile.mapp.in mapfile_ch{desyrdl_access_channel}.mapp
 mapfile.mapt.in mapfile_ch{desyrdl_access_channel}.mapt
+mapfile.h.in mapfile_ch{desyrdl_access_channel}.h

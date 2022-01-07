@@ -216,7 +216,10 @@ class DesyListener(RDLListener):
             context["addrmap_full_notop"] = addrmap_full_notop
             context["addrmap_full_notop_name"] = addrmap_full_notop_name
             context["reladdr"] = regx.address_offset
-            context["absaddr"] = regx.absolute_address
+            context["absaddr_base"] = regx.absolute_address
+            context["absaddr_high"] = regx.absolute_address+int(regx.total_size)-1
+
+            context["name_full_notop"] = "_".join([x.upper() for i,x in enumerate(addrmap_segments[1:])])
 
             context["reg"] = regx
             context["dim_n"] = dim_n
@@ -232,6 +235,8 @@ class DesyListener(RDLListener):
             # port definitions. Improve VHDL code to get rid of it.
             context["index"] = index
             index = index + elements
+
+            context["desc"] = regx.get_property("desc") or "TODO"
 
             context["desyrdl_access_channel"] = self.get_access_channel(regx)
 
@@ -264,8 +269,12 @@ class DesyListener(RDLListener):
             context["addrmap_full_name"] = addrmap_full_name
             context["addrmap_full_notop"] = addrmap_full_notop
             context["addrmap_full_notop_name"] = addrmap_full_notop_name
+
+            context["name_full_notop"] = "_".join([x.upper() for i,x in enumerate(addrmap_segments[1:])])
+
             context["reladdr"] = memx.address_offset
-            context["absaddr"] = memx.absolute_address
+            context["absaddr_base"] = memx.absolute_address
+            context["absaddr_high"] = memx.absolute_address+int(memx.total_size)-1
 
             context["mem"] = memx
             context["entries"] = memx.get_property("mementries")
@@ -275,6 +284,8 @@ class DesyListener(RDLListener):
             context["sw"] = memx.get_property("sw").name
             # virtual registers, e.g. for DMA regions
             context["vregs"] = [x for x in self.gen_regitems(memx)]
+
+            context["desc"] = memx.get_property("desc") or "TODO"
 
             context["desyrdl_access_channel"] = self.get_access_channel(memx)
 
@@ -309,7 +320,10 @@ class DesyListener(RDLListener):
             context["addrmap_full_notop"] = addrmap_full_notop
             context["addrmap_full_notop_name"] = addrmap_full_notop_name
             context["reladdr"] = extx.address_offset
-            context["absaddr"] = extx.absolute_address
+            context["absaddr_base"] = extx.absolute_address
+            context["absaddr_high"] = extx.absolute_address+int(extx.total_size)-1
+
+            context["name_full_notop"] = "_".join([x.upper() for i,x in enumerate(addrmap_segments[1:])])
 
             context["ext"] = extx
             context["size"] = int(extx.total_size)
