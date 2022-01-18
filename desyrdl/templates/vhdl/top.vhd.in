@@ -102,8 +102,8 @@ begin
       pi_ext      => ext_if_i,
       po_ext      => ext_if_o,
 
-      pi_s_top    => pi_s_top_if,
-      po_s_top    => po_s_top_if
+      pi_s_top    => pi_s_top,
+      po_s_top    => po_s_top
     );
 
   prs_reg_rd_mux: process(pi_clock)
@@ -145,8 +145,8 @@ begin
         pi_decoder_data   => reg_data_in,
         po_decoder_data   => reg_data_out_vect({{index}}),
 
-        pi_reg  => pi_addrmap_if.{{{{reg.inst_name}}}},
-        po_reg  => po_addrmap_if.{{{{reg.inst_name}}}}
+        pi_reg  => pi_addrmap.{{{{reg.inst_name}}}},
+        po_reg  => po_addrmap.{{{{reg.inst_name}}}}
       );--}} --{{context:if:eq:dim:2:
     gen_m: for idx_m in 0 to {{dim_m}}-1 generate
       inst_{{name}}: entity desyrdl.{node.type_name}_{{reg.type_name}}
@@ -159,8 +159,8 @@ begin
           pi_decoder_data   => reg_data_in,
           po_decoder_data   => reg_data_out_vect({{index}}+idx_m),
 
-          pi_reg  => pi_addrmap_if.{{{{reg.inst_name}}}}(idx_m),
-          po_reg  => po_addrmap_if.{{{{reg.inst_name}}}}(idx_m)
+          pi_reg  => pi_addrmap.{{{{reg.inst_name}}}}(idx_m),
+          po_reg  => po_addrmap.{{{{reg.inst_name}}}}(idx_m)
         );
     end generate;--}} --{{context:if:eq:dim:3:
     gen_n : for idx_n in 0 to {{dim_n}}-1 generate  -- outer dim, for 3D arrays
@@ -177,8 +177,8 @@ begin
             pi_decoder_data   => reg_data_in,
             po_decoder_data   => reg_data_out_vect({{index}}+l_idx),
 
-            pi_reg  => pi_addrmap_if.{{{{reg.inst_name}}}}(idx_n,idx_m),
-            po_reg  => po_addrmap_if.{{{{reg.inst_name}}}}(idx_n,idx_m)
+            pi_reg  => pi_addrmap.{{{{reg.inst_name}}}}(idx_n,idx_m),
+            po_reg  => po_addrmap.{{{{reg.inst_name}}}}(idx_n,idx_m)
           );
       end generate;
     end generate;--}}
@@ -192,12 +192,12 @@ begin
   blk_{{i}}_{{name}} : block
   begin
     mem_ack <= '1';
-    mem_data_out_vect({{i}})({{datawidth}}-1 downto 0) <= pi_addrmap_if.{{mem.inst_name}}.data;{{context:if:lt:datawidth:32:
+    mem_data_out_vect({{i}})({{datawidth}}-1 downto 0) <= pi_addrmap.{{mem.inst_name}}.data;{{context:if:lt:datawidth:32:
     mem_data_out_vect({{{{i}}}})(C_DATA_WIDTH-1 downto {{{{datawidth}}}}) <= (others => '0');}}
-    po_addrmap_if.{{mem.inst_name}}.addr <= mem_addr({{addrwidth}}-1 downto 0);
-    po_addrmap_if.{{mem.inst_name}}.data <= mem_data_in({{datawidth}}-1 downto 0);
-    po_addrmap_if.{{mem.inst_name}}.en <= mem_stb({{i}});
-    po_addrmap_if.{{mem.inst_name}}.we <= mem_we;
+    po_addrmap.{{mem.inst_name}}.addr <= mem_addr({{addrwidth}}-1 downto 0);
+    po_addrmap.{{mem.inst_name}}.data <= mem_data_in({{datawidth}}-1 downto 0);
+    po_addrmap.{{mem.inst_name}}.en <= mem_stb({{i}});
+    po_addrmap.{{mem.inst_name}}.we <= mem_we;
   end block;
   --}
 
@@ -214,8 +214,8 @@ begin
         pi_reset => pi_reset,
         pi_s_decoder => ext_if_o({{i}}),
         po_s_decoder => ext_if_i({{i}}),
-        po_m_ext     => po_addrmap_if.{{ext.inst_name}},
-        pi_m_ext     => pi_addrmap_if.{{ext.inst_name}}
+        po_m_ext     => po_addrmap.{{ext.inst_name}},
+        pi_m_ext     => pi_addrmap.{{ext.inst_name}}
       );
   end block;
   --}
