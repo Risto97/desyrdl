@@ -46,29 +46,29 @@ end entity {node.orig_type_name};
 architecture arch of {node.orig_type_name} is
 
   type t_data_out is array (natural range<>) of std_logic_vector(C_DATA_WIDTH-1 downto 0) ;
-  signal reg_data_out_vect : t_data_out({n_regcount} downto 0);
+  signal reg_data_out_vect : t_data_out({n_regcount}-1 downto 0);
 
-  signal reg_rd_stb   : std_logic_vector({n_regcount} downto 0);
-  signal reg_wr_stb   : std_logic_vector({n_regcount} downto 0);
+  signal reg_rd_stb   : std_logic_vector({n_regcount}-1 downto 0);
+  signal reg_wr_stb   : std_logic_vector({n_regcount}-1 downto 0);
   signal reg_data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0);
   signal reg_data_in  : std_logic_vector(C_DATA_WIDTH-1 downto 0);
 
-  signal mem_data_out_vect : t_data_out({n_memitems} downto 0);
-  signal mem_stb      : std_logic_vector({n_memitems} downto 0);
+  signal mem_data_out_vect : t_data_out({n_memitems}-1 downto 0);
+  signal mem_stb      : std_logic_vector({n_memitems}-1 downto 0);
   signal mem_we       : std_logic;
   signal mem_addr     : std_logic_vector(C_ADDR_WIDTH-1 downto 0);
   signal mem_data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0);
   signal mem_data_in  : std_logic_vector(C_DATA_WIDTH-1 downto 0);
   signal mem_ack      : std_logic;
 
-  signal ext_if_i     : t_{desyrdl_interface:lower}_s2m_array({n_extitems} downto 0);
-  signal ext_if_o     : t_{desyrdl_interface:lower}_m2s_array({n_extitems} downto 0);
+  signal ext_if_i     : t_{desyrdl_interface:lower}_s2m_array({n_extitems}-1 downto 0);
+  signal ext_if_o     : t_{desyrdl_interface:lower}_m2s_array({n_extitems}-1 downto 0);
 
 begin
 
   -- Assign the unused array index that is always present, even if the number
   -- of mem or reg items is 0.
-  mem_data_out_vect({n_memitems}) <= (others => '0');
+  --mem_data_out_vect({n_memitems}) <= (others => '0');
 
   inst_decoder_axi4l: entity desyrdl.decoder_{desyrdl_interface:lower}
     generic map (
@@ -109,7 +109,7 @@ begin
   prs_reg_rd_mux: process(pi_clock)
   begin
     if rising_edge(pi_clock) then
-      for idx in 0 to {n_regcount} loop
+      for idx in 0 to {n_regcount}-1 loop
         if reg_rd_stb(idx) = '1' then
           reg_data_out <= reg_data_out_vect(idx);
         end if;
@@ -120,14 +120,16 @@ begin
   prs_mem_rd_mux: process(pi_clock)
   begin
     if rising_edge(pi_clock) then
-      for idx in 0 to {n_memitems} loop
+      for idx in 0 to {n_memitems}-1 loop
         if mem_stb(idx) = '1' then
           mem_data_out <= mem_data_out_vect(idx);
         end if;
       end loop;
     end if;
   end process prs_mem_rd_mux;
-
+  -- gen_no_mem: if {n_memitems} = 0 generate
+  --   mem_data_out <= (others => '0');
+  -- end generate;
   -- ===========================================================================
   -- generated registers instances{regitems:repeat:
   -- ---------------------------------------------------------------------------
@@ -184,6 +186,7 @@ begin
     end generate;--}}
   end block; --}
 
+  mem_ack <= '1'; -- not used at the moment from external memories
   -- ===========================================================================
   --{memitems:repeat:
   -- ---------------------------------------------------------------------------
@@ -191,7 +194,6 @@ begin
   -- ---------------------------------------------------------------------------
   blk_{{i}}_{{name}} : block
   begin
-    mem_ack <= '1';
     mem_data_out_vect({{i}})({{datawidth}}-1 downto 0) <= pi_addrmap.{{mem.inst_name}}.data;{{context:if:lt:datawidth:32:
     mem_data_out_vect({{{{i}}}})(C_DATA_WIDTH-1 downto {{{{datawidth}}}}) <= (others => '0');}}
     po_addrmap.{{mem.inst_name}}.addr <= mem_addr({{addrwidth}}-1 downto 0);
