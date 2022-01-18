@@ -28,10 +28,10 @@ entity axi4l_to_axi4l is
   port (
     pi_reset       : in  std_logic;
     pi_clock       : in  std_logic;
-    pifi_s_decoder : in  tif_axi4l_m2s;
-    pifo_s_decoder : out tif_axi4l_s2m;
-    pifo_m_ext     : out tif_axi4l_m2s;
-    pifi_m_ext     : in  tif_axi4l_s2m
+    pi_s_decoder : in  t_axi4l_m2s;
+    po_s_decoder : out t_axi4l_s2m;
+    po_m_ext     : out t_axi4l_m2s;
+    pi_m_ext     : in  t_axi4l_s2m
   );
 end entity axi4l_to_axi4l;
 
@@ -39,7 +39,7 @@ architecture behav of axi4l_to_axi4l is
 
 begin
 
-  pifo_m_ext     <= pifi_s_decoder;
-  pifo_s_decoder <= pifi_m_ext;
+  po_m_ext     <= pi_s_decoder;
+  po_s_decoder <= pi_m_ext;
 
 end behav;
