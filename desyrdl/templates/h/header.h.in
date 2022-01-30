@@ -1,0 +1,52 @@
+#ifndef __desyrdl_ch{desyrdl_access_channel}__H__
+#define __desyrdl_ch{desyrdl_access_channel}__H__
+
+{regitems:repeat:
+/*
+ * Register: {{name_full_notop}}
+ * {{desc}}
+ */
+#define {{name_full_notop}}_LEN         {{elements:>11}}U
+#define {{name_full_notop}}_BASEADDR    {{absaddr_base:>#12x}}
+#define {{name_full_notop}}_HIGHADDR    {{absaddr_high:>#12x}}
+#define {{name_full_notop}}_DATA_WIDTH  {{width:>12}}
+#define {{name_full_notop}}_FRACBITS    {{fixedpoint:>12}}
+#define {{name_full_notop}}_IS_SIGNED   {{signed:>12}}
+#define {{name_full_notop}}_ACCESS_TYPE         "{{rw}}"}
+{memitems:repeat:
+/*
+ * Memory: {{name_full_notop}}
+ * {{desc}}
+ */
+#define {{name_full_notop}}_LEN         {{entries:>11}}U
+#define {{name_full_notop}}_BASEADDR    {{absaddr_base:>#12x}}
+#define {{name_full_notop}}_HIGHADDR    {{absaddr_high:>#12x}}
+#define {{name_full_notop}}_DATA_WIDTH  {{datawidth:>12}}
+#define {{name_full_notop}}_FRACBITS    0
+#define {{name_full_notop}}_IS_SIGNED   0
+#define {{name_full_notop}}_ACCESS_TYPE "RW"
+{{vregs:repeat:
+/*
+ * Virtual register within memory: {{{{name_full_notop}}}}
+ * {{desc}}
+ */
+#define {{{{name_full_notop}}}}_LEN         {{{{elements:>11}}}}U
+#define {{{{name_full_notop}}}}_BASEADDR    {{{{absaddr_base:>#12x}}}}
+#define {{{{name_full_notop}}}}_HIGHADDR    {{{{absaddr_high:>#12x}}}}
+#define {{{{name_full_notop}}}}_DATA_WIDTH  {{{{width:>12}}}}
+#define {{{{name_full_notop}}}}_FRACBITS    {{{{fixedpoint:>12}}}}
+#define {{{{name_full_notop}}}}_IS_SIGNED   {{{{signed:>12}}}}
+#define {{{{name_full_notop}}}}_ACCESS_TYPE         "{{{{rw}}}}"}}}
+{extitems:repeat:
+/*
+ * External instance: {{name_full_notop}}
+ */
+#define {{name_full_notop}}_LEN         {{total_words:>11}}U
+#define {{name_full_notop}}_BASEADDR    {{absaddr_base:>#12x}}
+#define {{name_full_notop}}_HIGHADDR    {{absaddr_high:>#12x}}
+#define {{name_full_notop}}_DATA_WIDTH  32
+#define {{name_full_notop}}_FRACBITS    0
+#define {{name_full_notop}}_IS_SIGNED   0
+#define {{name_full_notop}}_ACCESS_TYPE "RW"
+}
+#endif /**/
