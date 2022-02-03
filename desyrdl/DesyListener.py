@@ -277,7 +277,12 @@ class DesyListener(RDLListener):
             context["vregs"] = [x for x in self.gen_regitems(memx)]
 
             context["desyrdl_access_channel"] = self.get_access_channel(memx)
-
+            if not memx.is_sw_writable and memx.is_sw_readable:
+                context["rw"] = "RO"
+            elif memx.is_sw_writable and not memx.is_sw_readable:
+                context["rw"] = "WO"
+            else:
+                context["rw"] = "RW"
 
             # add all non-native explicitly set properties
             for p in memx.list_properties(include_native=False):
