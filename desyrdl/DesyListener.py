@@ -453,7 +453,7 @@ class DesyListener(RDLListener):
 
     def get_data_type_sign(self, node):
         datatype = str(node.get_property("desyrdl_data_type") or '')
-        pattern = '(^int.*|^sfixed.*)'
+        pattern = '(^int.*|^fixed.*)'
         if re.match(pattern, datatype):
             return 1
         else:
