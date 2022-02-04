@@ -126,37 +126,9 @@ class DesyListener(RDLListener):
         self.memitems[self.context_pointer].extend(self.gen_node_names(node, [MemNode], True, first_only=False))
         self.extitems[self.context_pointer].extend(self.gen_node_names(node, [AddrmapNode, RegfileNode, RegNode], True, first_only=False))
 
-        self.context = dict(
-                node=node,
-                regtypes=[x for x in self.gen_regtypes(self.regtypes[self.context_pointer].values())],
-                memtypes=[x for x in self.gen_memtypes(self.memtypes[self.context_pointer].values())],
-                regitems=[x for x in self.gen_regitems(self.regitems[self.context_pointer])],
-                memitems=[x for x in self.gen_memitems(self.memitems[self.context_pointer])],
-                extitems=[x for x in self.gen_extitems(self.extitems[self.context_pointer])],
-                n_regtypes=len(self.regtypes[self.context_pointer]),
-                n_regitems=len(self.regitems[self.context_pointer]),
-                n_regcount=self.regcount[self.context_pointer],
-                n_memtypes=len(self.memtypes[self.context_pointer]),
-                n_memitems=len(self.memitems[self.context_pointer]),
-                n_extitems=len(self.extitems[self.context_pointer]))
-
-        # add all non-native explicitly set properties
-        for p in node.list_properties(include_native=False):
-            assert p not in self.context
-            print(f"exit_Addrmap {node.inst_name}: Adding non-native property {p}")
-            self.context[p] = node.get_property(p)
-
-        # The mapfile output filename is a template and relies on the access
-        # channel property. That's why it must be known for all addrmaps.
-        if "desyrdl_access_channel" not in self.context:
-            self.context["desyrdl_access_channel"] = self.get_access_channel(node)
-
         print(f"path_segment = {node.get_path_segment()}")
         print(f"node.inst_name = {node.inst_name}")
         print(f"node.type_name = {node.type_name}")
-
-        self.context_pointer = self.context_pointer-1
-        print(f'leaving addrmap {node.inst_name}, context_pointer now {self.context_pointer}')
 
     # yields a tuple (i, node) for each child of node that matches a list of
     # types and is either external or internal
@@ -489,10 +461,33 @@ class VhdlListener(DesyListener):
     def exit_Addrmap(self, node):
         super().exit_Addrmap(node)
 
+        self.context = dict(
+                node=node,
+                regtypes=[x for x in self.gen_regtypes(self.regtypes[self.context_pointer].values())],
+                memtypes=[x for x in self.gen_memtypes(self.memtypes[self.context_pointer].values())],
+                regitems=[x for x in self.gen_regitems(self.regitems[self.context_pointer])],
+                memitems=[x for x in self.gen_memitems(self.memitems[self.context_pointer])],
+                extitems=[x for x in self.gen_extitems(self.extitems[self.context_pointer])],
+                n_regtypes=len(self.regtypes[self.context_pointer]),
+                n_regitems=len(self.regitems[self.context_pointer]),
+                n_regcount=self.regcount[self.context_pointer],
+                n_memtypes=len(self.memtypes[self.context_pointer]),
+                n_memitems=len(self.memitems[self.context_pointer]),
+                n_extitems=len(self.extitems[self.context_pointer]))
+
+        # add all non-native explicitly set properties
+        for p in node.list_properties(include_native=False):
+            assert p not in self.context
+            print(f"exit_Addrmap {node.inst_name}: Adding non-native property {p}")
+            self.context[p] = node.get_property(p)
+
         # generate if no property set or is set to true
         if node.get_property('desyrdl_generate_hdl') is None or \
            node.get_property('desyrdl_generate_hdl') is True:
             self.process_templates(node)
+
+        self.context_pointer = self.context_pointer-1
+        print(f'leaving addrmap {node.inst_name}, context_pointer now {self.context_pointer}')
 
 
 class MapfileListener(DesyListener):
@@ -500,4 +495,41 @@ class MapfileListener(DesyListener):
     def exit_Addrmap(self, node):
         super().exit_Addrmap(node)
 
-        self.process_templates(node)
+        if isinstance(node.parent, RootNode):
+            assert self.context_pointer == 0
+
+            all_regtypes = [y for x in self.regtypes for y in self.gen_regtypes(x.values())]
+            all_memtypes = [y for x in self.memtypes for y in self.gen_memtypes(x.values())]
+            all_regitems = [y for x in self.regitems for y in self.gen_regitems(x)]
+            all_memitems = [y for x in self.memitems for y in self.gen_memitems(x)]
+            all_extitems = [y for x in self.extitems for y in self.gen_extitems(x)]
+
+            self.context = dict(
+                    node=node,
+                    regtypes=all_regtypes,
+                    memtypes=all_memtypes,
+                    regitems=all_regitems,
+                    memitems=all_memitems,
+                    extitems=all_extitems,
+                    n_regtypes=len(all_regtypes),
+                    n_regitems=len(all_regitems),
+                    n_regcount=sum(self.regcount),
+                    n_memtypes=len(all_memtypes),
+                    n_memitems=len(all_memitems),
+                    n_extitems=len(all_extitems))
+
+            # add all non-native explicitly set properties
+            for p in node.list_properties(include_native=False):
+                assert p not in self.context
+                print(f"exit_Addrmap {node.inst_name}: Adding non-native property {p}")
+                self.context[p] = node.get_property(p)
+
+            # The mapfile output filename is a template and relies on the access
+            # channel property.
+            if "desyrdl_access_channel" not in self.context:
+                self.context["desyrdl_access_channel"] = self.get_access_channel(node)
+
+            self.process_templates(node)
+
+        self.context_pointer = self.context_pointer-1
+        print(f'leaving addrmap {node.inst_name}, context_pointer now {self.context_pointer}')
