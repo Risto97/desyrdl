@@ -34,7 +34,7 @@ class DesyListener(RDLListener):
     # formatter: RdlFormatter instance
     # templates: array of tuples (tpl_file, tpl_tplstr)
     # out_dir: path where to put output files
-    def __init__(self, formatter, templates, out_dir, merge_outputs=False):
+    def __init__(self, formatter, templates, out_dir):
         for t,tplstr in templates:
             assert isinstance(t, Path)
         assert isinstance(out_dir, Path)
@@ -42,20 +42,10 @@ class DesyListener(RDLListener):
         self.templates = templates
         self.out_dir = out_dir
         self.generated_files = list()
-        self.merge_outputs = merge_outputs
 
         self.formatter = formatter
 
         self.init_context()
-
-        # If generated outputs shall be merged, remove any existing files.
-        # The output file template string should be the final filename.
-        if self.merge_outputs:
-            for tpl,tplstr in self.templates:
-                try:
-                    Path(self.out_dir / tplstr).unlink()
-                except FileNotFoundError:
-                    pass
 
     def init_context(self):
         self.regitems = list()
@@ -83,12 +73,7 @@ class DesyListener(RDLListener):
             out_file = self.formatter.format(tplstr, **self.context)
             out_path = Path(self.out_dir / out_file)
 
-            if self.merge_outputs:
-                mode = 'a'
-            else:
-                mode = 'w'
-
-            with out_path.open(mode) as f_out:
+            with out_path.open('w') as f_out:
                 f_out.write(s_out)
                 if out_path not in self.generated_files:
                     self.generated_files.append(out_path)

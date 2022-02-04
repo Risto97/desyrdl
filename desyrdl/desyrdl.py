@@ -179,7 +179,7 @@ def main():
             print('======================')
             print('Generating map files')
             print('======================')
-            listener = MapfileListener(vf, tpl_files, out_dir, merge_outputs=True)
+            listener = MapfileListener(vf, tpl_files, out_dir)
             tpl_walker = RDLWalker(unroll=True)
             tpl_walker.walk(top_node, listener)
         elif out_format == 'adoc':
