@@ -63,7 +63,10 @@ class DesyListener(RDLListener):
         self.extitems = list()
         self.regtypes = list()
         self.memtypes = list()
-        self.regcount = 0
+        self.regcount = list()
+
+        # increase and decreaes a pointer as we go through the register model
+        self.context_pointer = -1
 
     def process_templates(self, node):
         for tpl,tplstr in self.templates:
@@ -96,38 +99,46 @@ class DesyListener(RDLListener):
         self.regitems.append(list())
         self.memitems.append(list())
         self.extitems.append(list())
+        self.regcount.append(0)
+
+        self.context_pointer = self.context_pointer+1
+
+        print(f'entering addrmap {node.inst_name}, context_pointer now {self.context_pointer}')
+        print(f'regtypes len: {len(self.regtypes)}')
 
     # types are in the dictionary on the top of the stack
     def enter_Component(self, node):
         if isinstance(node, MemNode):
-            if node.type_name not in self.memtypes[-1]:
-                self.memtypes[-1][node.type_name] = node
+            if node.type_name not in self.memtypes[self.context_pointer]:
+                self.memtypes[self.context_pointer][node.type_name] = node
 
         if isinstance(node, RegNode) and not node.external:
-            if node.type_name not in self.regtypes[-1]:
-                print(f'adding type {node.type_name} to {self.regtypes[-1]}')
+            if node.type_name not in self.regtypes[self.context_pointer]:
+                print(f'adding type {node.type_name} to {self.regtypes[self.context_pointer]}')
 
-                self.regtypes[-1][node.type_name] = node
+                self.regtypes[self.context_pointer][node.type_name] = node
 
     def exit_Addrmap(self, node):
 
-        self.regitems[-1].extend(self.gen_regitems(node))
-        self.memitems[-1].extend(self.gen_memitems(node))
-        self.extitems[-1].extend(self.gen_extitems(node))
+        # There is no need for more than the generators before the actual
+        # context is created.
+        self.regitems[self.context_pointer].extend(self.gen_node_names(node, [RegNode], False))
+        self.memitems[self.context_pointer].extend(self.gen_node_names(node, [MemNode], True, first_only=False))
+        self.extitems[self.context_pointer].extend(self.gen_node_names(node, [AddrmapNode, RegfileNode, RegNode], True, first_only=False))
 
         self.context = dict(
                 node=node,
-                regtypes=[x for x in self.gen_regtypes()],
-                memtypes=[x for x in self.gen_memtypes()],
-                regitems=self.regitems[-1],
-                memitems=self.memitems[-1],
-                extitems=self.extitems[-1],
-                n_regtypes=len(self.regtypes[-1]),
-                n_regitems=len(self.regitems[-1]),
-                n_regcount=self.regcount,
-                n_memtypes=len(self.memtypes[-1]),
-                n_memitems=len(self.memitems[-1]),
-                n_extitems=len(self.extitems[-1]))
+                regtypes=[x for x in self.gen_regtypes(self.regtypes[self.context_pointer].values())],
+                memtypes=[x for x in self.gen_memtypes(self.memtypes[self.context_pointer].values())],
+                regitems=[x for x in self.gen_regitems(self.regitems[self.context_pointer])],
+                memitems=[x for x in self.gen_memitems(self.memitems[self.context_pointer])],
+                extitems=[x for x in self.gen_extitems(self.extitems[self.context_pointer])],
+                n_regtypes=len(self.regtypes[self.context_pointer]),
+                n_regitems=len(self.regitems[self.context_pointer]),
+                n_regcount=self.regcount[self.context_pointer],
+                n_memtypes=len(self.memtypes[self.context_pointer]),
+                n_memitems=len(self.memitems[self.context_pointer]),
+                n_extitems=len(self.extitems[self.context_pointer]))
 
         # add all non-native explicitly set properties
         for p in node.list_properties(include_native=False):
@@ -144,13 +155,8 @@ class DesyListener(RDLListener):
         print(f"node.inst_name = {node.inst_name}")
         print(f"node.type_name = {node.type_name}")
 
-        # Some context must be cleared on addrmap boundaries
-        self.regtypes.pop()
-        self.memtypes.pop()
-        self.regitems.pop()
-        self.memitems.pop()
-        self.extitems.pop()
-        self.regcount = 0
+        self.context_pointer = self.context_pointer-1
+        print(f'leaving addrmap {node.inst_name}, context_pointer now {self.context_pointer}')
 
     # yields a tuple (i, node) for each child of node that matches a list of
     # types and is either external or internal
@@ -170,12 +176,13 @@ class DesyListener(RDLListener):
             yield (i, child)
             i += 1
 
-    def gen_regitems(self, node):
+    def gen_regitems(self, gen_items):
         # For indexing of flattened arrays in VHDL port definitions.
         # Move to a dict() or improve VHDL code.
         index = 0
 
-        for i, regx in self.gen_node_names(node, [RegNode], False):
+        # apparently there is no need to do enumerate(gen_items)
+        for i, regx in gen_items:
 
             dim_n = 1
             dim_m = 1
@@ -192,7 +199,7 @@ class DesyListener(RDLListener):
 
             elements = dim_n * dim_m
 
-            self.regcount += elements
+            self.regcount[self.context_pointer] += elements
 
             context = dict()
 
@@ -242,8 +249,8 @@ class DesyListener(RDLListener):
 
             yield context
 
-    def gen_memitems(self, node):
-        for i, memx in self.gen_node_names(node, [MemNode], True, first_only=False):
+    def gen_memitems(self, gen_items):
+        for i, memx in gen_items:
 
             context = dict()
 
@@ -274,7 +281,8 @@ class DesyListener(RDLListener):
             context["addrwidth"] = ceil(log2(memx.get_property("mementries") * 4))
             context["sw"] = memx.get_property("sw").name
             # virtual registers, e.g. for DMA regions
-            context["vregs"] = [x for x in self.gen_regitems(memx)]
+            gen_vregs = self.gen_node_names(memx, [RegNode], False)
+            context["vregs"] = [x for x in self.gen_regitems(gen_vregs)]
 
             context["desyrdl_access_channel"] = self.get_access_channel(memx)
             if not memx.is_sw_writable and memx.is_sw_readable:
@@ -291,8 +299,8 @@ class DesyListener(RDLListener):
 
             yield context
 
-    def gen_extitems(self, node):
-        for i, extx in self.gen_node_names(node, [AddrmapNode, RegfileNode, RegNode], True, first_only=False):
+    def gen_extitems(self, gen_items):
+        for i, extx in gen_items:
 
             context = dict()
 
@@ -330,8 +338,8 @@ class DesyListener(RDLListener):
 
             yield context
 
-    def gen_regtypes(self):
-        for i, regx in enumerate(self.regtypes[-1].values()):
+    def gen_regtypes(self, types):
+        for i, regx in enumerate(types):
             fields = [f for f in self.gen_fields(regx)]
             fields_count = len(fields)
             reg_sign = self.get_data_type_sign(regx)
@@ -363,8 +371,8 @@ class DesyListener(RDLListener):
 
             yield context
 
-    def gen_memtypes(self):
-        for i, memx in enumerate(self.memtypes[-1].values()):
+    def gen_memtypes(self, types):
+        for i, memx in enumerate(types):
             context = dict()
 
             context["mem"] = memx
