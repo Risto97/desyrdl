@@ -24,11 +24,12 @@ import sys
 from pathlib import Path
 from shutil import copy
 
-from desyrdl.DesyListener import MapfileListener, VhdlListener
-from desyrdl.RdlFormatter import RdlFormatter
 from systemrdl import RDLCompileError, RDLCompiler, RDLWalker  # RDLListener
 from systemrdl.node import (AddrmapNode, FieldNode, MemNode,  # AddressableNode
                             RegfileNode, RegNode, RootNode)
+
+from desyrdl.DesyListener import MapfileListener, VhdlListener
+from desyrdl.RdlFormatter import RdlFormatter
 
 
 def main():
@@ -180,6 +181,14 @@ def main():
             print('Generating map files')
             print('======================')
             listener = MapfileListener(vf, tpl_files, out_dir)
+            tpl_walker = RDLWalker(unroll=True)
+            tpl_walker.walk(top_node, listener)
+        elif out_format == 'h':
+            # Generate mapfile from template
+            print('======================')
+            print('Generating header files')
+            print('======================')
+            listener = MapfileListener(vf, tpl_files, out_dir, separator='_')
             tpl_walker = RDLWalker(unroll=True)
             tpl_walker.walk(top_node, listener)
         elif out_format == 'adoc':

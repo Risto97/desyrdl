@@ -1,0 +1,53 @@
+#ifndef __desyrdl_ch{desyrdl_access_channel}__H__
+#define __desyrdl_ch{desyrdl_access_channel}__H__
+
+{regitems:repeat:
+/*
+ * Module: {{addrmap}} Register: {{name}}
+ * {{desc}}
+ */
+#define {{addrmap_name}}_LEN         {{elements:>11}}U
+#define {{addrmap_name}}_BASEADDR    {{absaddr_base:>#12x}}
+#define {{addrmap_name}}_HIGHADDR    {{absaddr_high:>#12x}}
+#define {{addrmap_name}}_DATA_WIDTH  {{width:>12}}
+#define {{addrmap_name}}_FRACBITS    {{fixedpoint:>12}}
+#define {{addrmap_name}}_IS_SIGNED   {{signed:>12}}
+#define {{addrmap_name}}_ACCESS_TYPE         "{{rw}}"}
+{memitems:repeat:
+/*
+ * Memory: {{addrmap_name}}
+ * {{desc}}
+ */
+#define {{addrmap_name}}_LEN         {{entries:>11}}U
+#define {{addrmap_name}}_BASEADDR    {{absaddr_base:>#12x}}
+#define {{addrmap_name}}_HIGHADDR    {{absaddr_high:>#12x}}
+#define {{addrmap_name}}_DATA_WIDTH  {{datawidth:>12}}
+#define {{addrmap_name}}_FRACBITS    0
+#define {{addrmap_name}}_IS_SIGNED   0
+#define {{addrmap_name}}_ACCESS_TYPE "RW"
+{{vregs:repeat:
+/*
+ * Virtual register within memory: {{{{addrmap_name}}}}
+ * {{desc}}
+ *
+ */
+#define {{{{addrmap_name}}}}_LEN         {{{{elements:>11}}}}U
+#define {{{{addrmap_name}}}}_BASEADDR    {{{{absaddr_base:>#12x}}}}
+#define {{{{addrmap_name}}}}_HIGHADDR    {{{{absaddr_high:>#12x}}}}
+#define {{{{addrmap_name}}}}_DATA_WIDTH  {{{{width:>12}}}}
+#define {{{{addrmap_name}}}}_FRACBITS    {{{{fixedpoint:>12}}}}
+#define {{{{addrmap_name}}}}_IS_SIGNED   {{{{signed:>12}}}}
+#define {{{{addrmap_name}}}}_ACCESS_TYPE         "{{{{rw}}}}"}}}
+{extitems:repeat:
+/*
+ * External instance: {{addrmap_name}}
+ */
+#define {{addrmap_name}}_LEN         {{total_words:>11}}U
+#define {{addrmap_name}}_BASEADDR    {{absaddr_base:>#12x}}
+#define {{addrmap_name}}_HIGHADDR    {{absaddr_high:>#12x}}
+#define {{addrmap_name}}_DATA_WIDTH  32
+#define {{addrmap_name}}_FRACBITS    0
+#define {{addrmap_name}}_IS_SIGNED   0
+#define {{addrmap_name}}_ACCESS_TYPE "RW"
+}
+#endif /**/
