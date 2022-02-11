@@ -34,7 +34,7 @@ class DesyListener(RDLListener):
     # formatter: RdlFormatter instance
     # templates: array of tuples (tpl_file, tpl_tplstr)
     # out_dir: path where to put output files
-    def __init__(self, formatter, templates, out_dir):
+    def __init__(self, formatter, templates, out_dir, separator="."):
         for t,tplstr in templates:
             assert isinstance(t, Path)
         assert isinstance(out_dir, Path)
@@ -43,6 +43,7 @@ class DesyListener(RDLListener):
         self.out_dir = out_dir
         self.generated_files = list()
 
+        self.separator = separator
         self.formatter = formatter
 
         self.init_context()
@@ -152,11 +153,11 @@ class DesyListener(RDLListener):
 
             addrmap_segments = regx.get_path_segments(array_suffix='', empty_array_suffix='')
             addrmap = addrmap_segments[-2]
-            addrmap_name = ".".join([x for i,x in enumerate(addrmap_segments[-2:])])
-            addrmap_full = ".".join([x for i,x in enumerate(addrmap_segments[:-1])])
-            addrmap_full_name = ".".join([x for i,x in enumerate(addrmap_segments)])
-            addrmap_full_notop = ".".join([x for i,x in enumerate(addrmap_segments[1:-1])])
-            addrmap_full_notop_name = ".".join([x for i,x in enumerate(addrmap_segments[1:])])
+            addrmap_name = self.separator.join([x for i,x in enumerate(addrmap_segments[-2:])])
+            addrmap_full = self.separator.join([x for i,x in enumerate(addrmap_segments[:-1])])
+            addrmap_full_name = self.separator.join([x for i,x in enumerate(addrmap_segments)])
+            addrmap_full_notop = self.separator.join([x for i,x in enumerate(addrmap_segments[1:-1])])
+            addrmap_full_notop_name = self.separator.join([x for i,x in enumerate(addrmap_segments[1:])])
 
             fields = [f for f in self.gen_fields(regx)]
 
@@ -173,7 +174,7 @@ class DesyListener(RDLListener):
             context["absaddr_base"] = regx.absolute_address
             context["absaddr_high"] = regx.absolute_address+int(regx.total_size)-1
 
-            context["name_full_notop"] = "_".join([x.upper() for i,x in enumerate(addrmap_segments[1:])])
+            # context["name_full_notop"] = "_".join([x.upper() for i,x in enumerate(addrmap_segments[1:])])
 
             context["reg"] = regx
             context["dim_n"] = dim_n
@@ -208,11 +209,11 @@ class DesyListener(RDLListener):
 
             addrmap_segments = memx.get_path_segments(array_suffix='.{index:d}', empty_array_suffix='')
             addrmap = addrmap_segments[-2]
-            addrmap_name = ".".join([x for i,x in enumerate(addrmap_segments[-2:])])
-            addrmap_full = ".".join([x for i,x in enumerate(addrmap_segments[:-1])])
-            addrmap_full_name = ".".join([x for i,x in enumerate(addrmap_segments)])
-            addrmap_full_notop = ".".join([x for i,x in enumerate(addrmap_segments[1:-1])])
-            addrmap_full_notop_name = ".".join([x for i,x in enumerate(addrmap_segments[1:])])
+            addrmap_name = self.separator.join([x for i,x in enumerate(addrmap_segments[-2:])])
+            addrmap_full = self.separator.join([x for i,x in enumerate(addrmap_segments[:-1])])
+            addrmap_full_name = self.separator.join([x for i,x in enumerate(addrmap_segments)])
+            addrmap_full_notop = self.separator.join([x for i,x in enumerate(addrmap_segments[1:-1])])
+            addrmap_full_notop_name = self.separator.join([x for i,x in enumerate(addrmap_segments[1:])])
 
             context["i"] = i
             context["name"] = memx.inst_name
@@ -224,7 +225,7 @@ class DesyListener(RDLListener):
             context["addrmap_full_notop"] = addrmap_full_notop
             context["addrmap_full_notop_name"] = addrmap_full_notop_name
 
-            context["name_full_notop"] = "_".join([x.upper() for i,x in enumerate(addrmap_segments[1:])])
+            # context["name_full_notop"] = "_".join([x.upper() for i,x in enumerate(addrmap_segments[1:])])
 
             context["reladdr"] = memx.address_offset
             context["absaddr_base"] = memx.absolute_address
@@ -264,11 +265,11 @@ class DesyListener(RDLListener):
 
             addrmap_segments = extx.get_path_segments(array_suffix='.{index:d}', empty_array_suffix='')
             addrmap = addrmap_segments[-2]
-            addrmap_name = ".".join([x for i,x in enumerate(addrmap_segments[-2:])])
-            addrmap_full = ".".join([x for i,x in enumerate(addrmap_segments[:-1])])
-            addrmap_full_name = ".".join([x for i,x in enumerate(addrmap_segments)])
-            addrmap_full_notop = ".".join([x for i,x in enumerate(addrmap_segments[1:-1])])
-            addrmap_full_notop_name = ".".join([x for i,x in enumerate(addrmap_segments[1:])])
+            addrmap_name = self.separator.join([x for i,x in enumerate(addrmap_segments[-2:])])
+            addrmap_full = self.separator.join([x for i,x in enumerate(addrmap_segments[:-1])])
+            addrmap_full_name = self.separator.join([x for i,x in enumerate(addrmap_segments)])
+            addrmap_full_notop = self.separator.join([x for i,x in enumerate(addrmap_segments[1:-1])])
+            addrmap_full_notop_name = self.separator.join([x for i,x in enumerate(addrmap_segments[1:])])
 
             context["i"] = i
             context["name"] = extx.inst_name
@@ -283,7 +284,7 @@ class DesyListener(RDLListener):
             context["absaddr_base"] = extx.absolute_address
             context["absaddr_high"] = extx.absolute_address+int(extx.total_size)-1
 
-            context["name_full_notop"] = "_".join([x.upper() for i,x in enumerate(addrmap_segments[1:])])
+            # context["name_full_notop"] = "_".join([x.upper() for i,x in enumerate(addrmap_segments[1:])])
 
             context["ext"] = extx
             context["size"] = int(extx.total_size)

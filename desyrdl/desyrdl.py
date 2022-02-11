@@ -188,7 +188,7 @@ def main():
             print('======================')
             print('Generating header files')
             print('======================')
-            listener = MapfileListener(vf, tpl_files, out_dir, merge_outputs=True)
+            listener = MapfileListener(vf, tpl_files, out_dir, separator='_')
             tpl_walker = RDLWalker(unroll=True)
             tpl_walker.walk(top_node, listener)
         elif out_format == 'adoc':
