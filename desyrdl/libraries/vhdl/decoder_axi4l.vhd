@@ -30,44 +30,44 @@ use desyrdl.common.all;
 
 entity decoder_axi4l is
   generic (
-    g_addr_width    : integer := 32;
-    g_data_width    : integer := 32;
+    G_ADDR_WIDTH    : integer := 32;
+    G_DATA_WIDTH    : integer := 32;
 
-    g_register_info  : t_reg_info_array;
-    g_regitems       : integer := 0;
-    g_regcount       : integer := 0;
+    G_REGISTER_INFO  : t_reg_info_array;
+    G_REGITEMS       : integer := 0;
+    G_REGCOUNT       : integer := 0;
 
-    g_mem_info       : t_mem_info_array;
-    g_memitems       : integer := 0;
-    g_memcount       : integer := 0;
+    G_MEM_INFO       : t_mem_info_array;
+    G_MEMITEMS       : integer := 0;
+    G_MEMCOUNT       : integer := 0;
 
-    g_ext_info       : t_ext_info_array;
-    g_extitems       : integer := 0;
-    g_extcount       : integer := 0
+    G_EXT_INFO       : t_ext_info_array;
+    G_EXTITEMS       : integer := 0;
+    G_EXTCOUNT       : integer := 0
   );
   port (
     pi_clock  : in std_logic;
     pi_reset  : in std_logic;
     -- one element for each register, so N elements for a 2D register with length N
 
-    po_reg_rd_stb  : out std_logic_vector(g_regcount downto 0);
-    po_reg_wr_stb  : out std_logic_vector(g_regcount downto 0);
-    po_reg_data    : out std_logic_vector(g_data_width-1 downto 0);
-    pi_reg_data    : in  std_logic_vector(g_data_width-1 downto 0);
+    po_reg_rd_stb  : out std_logic_vector(G_REGCOUNT-1 downto 0);
+    po_reg_wr_stb  : out std_logic_vector(G_REGCOUNT-1 downto 0);
+    po_reg_data    : out std_logic_vector(G_DATA_WIDTH-1 downto 0);
+    pi_reg_data    : in  std_logic_vector(G_DATA_WIDTH-1 downto 0);
     --pi_reg_ack  : in  std_logic;
 
-    po_mem_stb     : out std_logic_vector(g_memcount downto 0);
+    po_mem_stb     : out std_logic_vector(G_MEMCOUNT-1 downto 0);
     po_mem_we      : out std_logic;
-    po_mem_addr    : out std_logic_vector(g_addr_width-1 downto 0);
-    po_mem_data    : out std_logic_vector(g_data_width-1 downto 0);
-    pi_mem_data    : in  std_logic_vector(g_data_width-1 downto 0);
+    po_mem_addr    : out std_logic_vector(G_ADDR_WIDTH-1 downto 0);
+    po_mem_data    : out std_logic_vector(G_DATA_WIDTH-1 downto 0);
+    pi_mem_data    : in  std_logic_vector(G_DATA_WIDTH-1 downto 0);
     pi_mem_ack     : in  std_logic;
 
-    pifi_ext    : in  tif_axi4l_s2m_array(G_EXTCOUNT downto 0);
-    pifo_ext    : out tif_axi4l_m2s_array(G_EXTCOUNT downto 0);
+    pi_ext    : in  t_axi4l_s2m_array(G_EXTCOUNT-1 downto 0);
+    po_ext    : out t_axi4l_m2s_array(G_EXTCOUNT-1 downto 0);
 
-    pifi_s_top  : in  tif_axi4l_m2s ;
-    pifo_s_top  : out tif_axi4l_s2m
+    pi_s_top  : in  t_axi4l_m2s ;
+    po_s_top  : out t_axi4l_s2m
 
 );
 end entity decoder_axi4l;
@@ -89,18 +89,18 @@ architecture arch of decoder_axi4l is
   );
   signal state_read : t_state_read;
 
-  signal rdata_reg : std_logic_vector(g_data_width-1 downto 0);
-  signal rdata_mem : std_logic_vector(g_data_width-1 downto 0);
-  signal rdata_ext : std_logic_vector(g_data_width-1 downto 0);
+  signal rdata_reg : std_logic_vector(G_DATA_WIDTH-1 downto 0);
+  signal rdata_mem : std_logic_vector(G_DATA_WIDTH-1 downto 0);
+  signal rdata_ext : std_logic_vector(G_DATA_WIDTH-1 downto 0);
 
-  signal rdata     : std_logic_vector(g_data_width-1 downto 0) := (others => '0');
-  signal raddr     : std_logic_vector(g_addr_width-1 downto 0) := (others => '0');
-  signal raddr_int : integer;
+  signal rdata     : std_logic_vector(G_DATA_WIDTH-1 downto 0) := (others => '0');
+  signal raddr     : std_logic_vector(G_ADDR_WIDTH-1 downto 0) := (others => '0');
+  signal raddr_int : INTEGER;
 
   -- select read
-  signal reg_rd_stb  : std_logic_vector(g_regcount downto 0) := (others => '0');
-  signal ext_rd_stb  : std_logic_vector(g_extcount downto 0) := (others => '0');
-  signal mem_rd_stb  : std_logic_vector(g_memcount downto 0) := (others => '0');
+  signal reg_rd_stb  : std_logic_vector(G_REGCOUNT-1 downto 0) := (others => '0');
+  signal ext_rd_stb  : std_logic_vector(G_EXTCOUNT-1 downto 0) := (others => '0');
+  signal mem_rd_stb  : std_logic_vector(G_MEMCOUNT-1 downto 0) := (others => '0');
   signal mem_rd_req  : std_logic := '0';
   signal mem_rd_ack  : std_logic := '0';
 
@@ -117,15 +117,15 @@ architecture arch of decoder_axi4l is
   );
   signal state_write : t_state_write;
 
-  signal wdata     : std_logic_vector(g_data_width-1 downto 0) := (others => '0');
-  signal wstrb     : std_logic_vector(g_data_width/8-1 downto 0) := (others => '0');
-  signal waddr     : std_logic_vector(g_addr_width-1 downto 0) := (others => '0');
-  signal waddr_int : integer;
+  signal wdata     : std_logic_vector(G_DATA_WIDTH-1 downto 0) := (others => '0');
+  signal wstrb     : std_logic_vector(G_DATA_WIDTH/8-1 downto 0) := (others => '0');
+  signal waddr     : std_logic_vector(G_ADDR_WIDTH-1 downto 0) := (others => '0');
+  signal waddr_int : INTEGER;
 
   -- select write
-  signal reg_wr_stb  : std_logic_vector(g_regcount downto 0) := (others => '0');
-  signal ext_wr_stb  : std_logic_vector(g_extcount downto 0) := (others => '0');
-  signal mem_wr_stb  : std_logic_vector(g_memcount downto 0) := (others => '0');
+  signal reg_wr_stb  : std_logic_vector(G_REGCOUNT-1 downto 0) := (others => '0');
+  signal ext_wr_stb  : std_logic_vector(G_EXTCOUNT-1 downto 0) := (others => '0');
+  signal mem_wr_stb  : std_logic_vector(G_MEMCOUNT-1 downto 0) := (others => '0');
   signal mem_wr_req  : std_logic := '0';
   signal mem_wr_ack  : std_logic := '0';
 
@@ -165,7 +165,7 @@ begin
         case state_read is
           when ST_READ_IDLE =>
 
-            if pifi_s_top.arvalid = '1' then
+            if pi_s_top.arvalid = '1' then
               state_read <= ST_READ_SELECT;
             end if;
 
@@ -216,7 +216,7 @@ begin
 
           when ST_READ_VALID =>
 
-            if pifi_s_top.rready = '1' then
+            if pi_s_top.rready = '1' then
               state_read <= ST_READ_IDLE;
             end if;
 
@@ -229,18 +229,18 @@ begin
     end if;
   end process;
 
-  pifo_s_top.rresp <= "00";
+  po_s_top.rresp <= "00";
 
   ------------------------------------------------------------------------------
   -- read data mux
   prs_rdata_mux: process(rtarget,rdata_reg,rdata_mem,rdata_ext)
   begin
     if rtarget = REG then
-      pifo_s_top.rdata <= rdata_reg ;
+      po_s_top.rdata <= rdata_reg ;
     elsif rtarget = MEM then
-      pifo_s_top.rdata <= rdata_mem ;
+      po_s_top.rdata <= rdata_mem ;
     else
-      pifo_s_top.rdata <= rdata_ext ;
+      po_s_top.rdata <= rdata_ext ;
     end if;
   end process prs_rdata_mux;
 
@@ -250,9 +250,9 @@ begin
   begin
     case state_read is
       when ST_READ_IDLE =>
-        pifo_s_top.arready <= '1';
+        po_s_top.arready <= '1';
       when others =>
-        pifo_s_top.arready <= '0';
+        po_s_top.arready <= '0';
     end case;
   end process;
   -- RVALID flag handling
@@ -260,47 +260,47 @@ begin
   begin
     case state_read is
       when ST_READ_VALID =>
-        pifo_s_top.rvalid <= '1';
+        po_s_top.rvalid <= '1';
       when others =>
-        pifo_s_top.rvalid <= '0';
+        po_s_top.rvalid <= '0';
     end case;
   end process;
 
   ------------------------------------------------------------------------------
   -- Address decoder
   ------------------------------------------------------------------------------
-  raddr_int <= to_integer(unsigned(pifi_s_top.araddr));
+  raddr_int <= to_integer(unsigned(pi_s_top.araddr));
 
   prs_raddr_decoder: process(pi_clock)
   begin
     if rising_edge(pi_clock) then
-      if state_read = ST_READ_IDLE and pifi_s_top.arvalid = '1' then
+      if state_read = ST_READ_IDLE and pi_s_top.arvalid = '1' then
         rtarget    <= NONE;
         reg_rd_stb <= (others => '0');
-        raddr      <= pifi_s_top.araddr;
+        raddr      <= pi_s_top.araddr;
 
-        for i in 0 to g_regitems - 1 loop
-          for j in 0 to g_register_info(i).dim_n-1 loop
-            for k in 0 to g_register_info(i).dim_m-1 loop
-              if raddr_int = g_register_info(i).address + 4 * (j * g_register_info(i).dim_m + k) then
+        for i in 0 to G_REGITEMS - 1 loop
+          for j in 0 to G_REGISTER_INFO(i).dim_n-1 loop
+            for k in 0 to G_REGISTER_INFO(i).dim_m-1 loop
+              if raddr_int = G_REGISTER_INFO(i).address + 4 * (j * G_REGISTER_INFO(i).dim_m + k) then
                 rtarget  <= REG;
-                --reg_rsel <= g_register_info(i).item + j * g_register_info(i).dim_m + k;
-                reg_rd_stb(g_register_info(i).index + j * g_register_info(i).dim_m + k) <= '1';
+                --reg_rsel <= G_REGISTER_INFO(i).item + j * G_REGISTER_INFO(i).dim_m + k;
+                reg_rd_stb(G_REGISTER_INFO(i).index + j * G_REGISTER_INFO(i).dim_m + k) <= '1';
               end if;
             end loop;
           end loop;
         end loop;
 
-        for i in 0 to g_memitems - 1  loop
-          if raddr_int >= g_mem_info(i).address and raddr_int < g_mem_info(i).address + g_mem_info(i).entries * 4 then
+        for i in 0 to G_MEMITEMS - 1  loop
+          if raddr_int >= G_MEM_INFO(i).address and raddr_int < G_MEM_INFO(i).address + G_MEM_INFO(i).entries * 4 then
             rtarget <= MEM;
             mem_rd_stb(i) <= '1';
             mem_rd_req    <= '1';
           end if;
         end loop;
 
-        for i in 0 to g_extitems - 1  loop
-          if raddr_int >= g_ext_info(i).address and raddr_int < g_ext_info(i).address + g_ext_info(i).size then
+        for i in 0 to G_EXTITEMS - 1  loop
+          if raddr_int >= G_EXT_INFO(i).address and raddr_int < G_EXT_INFO(i).address + G_EXT_INFO(i).size then
             rtarget <= EXT;
             ext_rd_stb(i) <= '1';
           end if;
@@ -308,9 +308,15 @@ begin
 
       elsif state_read = ST_READ_VALID then
         --rtarget    <= NONE;
-        reg_rd_stb <= (others => '0');
-        ext_rd_stb <= (others => '0');
-        mem_rd_stb <= (others => '0');
+        if G_REGITEMS > 0 then
+          reg_rd_stb <= (others => '0');
+        end if;
+        if G_EXTITEMS > 0 then
+          ext_rd_stb <= (others => '0');
+        end if;
+        if G_MEMITEMS > 0 then
+          mem_rd_stb <= (others => '0');
+        end if;
         mem_rd_req <= '0';
       end if;
     end if;
@@ -335,11 +341,11 @@ begin
         case state_write is
           when ST_WRITE_IDLE =>
 
-            if pifi_s_top.awvalid = '1' and pifi_s_top.wvalid = '1' then
+            if pi_s_top.awvalid = '1' and pi_s_top.wvalid = '1' then
               state_write <= ST_WRITE_SELECT;
-            elsif pifi_s_top.awvalid = '1' and pifi_s_top.wvalid = '0' then
+            elsif pi_s_top.awvalid = '1' and pi_s_top.wvalid = '0' then
               state_write <= ST_WRITE_WAIT_DATA;
-            elsif pifi_s_top.awvalid = '0' and pifi_s_top.wvalid = '1' then
+            elsif pi_s_top.awvalid = '0' and pi_s_top.wvalid = '1' then
               state_write <= ST_WRITE_WAIT_ADDR;
             end if;
 
@@ -349,12 +355,12 @@ begin
             write_time_cnt <= 0;
 
           when ST_WRITE_WAIT_DATA =>
-            if pifi_s_top.wvalid = '1' then
+            if pi_s_top.wvalid = '1' then
               state_write <= ST_WRITE_SELECT;
             end if;
 
           when ST_WRITE_WAIT_ADDR =>
-            if pifi_s_top.awvalid = '1' then
+            if pi_s_top.awvalid = '1' then
               state_write <= ST_WRITE_SELECT;
             end if;
 
@@ -403,7 +409,7 @@ begin
             end if;
 
           when ST_WRITE_RESP =>
-            if pifi_s_top.bready = '1' then
+            if pi_s_top.bready = '1' then
               state_write <= ST_WRITE_IDLE;
             end if;
 
@@ -417,15 +423,15 @@ begin
 
   ------------------------------------------------------------------------------
   -- WRITE AXI handshaking
-  pifo_s_top.bresp <= "00";
+  po_s_top.bresp <= "00";
 
   prs_axi_bvalid: process (state_write)
   begin
     case state_write is
       when ST_WRITE_RESP =>
-        pifo_s_top.bvalid <= '1';
+        po_s_top.bvalid <= '1';
       when others =>
-        pifo_s_top.bvalid <= '0';
+        po_s_top.bvalid <= '0';
     end case;
   end process;
 
@@ -433,9 +439,9 @@ begin
   begin
     case state_write is
       when ST_WRITE_IDLE | ST_WRITE_WAIT_ADDR =>
-        pifo_s_top.awready <= '1';
+        po_s_top.awready <= '1';
       when others =>
-        pifo_s_top.awready <= '0';
+        po_s_top.awready <= '0';
     end case;
   end process;
 
@@ -443,57 +449,63 @@ begin
   begin
     case state_write is
       when ST_WRITE_IDLE | ST_WRITE_WAIT_DATA =>
-        pifo_s_top.wready <= '1';
+        po_s_top.wready <= '1';
       when others =>
-        pifo_s_top.wready <= '0';
+        po_s_top.wready <= '0';
     end case;
   end process;
 
   ------------------------------------------------------------------------------
   -- write Address decoder
   ------------------------------------------------------------------------------
-  waddr_int <= to_integer(unsigned(pifi_s_top.awaddr));
+  waddr_int <= to_integer(unsigned(pi_s_top.awaddr));
 
   prs_waddr_decoder: process(pi_clock)
   begin
     if rising_edge(pi_clock) then
-      if (state_write = ST_WRITE_IDLE or state_write = ST_WRITE_WAIT_ADDR ) and pifi_s_top.awvalid = '1' then
+      if (state_write = ST_WRITE_IDLE or state_write = ST_WRITE_WAIT_ADDR ) and pi_s_top.awvalid = '1' then
         wtarget    <= NONE;
         reg_wr_stb <= (others => '0');
-        waddr      <= pifi_s_top.awaddr ;
+        waddr      <= pi_s_top.awaddr ;
 
-        for i in 0 to g_regitems-1 loop
-          for j in 0 to g_register_info(i).dim_n-1 loop
-            for k in 0 to g_register_info(i).dim_m-1 loop
-              if waddr_int = g_register_info(i).address + 4 * (j * g_register_info(i).dim_m + k) then
+        for i in 0 to G_REGITEMS-1 loop
+          for j in 0 to G_REGISTER_INFO(i).dim_n-1 loop
+            for k in 0 to G_REGISTER_INFO(i).dim_m-1 loop
+              if waddr_int = G_REGISTER_INFO(i).address + 4 * (j * G_REGISTER_INFO(i).dim_m + k) then
                 wtarget  <= REG;
-                --reg_rsel <= g_register_info(i).item + j * g_register_info(i).dim_m + k;
-                reg_wr_stb(g_register_info(i).index + j * g_register_info(i).dim_m + k) <= '1';
+                --reg_rsel <= G_REGISTER_INFO(i).item + j * G_REGISTER_INFO(i).dim_m + k;
+                reg_wr_stb(G_REGISTER_INFO(i).index + j * G_REGISTER_INFO(i).dim_m + k) <= '1';
               end if;
             end loop;
           end loop;
         end loop;
 
-        for i in 0 to g_memitems - 1  loop
-          if waddr_int >= g_mem_info(i).address and waddr_int < g_mem_info(i).address + g_mem_info(i).entries * 4 then
+        for i in 0 to G_MEMITEMS - 1  loop
+          if waddr_int >= G_MEM_INFO(i).address and waddr_int < G_MEM_INFO(i).address + G_MEM_INFO(i).entries * 4 then
             wtarget       <= MEM;
             mem_wr_stb(i) <= '1';
             mem_wr_req    <= '1';
           end if;
         end loop;
 
-        for i in 0 to g_extitems - 1  loop
-          if waddr_int >= g_ext_info(i).address and waddr_int < g_ext_info(i).address + g_ext_info(i).size then
+        for i in 0 to G_EXTITEMS - 1  loop
+          if waddr_int >= G_EXT_INFO(i).address and waddr_int < G_EXT_INFO(i).address + G_EXT_INFO(i).size then
             wtarget <= EXT;
             ext_wr_stb(i) <= '1';
           end if;
         end loop;
 
       elsif state_write = ST_WRITE_RESP then
-        wtarget    <= NONE;
-        reg_wr_stb <= (others => '0');
-        ext_wr_stb <= (others => '0');
-        mem_wr_stb <= (others => '0');
+        --wtarget    <= NONE;
+        if G_REGITEMS > 0 then
+          reg_wr_stb <= (others => '0');
+        end if;
+        if G_EXTITEMS > 0 then
+          ext_wr_stb <= (others => '0');
+        end if;
+        if G_MEMITEMS > 0 then
+          mem_wr_stb <= (others => '0');
+        end if;
         mem_wr_req <= '0';
       end if;
     end if;
@@ -504,8 +516,8 @@ begin
   begin
     if rising_edge(pi_clock) then
       if state_write  = ST_WRITE_IDLE or state_write = ST_WRITE_WAIT_DATA then
-        wdata <= pifi_s_top.wdata;
-        wstrb <= pifi_s_top.wstrb;
+        wdata <= pi_s_top.wdata;
+        wstrb <= pi_s_top.wstrb;
       end if;
     end if;
   end process prs_wdata_reg ;
@@ -551,22 +563,22 @@ begin
         -- read has higher priority, but do not disturb pending write transaction
         -- mem_rd_req goes to 0 for 1 clock cycle after each read transaction - write grant
         if mem_rd_req = '1' and l_wr_trn = '0' then
-          for i in 0 to g_memitems - 1  loop
+          for i in 0 to G_MEMITEMS - 1  loop
             if  mem_rd_stb(i) = '1' then
-              po_mem_addr(g_mem_info(i).addrwidth-3 downto 0) <= raddr(g_mem_info(i).addrwidth-1 downto 2);
-              po_mem_addr(g_addr_width-1 downto g_mem_info(i).addrwidth-2) <= (others => '0');
-            end if;
+              po_mem_addr(G_MEM_INFO(i).addrwidth-3 downto 0) <= raddr(G_MEM_INFO(i).addrwidth-1 downto 2);
+              po_mem_addr(G_ADDR_WIDTH-1 downto G_MEM_INFO(i).addrwidth-2) <= (others => '0');
+            end IF;
           end loop;
           po_mem_stb <= mem_rd_stb;
           po_mem_we  <= '0';
           l_rd_ack <= '1';
 
         elsif mem_wr_req = '1'  then
-          for i in 0 to g_memitems - 1  loop
+          for i in 0 to G_MEMITEMS - 1  loop
             if  mem_wr_stb(i) = '1' then
-              po_mem_addr(g_mem_info(i).addrwidth-3 downto 0) <= waddr(g_mem_info(i).addrwidth-1 downto 2);
-              po_mem_addr(g_addr_width-1 downto g_mem_info(i).addrwidth-2) <= (others => '0');
-            end if;
+              po_mem_addr(G_MEM_INFO(i).addrwidth-3 downto 0) <= waddr(G_MEM_INFO(i).addrwidth-1 downto 2);
+              po_mem_addr(G_ADDR_WIDTH-1 downto G_MEM_INFO(i).addrwidth-2) <= (others => '0');
+            end IF;
           end loop;
           po_mem_stb <= mem_wr_stb;
           po_mem_we  <= '1';
@@ -577,8 +589,8 @@ begin
           po_mem_we  <= '0';
           l_rd_ack   <= '0';
           l_wr_ack   <= '0';
-        end if;
-      end if;
+        end IF;
+      end IF;
     end process prs_rdwr_arb;
 
     mem_wr_ack <= l_wr_ack;
@@ -586,6 +598,11 @@ begin
     -- delay read ack due to synch process of po_mem_addr and po_mem_stb,
     -- read requires one more clock cycle to get data back from memory
     -- possible in future: change of interface to use pi_mem_ack
+    gen_no_mem: if G_MEMITEMS= 0 generate
+      po_mem_addr <= (others => '0');
+      po_mem_stb  <= (others => '0');
+      --po_mem_data <= (others => '0');
+    end generate;
 
     po_mem_data <= wdata ;
     rdata_mem   <= pi_mem_data ;
@@ -596,51 +613,52 @@ begin
   -- ===========================================================================
   -- external buses -- the same type as upstream bus: axi4l
   ------------------------------------------------------------------------------
-  gen_ext_if : for idx in 0 to g_extitems-1 generate
-    pifo_ext(idx).arvalid                                          <= ext_arvalid and ext_rd_stb(idx);
-    pifo_ext(idx).araddr(g_ext_info(idx).addrwidth - 1 downto 0)   <= raddr(g_ext_info(idx).addrwidth - 1 downto 0);
-    pifo_ext(idx).araddr(pifo_ext(idx).araddr'left downto g_ext_info(idx).addrwidth) <= (others => '0');
-    pifo_ext(idx).rready                                           <= ext_rready and ext_rd_stb(idx);
-    -- pifo_ext(idx).rready                                           <= pifi_s_top.rready and ext_rd_stb(idx);
+  gen_ext_if : for idx in 0 to G_EXTITEMS-1 generate
+    po_ext(idx).arvalid                                          <= ext_arvalid and ext_rd_stb(idx);
+    po_ext(idx).araddr(G_EXT_INFO(idx).addrwidth - 1 downto 0)   <= raddr(G_EXT_INFO(idx).addrwidth - 1 downto 0);
+    po_ext(idx).araddr(po_ext(idx).araddr'left downto G_EXT_INFO(idx).addrwidth) <= (others => '0');
+    po_ext(idx).rready                                           <= ext_rready and ext_rd_stb(idx);
+    -- po_ext(idx).rready                                           <= pi_s_top.rready and ext_rd_stb(idx);
 
-    pifo_ext(idx).awvalid                                          <= ext_awvalid and ext_wr_stb(idx);
-    pifo_ext(idx).awaddr(g_ext_info(idx).addrwidth - 1 downto 0)   <= waddr(g_ext_info(idx).addrwidth - 1 downto 0);
-    pifo_ext(idx).awaddr(pifo_ext(idx).awaddr'left downto g_ext_info(idx).addrwidth) <= (others => '0');
-    pifo_ext(idx).wvalid                                           <= ext_wvalid and ext_wr_stb(idx);
-    pifo_ext(idx).wdata(31 downto 0)                               <= wdata;
-    pifo_ext(idx).wstrb(3 downto 0)                                <= wstrb;
-    pifo_ext(idx).bready                                           <= ext_bready and ext_wr_stb(idx);
+    po_ext(idx).awvalid                                          <= ext_awvalid and ext_wr_stb(idx);
+    po_ext(idx).awaddr(G_EXT_INFO(idx).addrwidth - 1 downto 0)   <= waddr(G_EXT_INFO(idx).addrwidth - 1 downto 0);
+    po_ext(idx).awaddr(po_ext(idx).awaddr'left downto G_EXT_INFO(idx).addrwidth) <= (others => '0');
+    po_ext(idx).wvalid                                           <= ext_wvalid and ext_wr_stb(idx);
+    po_ext(idx).wdata(31 downto 0)                               <= wdata;
+    po_ext(idx).wstrb(3 downto 0)                                <= wstrb;
+    po_ext(idx).bready                                           <= ext_bready and ext_wr_stb(idx);
   end generate;
 
-  prs_ext_rd_mux: process(ext_rd_stb,pifi_ext)
+  prs_ext_rd_mux: process(ext_rd_stb,pi_ext)
   begin
     ext_arready <= '0';
     ext_rvalid  <= '0';
+    rdata_ext   <= (others => '0');
     -- if rising_edge(pi_clock) then
-      for idx in 0 to g_extitems-1 loop
+      for idx in 0 to G_EXTITEMS-1 loop
         if ext_rd_stb(idx) = '1' then
-          ext_arready <= pifi_ext(idx).arready;
-          ext_rvalid  <= pifi_ext(idx).rvalid;
-          rdata_ext   <= pifi_ext(idx).rdata;
-        end if;
+          ext_arready <= pi_ext(idx).arready;
+          ext_rvalid  <= pi_ext(idx).rvalid;
+          rdata_ext   <= pi_ext(idx).rdata;
+        end IF;
       end loop;
-    -- end if;
+    -- end IF;
   end process prs_ext_rd_mux;
 
-  prs_ext_wr_mux: process(ext_wr_stb,pifi_ext)
+  prs_ext_wr_mux: process(ext_wr_stb,pi_ext)
   begin
     ext_awready <= '0';
     ext_wready  <= '0';
     ext_bvalid  <= '0';
     -- if rising_edge(pi_clock) then
-      for idx in 0 to g_extitems-1 loop
+      for idx in 0 to G_EXTITEMS-1 loop
         if ext_wr_stb(idx) = '1' then
-          ext_awready <= pifi_ext(idx).awready;
-          ext_wready  <= pifi_ext(idx).wready;
-          ext_bvalid  <= pifi_ext(idx).bvalid;
-        end if;
+          ext_awready <= pi_ext(idx).awready;
+          ext_wready  <= pi_ext(idx).wready;
+          ext_bvalid  <= pi_ext(idx).bvalid;
+        end IF;
       end loop;
-    -- end if;
+    -- end IF;
   end process prs_ext_wr_mux;
 
 end architecture;

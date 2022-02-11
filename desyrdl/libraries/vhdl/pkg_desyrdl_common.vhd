@@ -31,14 +31,14 @@ package common is
 
   ---------------------------------------------------------------------------
   -- common type definitions
-  -- type t_4b_slv_array  is array (natural range<>) of std_logic_vector( 3 downto 0) ;
-  -- type t_32b_slv_array is array (natural range<>) of std_logic_vector(31 downto 0) ;
-  -- type t_integer_array is array (natural range<>) of integer ;
+  -- type t_4b_slv_array  is array (integer range<>) of std_logic_vector( 3 downto 0) ;
+  -- type t_32b_slv_array is array (integer range<>) of std_logic_vector(31 downto 0) ;
+  -- type t_integer_array is array (integer range<>) of integer ;
 
   --============================================================================
   -- AXI4-Lite
   --============================================================================
-  type tif_axi4l_m2s is record
+  type t_axi4l_m2s is record
     -- write address channel signals---------------------------------------------
     awaddr      : std_logic_vector(C_AXI4L_ADDR_WIDTH-1 downto 0);
     awprot      : std_logic_vector(2 downto 0);
@@ -55,9 +55,9 @@ package common is
     arvalid     : std_logic;
     -- read data channel signals---------------------------------------------
     rready      : std_logic;
-  end record tif_axi4l_m2s;
+  end record t_axi4l_m2s;
 
-  type tif_axi4l_s2m is record
+  type t_axi4l_s2m is record
     -- write address channel signals---------------------------------------------
     awready     : std_logic;
     -- write data channel signals---------------------------------------------
@@ -71,12 +71,12 @@ package common is
     rdata       : std_logic_vector(C_AXI4L_DATA_WIDTH-1 downto 0);
     rresp       : std_logic_vector(1 downto 0);
     rvalid      : std_logic;
-  end record tif_axi4l_s2m;
+  end record t_axi4l_s2m;
 
-  type tif_axi4l_m2s_array is array (natural range <>) of tif_axi4l_m2s;
-  type tif_axi4l_s2m_array is array (natural range <>) of tif_axi4l_s2m;
+  type t_axi4l_m2s_array is array (integer range <>) of t_axi4l_m2s;
+  type t_axi4l_s2m_array is array (integer range <>) of t_axi4l_s2m;
 
-  constant  C_AXI4L_S2M_DEFAULT : tif_axi4l_s2m := (
+  constant  C_AXI4L_S2M_DEFAULT : t_axi4l_s2m := (
     awready     => '0',
     wready      => '0',
     bresp       => (others => '0'),
@@ -86,7 +86,7 @@ package common is
     rresp       => (others => '0'),
     rvalid      => '0'
   );
-  constant  C_AXI4L_M2S_DEFAULT : tif_axi4l_m2s := (
+  constant  C_AXI4L_M2S_DEFAULT : t_axi4l_m2s := (
     awaddr        => (others => '0'),
     awprot        => (others => '0'),
     awvalid       => '0',
@@ -106,30 +106,30 @@ package common is
   -- repository.
 
   -- Output signals of IBUS. Through this record the application send data/commands to the bus
-  type tif_ibus_m2s is record
+  type t_ibus_m2s is record
     addr   : std_logic_vector(31 downto 0);
     data   : std_logic_vector(31 downto 0);
     rena   : std_logic;
     wena   : std_logic;
     clk    : std_logic;
-  end record tif_ibus_m2s;
+  end record t_ibus_m2s;
 
   -- Output signals of IBUS. Through this record the application send data/commands to the bus
-  type tif_ibus_s2m is record
+  type t_ibus_s2m is record
     clk    : std_logic;
     data   : std_logic_vector(31 downto 0);
     rack   : std_logic;
     wack   : std_logic;
-  end record tif_ibus_s2m;
+  end record t_ibus_s2m;
 
   -- Array of IBUS outputs
-  type tif_ibus_m2s_array is array (natural range<>) of tif_ibus_m2s;
+  type t_ibus_m2s_array is array (integer range<>) of t_ibus_m2s;
 
   -- Array of IBUS inputs
-  type tif_ibus_s2m_array is array (natural range<>) of tif_ibus_s2m;
+  type t_ibus_s2m_array is array (integer range<>) of t_ibus_s2m;
 
   -- Default IBUS connections for the output (All entries equals 0)
-  constant C_IBUS_M2S_DEFAULT : tif_ibus_m2s := (
+  constant C_IBUS_M2S_DEFAULT : t_ibus_m2s := (
     addr => (others => '0'),
     data => (others => '0'),
     rena => '0',
@@ -137,7 +137,7 @@ package common is
     clk  => '0'
   );
   -- Default IBUS connections for the input (All entries equals 0)
-  constant C_IBUS_S2M_DEFAULT : tif_ibus_s2m := (
+  constant C_IBUS_S2M_DEFAULT : t_ibus_s2m := (
     clk  => '0',
     data => (others => '0'),
     rack => '0',
@@ -171,7 +171,7 @@ package common is
     defval    : integer;
   end record;
 
-  type t_field_info_array is array (natural range <>) of t_field_info;
+  type t_field_info_array is array (integer range <>) of t_field_info;
 
   constant C_FIELD_NONE : t_field_info := (WIRE, 0, 0, 0, C_NA, C_NA, 0, 0, 0, 0);
 
@@ -186,7 +186,7 @@ package common is
     dim_m    : positive;
   end record;
 
-  type t_reg_info_array is array (natural range <>) of t_reg_info;
+  type t_reg_info_array is array (integer range <>) of t_reg_info;
 
   constant C_REG_NONE : t_reg_info := (x"0000_0000", 0, 0,(others => C_FIELD_NONE),1,1);
 
@@ -199,7 +199,7 @@ package common is
     sw         : t_access_type;
   end record;
 
-  type t_mem_info_array is array (natural range <>) of t_mem_info;
+  type t_mem_info_array is array (integer range <>) of t_mem_info;
 
   constant C_MEM_NONE : t_mem_info := (x"0000_0000", 0, 0, 0, C_NA);
 
@@ -210,13 +210,13 @@ package common is
     size       : integer;
   end record;
 
-  type t_ext_info_array is array (natural range <>) of t_ext_info;
+  type t_ext_info_array is array (integer range <>) of t_ext_info;
 
   constant C_EXT_NONE : t_ext_info := (x"0000_0000", 0, 0);
 
   -- interface types
   type t_if_type Is (DPM, AXI4, AXI4L, IBUS, WISHBONE, AVALON, NONE);
-  type t_if_type_array is array (natural range <>) of t_if_type;
+  type t_if_type_array is array (integer range <>) of t_if_type;
 
 
   -- components
@@ -246,10 +246,10 @@ package common is
       po_mem_data   : out std_logic_vector(g_data_width-1 downto 0);
       pi_mem_data   : in  std_logic_vector(g_data_width-1 downto 0);
       pi_mem_ack    : in  std_logic;
-      pifi_ext      : in  tif_axi4l_s2m_array(G_EXTCOUNT downto 0);
-      pifo_ext      : out tif_axi4l_m2s_array(G_EXTCOUNT downto 0);
-      pifi_s_top    : in  tif_axi4l_m2s;
-      pifo_s_top    : out tif_axi4l_s2m);
+      pi_ext      : in  t_axi4l_s2m_array(G_EXTCOUNT-1 downto 0);
+      po_ext      : out t_axi4l_m2s_array(G_EXTCOUNT-1 downto 0);
+      pi_s_top    : in  t_axi4l_m2s;
+      po_s_top    : out t_axi4l_s2m);
   end component decoder_axi4l;
 
   component reg_field_storage is
@@ -273,20 +273,20 @@ package common is
     port (
       pi_reset       : in  std_logic;
       pi_clock       : in  std_logic;
-      pifi_s_decoder : in  tif_axi4l_m2s;
-      pifo_s_decoder : out tif_axi4l_s2m;
-      pifo_m_ext     : out tif_axi4l_m2s;
-      pifi_m_ext     : in  tif_axi4l_s2m);
+      pi_s_decoder : in  t_axi4l_m2s;
+      po_s_decoder : out t_axi4l_s2m;
+      po_m_ext     : out t_axi4l_m2s;
+      pi_m_ext     : in  t_axi4l_s2m);
   end component axi4l_to_axi4l;
 
   component axi4l_to_ibus is
     port (
       pi_reset       : in  std_logic;
       pi_clock       : in  std_logic;
-      pifi_s_decoder : in  tif_axi4l_m2s;
-      pifo_s_decoder : out tif_axi4l_s2m;
-      pifo_m_ext     : out tif_ibus_m2s;
-      pifi_m_ext     : in  tif_ibus_s2m);
+      pi_s_decoder : in  t_axi4l_m2s;
+      po_s_decoder : out t_axi4l_s2m;
+      po_m_ext     : out t_ibus_m2s;
+      pi_m_ext     : in  t_ibus_s2m);
   end component axi4l_to_ibus;
 end package common;
 

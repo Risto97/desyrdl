@@ -33,42 +33,42 @@ entity {node.orig_type_name} is
     pi_clock : in std_logic;
     pi_reset : in std_logic;
     -- TOP subordinate memory mapped interface
-    pifi_s_top  : in  tif_{node.orig_type_name}_m2s;
-    pifo_s_top  : out tif_{node.orig_type_name}_s2m;
-    -- pifi_s_top  : in  tif_{desyrdl_interface:lower}_m2s;
-    -- pifo_s_top  : out tif_{desyrdl_interface:lower}{desyrdl_interface:lower}_s2m;
+    pi_s_top  : in  t_{node.orig_type_name}_m2s;
+    po_s_top  : out t_{node.orig_type_name}_s2m;
+    -- pi_s_top_if  : in  t_{desyrdl_interface:lower}_m2s;
+    -- po_s_top_if  : out t_{desyrdl_interface:lower}_s2m;
     -- to logic interface
-    pifi_addrmap : in  tif_addrmap_{node.orig_type_name}_in;
-    pifo_addrmap : out tif_addrmap_{node.orig_type_name}_out
+    pi_addrmap : in  t_addrmap_{node.orig_type_name}_in;
+    po_addrmap : out t_addrmap_{node.orig_type_name}_out
   );
 end entity {node.orig_type_name};
 
 architecture arch of {node.orig_type_name} is
 
   type t_data_out is array (natural range<>) of std_logic_vector(C_DATA_WIDTH-1 downto 0) ;
-  signal reg_data_out_vect : t_data_out({n_regcount} downto 0);
+  signal reg_data_out_vect : t_data_out({n_regcount}-1 downto 0);
 
-  signal reg_rd_stb   : std_logic_vector({n_regcount} downto 0);
-  signal reg_wr_stb   : std_logic_vector({n_regcount} downto 0);
+  signal reg_rd_stb   : std_logic_vector({n_regcount}-1 downto 0);
+  signal reg_wr_stb   : std_logic_vector({n_regcount}-1 downto 0);
   signal reg_data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0);
   signal reg_data_in  : std_logic_vector(C_DATA_WIDTH-1 downto 0);
 
-  signal mem_data_out_vect : t_data_out({n_memitems} downto 0);
-  signal mem_stb      : std_logic_vector({n_memitems} downto 0);
+  signal mem_data_out_vect : t_data_out({n_memitems}-1 downto 0);
+  signal mem_stb      : std_logic_vector({n_memitems}-1 downto 0);
   signal mem_we       : std_logic;
   signal mem_addr     : std_logic_vector(C_ADDR_WIDTH-1 downto 0);
   signal mem_data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0);
   signal mem_data_in  : std_logic_vector(C_DATA_WIDTH-1 downto 0);
   signal mem_ack      : std_logic;
 
-  signal ifi_ext      : tif_{desyrdl_interface:lower}_s2m_array({n_extitems} downto 0);
-  signal ifo_ext      : tif_{desyrdl_interface:lower}_m2s_array({n_extitems} downto 0);
+  signal ext_if_i     : t_{desyrdl_interface:lower}_s2m_array({n_extitems}-1 downto 0);
+  signal ext_if_o     : t_{desyrdl_interface:lower}_m2s_array({n_extitems}-1 downto 0);
 
 begin
 
   -- Assign the unused array index that is always present, even if the number
   -- of mem or reg items is 0.
-  mem_data_out_vect({n_memitems}) <= (others => '0');
+  --mem_data_out_vect({n_memitems}) <= (others => '0');
 
   inst_decoder_axi4l: entity desyrdl.decoder_{desyrdl_interface:lower}
     generic map (
@@ -99,17 +99,17 @@ begin
       pi_mem_data   => mem_data_out,
       pi_mem_ack    => mem_ack,
 
-      pifi_ext      => ifi_ext,
-      pifo_ext      => ifo_ext,
+      pi_ext      => ext_if_i,
+      po_ext      => ext_if_o,
 
-      pifi_s_top    => pifi_s_top,
-      pifo_s_top    => pifo_s_top
+      pi_s_top    => pi_s_top,
+      po_s_top    => po_s_top
     );
 
   prs_reg_rd_mux: process(pi_clock)
   begin
     if rising_edge(pi_clock) then
-      for idx in 0 to {n_regcount} loop
+      for idx in 0 to {n_regcount}-1 loop
         if reg_rd_stb(idx) = '1' then
           reg_data_out <= reg_data_out_vect(idx);
         end if;
@@ -120,14 +120,16 @@ begin
   prs_mem_rd_mux: process(pi_clock)
   begin
     if rising_edge(pi_clock) then
-      for idx in 0 to {n_memitems} loop
+      for idx in 0 to {n_memitems}-1 loop
         if mem_stb(idx) = '1' then
           mem_data_out <= mem_data_out_vect(idx);
         end if;
       end loop;
     end if;
   end process prs_mem_rd_mux;
-
+  -- gen_no_mem: if {n_memitems} = 0 generate
+  --   mem_data_out <= (others => '0');
+  -- end generate;
   -- ===========================================================================
   -- generated registers instances{regitems:repeat:
   -- ---------------------------------------------------------------------------
@@ -145,8 +147,8 @@ begin
         pi_decoder_data   => reg_data_in,
         po_decoder_data   => reg_data_out_vect({{index}}),
 
-        pifi_reg  => pifi_addrmap.{{{{reg.inst_name}}}},
-        pifo_reg  => pifo_addrmap.{{{{reg.inst_name}}}}
+        pi_reg  => pi_addrmap.{{{{reg.inst_name}}}},
+        po_reg  => po_addrmap.{{{{reg.inst_name}}}}
       );--}} --{{context:if:eq:dim:2:
     gen_m: for idx_m in 0 to {{dim_m}}-1 generate
       inst_{{name}}: entity desyrdl.{node.type_name}_{{reg.type_name}}
@@ -159,8 +161,8 @@ begin
           pi_decoder_data   => reg_data_in,
           po_decoder_data   => reg_data_out_vect({{index}}+idx_m),
 
-          pifi_reg  => pifi_addrmap.{{{{reg.inst_name}}}}(idx_m),
-          pifo_reg  => pifo_addrmap.{{{{reg.inst_name}}}}(idx_m)
+          pi_reg  => pi_addrmap.{{{{reg.inst_name}}}}(idx_m),
+          po_reg  => po_addrmap.{{{{reg.inst_name}}}}(idx_m)
         );
     end generate;--}} --{{context:if:eq:dim:3:
     gen_n : for idx_n in 0 to {{dim_n}}-1 generate  -- outer dim, for 3D arrays
@@ -177,13 +179,14 @@ begin
             pi_decoder_data   => reg_data_in,
             po_decoder_data   => reg_data_out_vect({{index}}+l_idx),
 
-            pifi_reg  => pifi_addrmap.{{{{reg.inst_name}}}}(idx_n,idx_m),
-            pifo_reg  => pifo_addrmap.{{{{reg.inst_name}}}}(idx_n,idx_m)
+            pi_reg  => pi_addrmap.{{{{reg.inst_name}}}}(idx_n,idx_m),
+            po_reg  => po_addrmap.{{{{reg.inst_name}}}}(idx_n,idx_m)
           );
       end generate;
     end generate;--}}
   end block; --}
 
+  mem_ack <= '1'; -- not used at the moment from external memories
   -- ===========================================================================
   --{memitems:repeat:
   -- ---------------------------------------------------------------------------
@@ -191,13 +194,12 @@ begin
   -- ---------------------------------------------------------------------------
   blk_{{i}}_{{name}} : block
   begin
-    mem_ack <= '1';
-    mem_data_out_vect({{i}})({{datawidth}}-1 downto 0) <= pifi_addrmap.{{mem.inst_name}}.data;{{context:if:lt:datawidth:32:
+    mem_data_out_vect({{i}})({{datawidth}}-1 downto 0) <= pi_addrmap.{{mem.inst_name}}.data;{{context:if:lt:datawidth:32:
     mem_data_out_vect({{{{i}}}})(C_DATA_WIDTH-1 downto {{{{datawidth}}}}) <= (others => '0');}}
-    pifo_addrmap.{{mem.inst_name}}.addr <= mem_addr({{addrwidth}}-1 downto 0);
-    pifo_addrmap.{{mem.inst_name}}.data <= mem_data_in({{datawidth}}-1 downto 0);
-    pifo_addrmap.{{mem.inst_name}}.en <= mem_stb({{i}});
-    pifo_addrmap.{{mem.inst_name}}.we <= mem_we;
+    po_addrmap.{{mem.inst_name}}.addr <= mem_addr({{addrwidth}}-1 downto 0);
+    po_addrmap.{{mem.inst_name}}.data <= mem_data_in({{datawidth}}-1 downto 0);
+    po_addrmap.{{mem.inst_name}}.en <= mem_stb({{i}});
+    po_addrmap.{{mem.inst_name}}.we <= mem_we;
   end block;
   --}
 
@@ -212,10 +214,10 @@ begin
       port map (
         pi_clock => pi_clock,
         pi_reset => pi_reset,
-        pifi_s_decoder => ifo_ext({{i}}),
-        pifo_s_decoder => ifi_ext({{i}}),
-        pifo_m_ext     => pifo_addrmap.{{ext.inst_name}},
-        pifi_m_ext     => pifi_addrmap.{{ext.inst_name}}
+        pi_s_decoder => ext_if_o({{i}}),
+        po_s_decoder => ext_if_i({{i}}),
+        po_m_ext     => po_addrmap.{{ext.inst_name}},
+        pi_m_ext     => pi_addrmap.{{ext.inst_name}}
       );
   end block;
   --}
