@@ -71,19 +71,23 @@ begin
             -- software access side effects
             sw_wr_stb_q <= '1';
             --po_hw_swmod <= '1' when g_info.swmod = True else '0';
-          elsif pi_sw_rd_stb = '1' and (g_info.sw = C_R or g_info.sw = C_RW) then
-            sw_rd_stb_q <= '1';
           -- hardware write might get lost FIXME
           elsif pi_hw_we = '1' and (g_info.hw = C_W or g_info.hw = C_RW) then
             field_reg <= pi_hw_data;
             -- software access side effects
-            po_hw_swmod <= '0';
+            sw_wr_stb_q <= '0';
           else
             field_reg <= field_reg;
             -- software access side effects
             sw_wr_stb_q <= '0';
+          end if;
+
+          if pi_sw_rd_stb = '1' and (g_info.sw = C_R or g_info.sw = C_RW) then
+            sw_rd_stb_q <= '1';
+          else
             sw_rd_stb_q <= '0';
           end if;
+
           -- generate sw modified and sw accessed only for 1 clock cycle
           if sw_wr_stb_q = '0' and pi_sw_wr_stb = '1'  and (g_info.sw = C_W or g_info.sw = C_RW) then
             po_hw_swmod <= '1';
