@@ -161,6 +161,12 @@ class DesyListener(RDLListener):
 
             fields = [f for f in self.gen_fields(regx)]
 
+            totalwidth = 0
+            n_fields = 0
+            for field in regx.fields():
+                totalwidth = totalwidth + field.get_property("fieldwidth")
+                n_fields += 1
+           
             context["i"] = i
             context["name"] = regx.inst_name
             context["type"] = regx.type_name
@@ -182,8 +188,11 @@ class DesyListener(RDLListener):
             context["dim"] = dim
             context["elements"] = elements
             context["fields"] = fields
+            context["n_fields"] = n_fields
             context["rw"] = "RW" if regx.has_sw_writable else "RO"
-            context["width"] = regx.get_property("regwidth")
+            context["regwidth"] = regx.get_property("regwidth")
+            context["width"] = totalwidth
+            context["dtype"] = regx.get_property("desyrdl_data_type") or "uint"
             context["signed"] = self.get_data_type_sign(regx)
             context["fixedpoint"] = self.get_data_type_fixed(regx)
             # "internal_offset" is needed for indexing of flattened arrays in VHDL
