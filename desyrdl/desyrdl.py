@@ -28,7 +28,7 @@ from systemrdl import RDLCompileError, RDLCompiler, RDLWalker  # RDLListener
 from systemrdl.node import (AddrmapNode, FieldNode, MemNode,  # AddressableNode
                             RegfileNode, RegNode, RootNode)
 
-from desyrdl.DesyListener import MapfileListener, VhdlListener
+from desyrdl.DesyListener import AdocListener, MapfileListener, VhdlListener
 from desyrdl.RdlFormatter import RdlFormatter
 
 
@@ -196,7 +196,7 @@ def main():
             print('======================')
             print('Generating AsciiDoc file')
             print('======================')
-            listener = MapfileListener(vf, tpl_files, out_dir)
+            listener = AdocListener(vf, tpl_files, out_dir)
             tpl_walker = RDLWalker(unroll=True)
             tpl_walker.walk(top_node, listener)
 

@@ -1,29 +1,28 @@
-== Register Descriptions
+== {node.inst_name} registers
 
-[cols="3,3,3,3,9"]
+{param:if:gt:n_regitems:0: 
+.Register
+[cols="2,1,1,1,1,9"]
 |===
-|Name |Register Width |Number of Elements | RO/RW | Description
-
-{regnames:repeat:
-|{{reg.inst_name}}
-|{{regwidth}}
-|{{M}}
-|{{rw}}
-|TODO
-}
-
-{memnames:repeat:
-|{{mem.inst_name}}
-|{{memwidth}}
-|{{mementries}}
-|RW? (TODO: find out via SystemRDL)
-|TODO
-}
-
-{extnames:repeat:
-|{{ext.inst_name}}
-|32 (always for external components)
-|{{total_words}}
-|RW?
-|TODO
-}
+|Name | N | bits | type | RW | Description
+{regitems:repeat:
+| {{name:<40s}} | {{elements:>4}} | {{width:>4}} | {{dtype}} | {{rw:>4s}} | +++{{desc_html}}+++ {{context:if:gt:n_fields:1: {{{{fields:repeat: +
+- {{{{{{{{name}}}}}}}}[{{{{{{{{field.high}}}}}}}}:{{{{{{{{field.low}}}}}}}} ] sw:{{{{{{{{rw}}}}}}}} {{{{{{{{dtype}}}}}}}} : +++{{{{{{{{desc_html}}}}}}}}+++ }}}} }} }
+|=== }
+{param:if:gt:n_memitems:0: 
+.Memories
+[cols="2,1,1,1,1,9"]
+|===
+|Name | N | bits | type | RW | Description
+{memitems:repeat:
+| {{name:<40s}}     | {{entries:>4}}      | {{datawidth:>4}} | {{dtype}} | {{rw:>4s}} | +++{{desc_html}}+++ {{vregs:repeat:
+| {{{{name:<40s}}}} | {{{{elements:>4}}}} | {{{{width:>4}}}} | {{dtype}} | {{{{rw:>4s}}}} | +++{{desc_html}}+++ }}}
+|===}
+{param:if:gt:n_extitems:0: 
+.External address maps
+[cols="3,1,1,7"]
+|===
+|Name | size | interface | Description
+{extitems:repeat:
+| {{name:<40s}} | {{size:>4}} | {{desyrdl_interface}} | +++{{desc_html}}+++ }
+|===}

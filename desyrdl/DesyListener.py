@@ -28,6 +28,8 @@ from systemrdl import RDLListener
 from systemrdl.node import (AddrmapNode, FieldNode,  # AddressableNode,
                             MemNode, RegfileNode, RegNode, RootNode)
 
+from desyrdl.rdlformatcode import desyrdlmarkup
+
 
 class DesyListener(RDLListener):
 
@@ -160,7 +162,6 @@ class DesyListener(RDLListener):
             addrmap_full_notop_name = self.separator.join([x for i,x in enumerate(addrmap_segments[1:])])
 
             fields = [f for f in self.gen_fields(regx)]
-
             totalwidth = 0
             n_fields = 0
             for field in regx.fields():
@@ -200,7 +201,9 @@ class DesyListener(RDLListener):
             context["index"] = index
             index = index + elements
 
-            context["desc"] = regx.get_property("desc") or "TODO"
+            md = desyrdlmarkup() # parse description with markup lanugage, disable Mardown
+            context["desc"] = regx.get_property("desc")
+            context["desc_html"] = regx.get_html_desc(md)
 
             context["desyrdl_access_channel"] = self.get_access_channel(regx)
 
@@ -250,7 +253,13 @@ class DesyListener(RDLListener):
             gen_vregs = self.gen_node_names(memx, [RegNode], False)
             context["vregs"] = [x for x in self.gen_regitems(gen_vregs)]
 
-            context["desc"] = memx.get_property("desc") or "TODO"
+            context["dtype"] = memx.get_property("desyrdl_data_type") or "uint"
+            context["signed"] = self.get_data_type_sign(memx)
+            context["fixedpoint"] = self.get_data_type_fixed(memx)
+
+            md = desyrdlmarkup() # parse description with markup lanugage, disable Mardown
+            context["desc"] = memx.get_property("desc")
+            context["desc_html"] = memx.get_html_desc(md)
 
             context["desyrdl_access_channel"] = self.get_access_channel(memx)
             if not memx.is_sw_writable and memx.is_sw_readable:
@@ -293,6 +302,10 @@ class DesyListener(RDLListener):
             context["absaddr_base"] = extx.absolute_address
             context["absaddr_high"] = extx.absolute_address+int(extx.total_size)-1
 
+            md = desyrdlmarkup() # parse description with markup lanugage, disable Mardown
+            context["desc"] = extx.get_property("desc")
+            context["desc_html"] = extx.get_html_desc(md)
+
             # context["name_full_notop"] = "_".join([x.upper() for i,x in enumerate(addrmap_segments[1:])])
 
             context["ext"] = extx
@@ -300,6 +313,7 @@ class DesyListener(RDLListener):
             context["total_words"] = int(extx.total_size/4)
             context["addrwidth"] = ceil(log2(extx.size))
 
+            context["desyrdl_interface"] = extx.get_property("desyrdl_interface")
             context["desyrdl_access_channel"] = self.get_access_channel(extx)
 
             # add all non-native explicitly set properties
@@ -377,14 +391,25 @@ class DesyListener(RDLListener):
             context["we"] = 0 if fldx.get_property("we") is False else 1
             context["sw"] = fldx.get_property("sw").name
             context["hw"] = fldx.get_property("hw").name
+            if not fldx.is_sw_writable and fldx.is_sw_readable:
+                context["rw"] = "RO"
+            elif fldx.is_sw_writable and not fldx.is_sw_readable:
+                context["rw"] = "WO"
+            else:
+                context["rw"] = "RW"
             context["const"] = 1 if fldx.get_property("hw").name == "na" or fldx.get_property("hw").name == "r" else 0
             context["reset"] = 0 if fldx.get_property("reset") is None else fldx.get_property("reset")
             context["decrwidth"] = fldx.get_property("decrwidth") if fldx.get_property("decrwidth") is not None else 1
             context["incrwidth"] = fldx.get_property("incrwidth") if fldx.get_property("incrwidth") is not None else 1
             context["name"] = fldx.type_name
             # FIXME parent should be used as default if not defined in field
+            context["dtype"] = fldx.get_property("desyrdl_data_type") or "uint"
             context["signed"] = self.get_data_type_sign(fldx)
             context["fixedpoint"] = self.get_data_type_fixed(fldx)
+            md = desyrdlmarkup() # parse description with markup lanugage, disable Mardown
+            context["desc"] = fldx.get_property("desc") or ""
+            context["desc_html"] = fldx.get_html_desc(md) or ""
+
             # add all non-native explicitly set properties
             for p in node.list_properties(include_native=False):
                 assert p not in context
@@ -459,7 +484,13 @@ class VhdlListener(DesyListener):
 
     def exit_Addrmap(self, node):
         super().exit_Addrmap(node)
-
+        param = dict();
+        param["n_regtypes"]=len(self.regtypes[-1])
+        param["n_regitems"]=len(self.regitems[-1])
+        param["n_regcount"]=self.regcount[-1]
+        param["n_memtypes"]=len(self.memtypes[-1])
+        param["n_memitems"]=len(self.memitems[-1])
+        param["n_extitems"]=len(self.extitems[-1])
         self.context = dict(
                 node=node,
                 regtypes=[x for x in self.gen_regtypes(self.regtypes[-1].values())],
@@ -467,6 +498,7 @@ class VhdlListener(DesyListener):
                 regitems=[x for x in self.gen_regitems(self.regitems[-1])],
                 memitems=[x for x in self.gen_memitems(self.memitems[-1])],
                 extitems=[x for x in self.gen_extitems(self.extitems[-1])],
+                param=param,
                 n_regtypes=len(self.regtypes[-1]),
                 n_regitems=len(self.regitems[-1]),
                 n_regcount=self.regcount[-1],
@@ -531,3 +563,48 @@ class MapfileListener(DesyListener):
                 self.context["desyrdl_access_channel"] = self.get_access_channel(node)
 
             self.process_templates(node)
+
+class AdocListener(DesyListener):
+
+    def exit_Addrmap(self, node):
+        super().exit_Addrmap(node)
+        param = dict();
+        param["n_regtypes"]=len(self.regtypes[-1])
+        param["n_regitems"]=len(self.regitems[-1])
+        param["n_regcount"]=self.regcount[-1]
+        param["n_memtypes"]=len(self.memtypes[-1])
+        param["n_memitems"]=len(self.memitems[-1])
+        param["n_extitems"]=len(self.extitems[-1])
+
+        self.context = dict(
+            node=node,
+            regtypes=[x for x in self.gen_regtypes(self.regtypes[-1].values())],
+            memtypes=[x for x in self.gen_memtypes(self.memtypes[-1].values())],
+            regitems=[x for x in self.gen_regitems(self.regitems[-1])],
+            memitems=[x for x in self.gen_memitems(self.memitems[-1])],
+            extitems=[x for x in self.gen_extitems(self.extitems[-1])],
+            param=param,
+            n_regtypes=len(self.regtypes[-1]),
+            n_regitems=len(self.regitems[-1]),
+            n_regcount=self.regcount[-1],
+            n_memtypes=len(self.memtypes[-1]),
+            n_memitems=len(self.memitems[-1]),
+            n_extitems=len(self.extitems[-1]))
+
+        # add all non-native explicitly set properties
+        for p in node.list_properties(include_native=False):
+            assert p not in self.context
+            print(f"exit_Addrmap {node.inst_name}: Adding non-native property {p}")
+            self.context[p] = node.get_property(p)
+
+        if "desyrdl_access_channel" not in self.context:
+            self.context["desyrdl_access_channel"] = self.get_access_channel(node)
+
+        self.process_templates(node)
+
+        self.regtypes.pop()
+        self.memtypes.pop()
+        self.regitems.pop()
+        self.memitems.pop()
+        self.extitems.pop()
+        self.regcount.pop()
