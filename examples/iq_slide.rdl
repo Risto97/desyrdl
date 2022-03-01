@@ -5,6 +5,9 @@
    boundary where the regfile does not."
 */
 addrmap iq_slide #(longint unsigned WIDTH = 18, boolean MODIFYABLE = true, longint unsigned FD_CHANNELS = 8, longint unsigned TABLE_LEN = 5) {
+
+  desyrdl_interface = "AXI4L";
+
 	// simple registers can be defined anonymously:
 	reg {
 		name = "Overflow counter";

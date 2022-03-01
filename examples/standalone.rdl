@@ -1,4 +1,3 @@
-// top level RDL file, either a higher-order IP inside a hierarchy or the board top
 addrmap standalone {
   external regfile {
     reg {
