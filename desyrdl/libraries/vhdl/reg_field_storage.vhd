@@ -6,14 +6,14 @@
 --      /_____/_____//____/  /_/                   \_/ \_/ \_/               --
 --                                                                           --
 -------------------------------------------------------------------------------
---! @copyright  (c) 2021 DESY
---! @license    SPDX-License-Identifier: Apache-2.0
+--! @copyright Copyright 2021 DESY
+--! SPDX-License-Identifier: Apache-2.0
 -------------------------------------------------------------------------------
 --! @date 2021-08-04
 --! @author Michael Büchler <michael.buechler@desy.de>
 --! @author Lukasz Butkowski <lukasz.butkowski@desy.de>
 -------------------------------------------------------------------------------
---! @brief Storage field component of DesyRdl
+--! @brief Storage field component of DesyRDL
 -------------------------------------------------------------------------------
 
 library ieee;

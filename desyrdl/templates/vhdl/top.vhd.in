@@ -6,7 +6,7 @@
 --      /_____/_____//____/  /_/                   \_/ \_/ \_/              --
 --                                                                          --
 ------------------------------------------------------------------------------
---! @copyright Copyright 2021 DESY
+--! @copyright Copyright 2021-2022 DESY
 --! SPDX-License-Identifier: Apache-2.0
 ------------------------------------------------------------------------------
 --! @date 2021-04-07
@@ -14,7 +14,7 @@
 --! @author Lukasz Butkowski <lukasz.butkowski@desy.de>
 ------------------------------------------------------------------------------
 --! @brief
---! Top component of DesyRdl address space decoder for {node.type_name}
+--! Top component of DesyRDL address space decoder for {node.type_name}
 ------------------------------------------------------------------------------
 
 library ieee;

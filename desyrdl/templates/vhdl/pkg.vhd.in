@@ -6,15 +6,15 @@
 --      /_____/_____//____/  /_/                   \_/ \_/ \_/              --
 --                                                                          --
 ------------------------------------------------------------------------------
---! @copyright Copyright 2021 DESY
+--! @copyright Copyright 2021-2022 DESY
 --! SPDX-License-Identifier: Apache-2.0
 ------------------------------------------------------------------------------
 --! @date 2021-10-01
 --! @author Michael Büchler <michael.buechler@desy.de>
---! @author Lukasz Butkowski  <lukasz.butkowski@desy.de>
+--! @author Lukasz Butkowski <lukasz.butkowski@desy.de>
 ------------------------------------------------------------------------------
 --! @brief
---! VHDL package of DesyRdl for address space decoder for {node.orig_type_name}
+--! VHDL package of DesyRDL for address space decoder for {node.orig_type_name}
 ------------------------------------------------------------------------------
 
 library ieee;
