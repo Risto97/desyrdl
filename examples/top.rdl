@@ -1,9 +1,10 @@
-// top level RDL file, either a higher-order IP inside a hierarchy or the board top
+// top level RDL file
 addrmap top {
-	name = "Address map of the higher-level component, maybe LLRF Field Detection";
+  desyrdl_interface = "AXI4L";
+  desyrdl_access_channel = 0;
 
+  // <type name> <instance name>;
 	llrf_fd_top fd;
-	iq_slide iq;
-	marsupials mars;
+  test_hectare hectare;
 };
 

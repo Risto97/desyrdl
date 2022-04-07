@@ -1,5 +1,6 @@
-`include "test_hectare.sv"
+`include "test_hectare.vh"
 
+// declare another addrmap type before instantiating it
 addrmap nextlevel {
   desyrdl_interface = "AXI4L";
   reg {

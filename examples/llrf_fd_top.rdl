@@ -1,10 +1,4 @@
-// attention: default regwidth is 31
-
-property C_FD_CHANNELS {
-	type = number;
-	component = all;
-	default = 5;
-};
+// good to know: default regwidth is 32
 
 mem ctable {
 	mementries = 4096; // REGAE 250 MHz
@@ -13,6 +7,10 @@ mem ctable {
 
 addrmap llrf_fd_top {
 	name = "Address map of the higher-level component, maybe LLRF Field Detection";
+  desyrdl_interface = "AXI4L";
+
+  // <type name> [parameters] <instance name>;
+	iq_slide #(.FD_CHANNELS(5)) iq;
 
 	external ctable ctables[4];
 

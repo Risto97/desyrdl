@@ -6,13 +6,13 @@
 --      /_____/_____//____/  /_/                   \_/ \_/ \_/               --
 --                                                                           --
 -------------------------------------------------------------------------------
---! @copyright  (c) 2021 DESY
+--! @copyright Copyright 2022 DESY
 --! SPDX-License-Identifier: Apache-2.0
 -------------------------------------------------------------------------------
 --! @date 2021-10-12
 --! @author Michael Büchler <michael.buechler@desy.de>
 -------------------------------------------------------------------------------
---! @brief Dummy entity just to pass through interface, part of DesyRdl
+--! @brief Dummy entity just to pass through interface, part of DesyRDL
 -------------------------------------------------------------------------------
 
 library ieee;
