@@ -178,14 +178,14 @@ package pkg_{node.orig_type_name} is
       pi_reset : in std_logic;
 
       -- TOP interface
-      pi_s_top_if : in  t_{node.orig_type_name}_m2s;
-      po_s_top_if : out t_{node.orig_type_name}_s2m;
-      -- pi_s_top_if : in  t_{desyrdl_interface:lower}_m2s;
-      -- po_s_top_if : out t_{desyrdl_interface:lower}_s2m;
+      pi_s_top : in  t_{node.orig_type_name}_m2s;
+      po_s_top : out t_{node.orig_type_name}_s2m;
+      -- pi_s_top : in  t_{desyrdl_interface:lower}_m2s;
+      -- po_s_top : out t_{desyrdl_interface:lower}_s2m;
 
       -- logic
-      pi_addrmap_if : in  t_addrmap_{node.orig_type_name}_in;
-      po_addrmap_if : out t_addrmap_{node.orig_type_name}_out
+      pi_addrmap : in  t_addrmap_{node.orig_type_name}_in;
+      po_addrmap : out t_addrmap_{node.orig_type_name}_out
     );
   end component {node.orig_type_name};
 
