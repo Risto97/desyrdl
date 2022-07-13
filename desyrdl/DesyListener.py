@@ -491,6 +491,7 @@ class VhdlListener(DesyListener):
         param["n_memtypes"]=len(self.memtypes[-1])
         param["n_memitems"]=len(self.memitems[-1])
         param["n_extitems"]=len(self.extitems[-1])
+        param["addrwidth"]=ceil(log2(node.size))
         self.context = dict(
                 node=node,
                 regtypes=[x for x in self.gen_regtypes(self.regtypes[-1].values())],
@@ -504,7 +505,8 @@ class VhdlListener(DesyListener):
                 n_regcount=self.regcount[-1],
                 n_memtypes=len(self.memtypes[-1]),
                 n_memitems=len(self.memitems[-1]),
-                n_extitems=len(self.extitems[-1]))
+                n_extitems=len(self.extitems[-1]),
+                addrwidth=ceil(log2(node.size)))
 
         # add all non-native explicitly set properties
         for p in node.list_properties(include_native=False):
@@ -575,6 +577,7 @@ class AdocListener(DesyListener):
         param["n_memtypes"]=len(self.memtypes[-1])
         param["n_memitems"]=len(self.memitems[-1])
         param["n_extitems"]=len(self.extitems[-1])
+        param["addrwidth"]=ceil(log2(node.size))
 
         self.context = dict(
             node=node,
@@ -589,7 +592,8 @@ class AdocListener(DesyListener):
             n_regcount=self.regcount[-1],
             n_memtypes=len(self.memtypes[-1]),
             n_memitems=len(self.memitems[-1]),
-            n_extitems=len(self.extitems[-1]))
+            n_extitems=len(self.extitems[-1]),
+            addrwidth=ceil(log2(node.size)))
 
         # add all non-native explicitly set properties
         for p in node.list_properties(include_native=False):

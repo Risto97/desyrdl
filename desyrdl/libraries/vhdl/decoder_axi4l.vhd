@@ -269,7 +269,7 @@ begin
   ------------------------------------------------------------------------------
   -- Address decoder
   ------------------------------------------------------------------------------
-  raddr_int <= to_integer(unsigned(pi_s_top.araddr));
+  raddr_int <= to_integer(unsigned(pi_s_top.araddr(G_ADDR_WIDTH-1 downto 0)));
 
   prs_raddr_decoder: process(pi_clock)
   begin
@@ -277,7 +277,7 @@ begin
       if state_read = ST_READ_IDLE and pi_s_top.arvalid = '1' then
         rtarget    <= NONE;
         reg_rd_stb <= (others => '0');
-        raddr      <= pi_s_top.araddr;
+        raddr      <= pi_s_top.araddr(G_ADDR_WIDTH-1 downto 0);
 
         for i in 0 to G_REGITEMS - 1 loop
           for j in 0 to G_REGISTER_INFO(i).dim_n-1 loop
@@ -458,7 +458,7 @@ begin
   ------------------------------------------------------------------------------
   -- write Address decoder
   ------------------------------------------------------------------------------
-  waddr_int <= to_integer(unsigned(pi_s_top.awaddr));
+  waddr_int <= to_integer(unsigned(pi_s_top.awaddr(G_ADDR_WIDTH-1 downto 0)));
 
   prs_waddr_decoder: process(pi_clock)
   begin
@@ -466,7 +466,7 @@ begin
       if (state_write = ST_WRITE_IDLE or state_write = ST_WRITE_WAIT_ADDR ) and pi_s_top.awvalid = '1' then
         wtarget    <= NONE;
         reg_wr_stb <= (others => '0');
-        waddr      <= pi_s_top.awaddr ;
+        waddr      <= pi_s_top.awaddr(G_ADDR_WIDTH-1 downto 0) ;
 
         for i in 0 to G_REGITEMS-1 loop
           for j in 0 to G_REGISTER_INFO(i).dim_n-1 loop
