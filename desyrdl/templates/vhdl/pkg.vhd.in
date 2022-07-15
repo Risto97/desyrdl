@@ -32,7 +32,7 @@ package pkg_{node.orig_type_name} is
   -----------------------------------------------
   -- per addrmap / module
   -----------------------------------------------
-  constant C_ADDR_WIDTH : integer := 32;
+  constant C_ADDR_WIDTH : integer := {addrwidth};
   constant C_DATA_WIDTH : integer := 32;
 
   -- ===========================================================================
