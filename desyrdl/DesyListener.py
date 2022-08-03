@@ -376,6 +376,14 @@ class DesyListener(RDLListener):
 
             yield context
 
+    def to_int32(self,value):
+        "make sure we have int32"
+        masked = value & (pow(2,32)-1)
+        if masked > pow(2,31):
+            return -(pow(2,32)-masked)
+        else:
+            return masked
+
     def gen_fields(self, node):
         for i, fldx in enumerate(node.fields()):
 
@@ -398,7 +406,7 @@ class DesyListener(RDLListener):
             else:
                 context["rw"] = "RW"
             context["const"] = 1 if fldx.get_property("hw").name == "na" or fldx.get_property("hw").name == "r" else 0
-            context["reset"] = 0 if fldx.get_property("reset") is None else fldx.get_property("reset")
+            context["reset"] = 0 if fldx.get_property("reset") is None else self.to_int32(fldx.get_property("reset"))
             context["decrwidth"] = fldx.get_property("decrwidth") if fldx.get_property("decrwidth") is not None else 1
             context["incrwidth"] = fldx.get_property("incrwidth") if fldx.get_property("incrwidth") is not None else 1
             context["name"] = fldx.type_name
