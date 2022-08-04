@@ -58,7 +58,7 @@ begin
     begin
       if rising_edge(pi_clock) then
         if pi_reset = '1' then
-          field_reg <= std_logic_vector(to_unsigned(g_info.defval, g_info.len));
+          field_reg   <= g_info.defval(g_info.len-1 downto 0);
           po_hw_swmod <= '0';
           po_hw_swacc <= '0';
           sw_wr_stb_q <= '0';

@@ -168,12 +168,12 @@ package common is
     we        : integer;
     incrwidth : integer;
     decrwidth : integer;
-    defval    : integer;
+    defval    : std_logic_vector(32-1 downto 0);
   end record;
 
   type t_field_info_array is array (integer range <>) of t_field_info;
 
-  constant C_FIELD_NONE : t_field_info := (WIRE, 0, 0, 0, C_NA, C_NA, 0, 0, 0, 0);
+  constant C_FIELD_NONE : t_field_info := (WIRE, 0, 0, 0, C_NA, C_NA, 0, 0, 0, x"00000000");
 
   type t_reg_info is record
     -- index    : integer;

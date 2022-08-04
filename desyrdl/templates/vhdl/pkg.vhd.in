@@ -47,7 +47,7 @@ package pkg_{node.orig_type_name} is
   -- registers type fields definition
   --{regtypes:repeat:
   constant C_{{name:upper}}_FIELDS : t_field_info_array(0 to 31) := ( --{{fields:repeat:
-    {{{{i}}}} => (ftype => {{{{ftype}}}}, len => {{{{field.width}}}}, upper => {{{{field.high}}}}, lower => {{{{field.low}}}}, we => {{{{we}}}}, sw => C_{{{{sw:upper}}}}, hw => C_{{{{hw:upper}}}},  defval => {{{{reset}}}}, decrwidth => {{{{decrwidth}}}}, incrwidth => {{{{incrwidth}}}}), -- {{{{field.inst_name}}}} --}}
+    {{{{i}}}} => (ftype => {{{{ftype}}}}, len => {{{{field.width}}}}, upper => {{{{field.high}}}}, lower => {{{{field.low}}}}, we => {{{{we}}}}, sw => C_{{{{sw:upper}}}}, hw => C_{{{{hw:upper}}}},  defval => {{{{reset_x}}}}, decrwidth => {{{{decrwidth}}}}, incrwidth => {{{{incrwidth}}}}), -- {{{{field.inst_name}}}} --}}
     others => C_FIELD_NONE
   );
   ----------}
@@ -258,7 +258,9 @@ begin
       data_out({{{{{{{{field.high}}}}}}}} downto {{{{{{{{field.low}}}}}}}}) <= pi_reg.{{{{{{{{name}}}}}}}}.data({{{{{{{{field.width}}}}}}}}-1 downto 0);
     end generate;
     const : if  {{{{{{{{const}}}}}}}} = 1 generate
-      data_out({{{{{{{{field.high}}}}}}}} downto {{{{{{{{field.low}}}}}}}}) <= std_logic_vector(to_unsigned({{{{{{{{reset}}}}}}}},{{{{{{{{field.width}}}}}}}}));
+      constant C_CONST_VAL : std_logic_vector(32-1 downto 0) := {{{{{{{{reset_x}}}}}}}};
+    begin
+      data_out({{{{{{{{field.high}}}}}}}} downto {{{{{{{{field.low}}}}}}}}) <= C_CONST_VAL({{{{{{{{field.width}}}}}}}}-1 downto 0);
     end generate;
     po_reg.{{{{{{{{name}}}}}}}}.data  <= data_out({{{{{{{{field.high}}}}}}}} downto {{{{{{{{field.low}}}}}}}});
     po_reg.{{{{{{{{name}}}}}}}}.swmod <= '0';

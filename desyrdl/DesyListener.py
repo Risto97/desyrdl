@@ -398,7 +398,10 @@ class DesyListener(RDLListener):
             else:
                 context["rw"] = "RW"
             context["const"] = 1 if fldx.get_property("hw").name == "na" or fldx.get_property("hw").name == "r" else 0
-            context["reset"] = 0 if fldx.get_property("reset") is None else fldx.get_property("reset")
+            context["reset"]   =           0   if fldx.get_property("reset") is None else fldx.get_property("reset")
+            context["reset_x"] = 'x"00000000"' if fldx.get_property("reset") is None else f'x"{fldx.get_property("reset"):08x}"'
+            # TODO  ^ handle negative "reset" value
+            # FIXME ^ this is hard-coded to max 32 bit registers
             context["decrwidth"] = fldx.get_property("decrwidth") if fldx.get_property("decrwidth") is not None else 1
             context["incrwidth"] = fldx.get_property("incrwidth") if fldx.get_property("incrwidth") is not None else 1
             context["name"] = fldx.type_name
