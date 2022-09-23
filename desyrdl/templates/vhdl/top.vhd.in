@@ -167,7 +167,7 @@ begin
     end generate;--}} --{{context:if:eq:dim:3:
     gen_n : for idx_n in 0 to {{dim_n}}-1 generate  -- outer dim, for 3D arrays
       gen_m: for idx_m in 0 to {{dim_m}}-1 generate -- inner dim, for 2D arrays
-        constant l_idx : natural := (idx_m + 1) * (idx_n + 1) - 1 ;
+        constant l_idx : natural := (idx_n*{{dim_m}} + idx_m) ;
       begin
         inst_{{reg.inst_name}}: entity desyrdl.{node.type_name}_{{reg.type_name}}
           port map(
