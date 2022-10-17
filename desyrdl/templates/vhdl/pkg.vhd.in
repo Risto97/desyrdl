@@ -258,7 +258,7 @@ begin
       data_out({{{{{{{{field.high}}}}}}}} downto {{{{{{{{field.low}}}}}}}}) <= pi_reg.{{{{{{{{name}}}}}}}}.data({{{{{{{{field.width}}}}}}}}-1 downto 0);
     end generate;
     const : if  {{{{{{{{const}}}}}}}} = 1 generate
-      data_out({{{{{{{{field.high}}}}}}}} downto {{{{{{{{field.low}}}}}}}}) <= std_logic_vector(to_unsigned({{{{{{{{reset}}}}}}}},{{{{{{{{field.width}}}}}}}}));
+      data_out({{{{{{{{field.high}}}}}}}} downto {{{{{{{{field.low}}}}}}}}) <= std_logic_vector(to_signed({{{{{{{{reset}}}}}}}},{{{{{{{{field.width}}}}}}}}));
     end generate;
     po_reg.{{{{{{{{name}}}}}}}}.data  <= data_out({{{{{{{{field.high}}}}}}}} downto {{{{{{{{field.low}}}}}}}});
     po_reg.{{{{{{{{name}}}}}}}}.swmod <= '0';
