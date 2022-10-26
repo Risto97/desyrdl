@@ -135,7 +135,7 @@ begin
   -- ---------------------------------------------------------------------------
   -- reg name: {{reg.inst_name}}  reg type: {{reg.type_name}}
   -- ---------------------------------------------------------------------------
-  blk_{{i}}_{{name}} : block
+  blk_reg_{{i}}_{{name}} : block
   begin  --{{context:if:eq:dim:1:
     inst_{{name}}: entity desyrdl.{node.type_name}_{{reg.type_name}}
       port map(
@@ -184,6 +184,188 @@ begin
           );
       end generate;
     end generate;--}}
+  end block; --}
+
+  -- ===========================================================================
+  -- generated regfile instances{regfileitems:repeat:
+  -- ---------------------------------------------------------------------------
+  -- regfile name: {{regfile.inst_name}}  regfile type: {{regfile.type_name}}
+  -- ---------------------------------------------------------------------------
+  blk_regfile_{{i}}_{{name}} : block
+  begin  --{{context:if:eq:dim:1:
+    -- ===========================================================================
+    -- generated registers instances{{{{regitems:repeat:
+    -- ---------------------------------------------------------------------------
+    -- reg name: {{{{{{{{reg.inst_name}}}}}}}}  reg type: {{{{{{{{reg.type_name}}}}}}}}
+    -- ---------------------------------------------------------------------------
+    blk_{{{{{{{{i}}}}}}}}_{{{{{{{{name}}}}}}}} : block
+    begin  --{{{{{{{{context:if:eq:dim:1:
+      inst_{{{{{{{{name}}}}}}}}: entity desyrdl.{node.type_name}_{{{{{{{{reg.type_name}}}}}}}}
+        port map(
+          pi_clock        => pi_clock,
+          pi_reset        => pi_reset,
+          -- to/from adapter
+          pi_decoder_rd_stb => reg_rd_stb({{{{{{{{index}}}}}}}}),
+          pi_decoder_wr_stb => reg_wr_stb({{{{{{{{index}}}}}}}}),
+          pi_decoder_data   => reg_data_in,
+          po_decoder_data   => reg_data_out_vect({{{{{{{{index}}}}}}}}),
+
+          pi_reg  => pi_addrmap.{{regfile.inst_name}}.{{{{{{{{{{{{{{{{reg.inst_name}}}}}}}}}}}}}}}},
+          po_reg  => po_addrmap.{{regfile.inst_name}}.{{{{{{{{{{{{{{{{reg.inst_name}}}}}}}}}}}}}}}}
+        ); --}}}}}}}} --{{{{{{{{context:if:eq:dim:2:
+      gen_m: for inner_idx_m in 0 to {{{{{{{{dim_m}}}}}}}}-1 generate
+        inst_{{{{{{{{name}}}}}}}}: entity desyrdl.{node.type_name}_{{{{{{{{reg.type_name}}}}}}}}
+          port map(
+            pi_clock        => pi_clock,
+            pi_reset        => pi_reset,
+            -- to/from adapter
+            pi_decoder_rd_stb => reg_rd_stb({{{{{{{{index}}}}}}}}+inner_idx_m),
+            pi_decoder_wr_stb => reg_wr_stb({{{{{{{{index}}}}}}}}+inner_idx_m),
+            pi_decoder_data   => reg_data_in,
+            po_decoder_data   => reg_data_out_vect({{{{{{{{index}}}}}}}}+inner_idx_m),
+
+            pi_reg  => pi_addrmap.{{regfile.inst_name}}.{{{{{{{{{{{{{{{{reg.inst_name}}}}}}}}}}}}}}}}(inner_idx_m),
+            po_reg  => po_addrmap.{{regfile.inst_name}}.{{{{{{{{{{{{{{{{reg.inst_name}}}}}}}}}}}}}}}}(inner_idx_m)
+          );
+      end generate; --}}}}}}}} --{{{{{{{{context:if:eq:dim:3:
+      gen_n : for inner_idx_n in 0 to {{{{{{{{dim_n}}}}}}}}-1 generate  -- outer dim, for 3D arrays
+        gen_m: for inner_idx_m in 0 to {{{{{{{{dim_m}}}}}}}}-1 generate -- inner dim, for 2D arrays
+          constant l_idx : natural := (inner_idx_n*{{{{{{{{dim_m}}}}}}}} + inner_idx_m) ;
+        begin
+          inst_{{{{{{{{reg.inst_name}}}}}}}}: entity desyrdl.{node.type_name}_{{{{{{{{reg.type_name}}}}}}}}
+            port map(
+              pi_clock        => pi_clock,
+              pi_reset        => pi_reset,
+              -- to/from adapter
+              pi_decoder_rd_stb => reg_rd_stb({{{{{{{{index}}}}}}}}+l_idx),
+              pi_decoder_wr_stb => reg_wr_stb({{{{{{{{index}}}}}}}}+l_idx),
+              pi_decoder_data   => reg_data_in,
+              po_decoder_data   => reg_data_out_vect({{{{{{{{index}}}}}}}}+l_idx),
+
+              pi_reg  => pi_addrmap.{{regfile.inst_name}}.{{{{{{{{{{{{{{{{reg.inst_name}}}}}}}}}}}}}}}}(inner_idx_n,inner_idx_m),
+              po_reg  => po_addrmap.{{regfile.inst_name}}.{{{{{{{{{{{{{{{{reg.inst_name}}}}}}}}}}}}}}}}(inner_idx_n,inner_idx_m)
+            );
+        end generate;
+      end generate; --}}}}}}}}
+    end block; --}}}} --}} --{{context:if:eq:dim:2:
+    gen_m: for outer_idx_m in 0 to {{dim_m}}-1 generate
+      -- ===========================================================================
+      -- generated registers instances{{{{regitems:repeat:
+      -- ---------------------------------------------------------------------------
+      -- reg name: {{{{{{{{reg.inst_name}}}}}}}}  reg type: {{{{{{{{reg.type_name}}}}}}}}
+      -- ---------------------------------------------------------------------------
+      blk_{{{{{{{{i}}}}}}}}_{{{{{{{{name}}}}}}}} : block
+      begin  --{{{{{{{{context:if:eq:dim:1:
+        inst_{{{{{{{{name}}}}}}}}: entity desyrdl.{node.type_name}_{{{{{{{{reg.type_name}}}}}}}}
+          port map(
+            pi_clock        => pi_clock,
+            pi_reset        => pi_reset,
+            -- to/from adapter
+            pi_decoder_rd_stb => reg_rd_stb({{{{{{{{index}}}}}}}} + {{regcount}}*outer_idx_m),
+            pi_decoder_wr_stb => reg_wr_stb({{{{{{{{index}}}}}}}} + {{regcount}}*outer_idx_m),
+            pi_decoder_data   => reg_data_in,
+            po_decoder_data   => reg_data_out_vect({{{{{{{{index}}}}}}}} + {{regcount}}*outer_idx_m),
+
+            pi_reg  => pi_addrmap.{{regfile.inst_name}}(outer_idx_m).{{{{{{{{{{{{{{{{reg.inst_name}}}}}}}}}}}}}}}},
+            po_reg  => po_addrmap.{{regfile.inst_name}}(outer_idx_m).{{{{{{{{{{{{{{{{reg.inst_name}}}}}}}}}}}}}}}}
+          ); --}}}}}}}} --{{{{{{{{context:if:eq:dim:2:
+        gen_m: for idx_m in 0 to {{{{{{{{dim_m}}}}}}}}-1 generate
+          inst_{{{{{{{{name}}}}}}}}: entity desyrdl.{node.type_name}_{{{{{{{{reg.type_name}}}}}}}}
+            port map(
+              pi_clock        => pi_clock,
+              pi_reset        => pi_reset,
+              -- to/from adapter
+              pi_decoder_rd_stb => reg_rd_stb({{{{{{{{index}}}}}}}} + {{regcount}}*outer_idx_m + idx_m),
+              pi_decoder_wr_stb => reg_wr_stb({{{{{{{{index}}}}}}}} + {{regcount}}*outer_idx_m + idx_m),
+              pi_decoder_data   => reg_data_in,
+              po_decoder_data   => reg_data_out_vect({{{{{{{{index}}}}}}}} + {{regcount}}*outer_idx_m + idx_m),
+
+              pi_reg  => pi_addrmap.{{regfile.inst_name}}(outer_idx_m).{{{{{{{{{{{{{{{{reg.inst_name}}}}}}}}}}}}}}}}(idx_m),
+              po_reg  => po_addrmap.{{regfile.inst_name}}(outer_idx_m).{{{{{{{{{{{{{{{{reg.inst_name}}}}}}}}}}}}}}}}(idx_m)
+            );
+        end generate; --}}}}}}}} --{{{{{{{{context:if:eq:dim:3:
+        gen_n : for idx_n in 0 to {{{{{{{{dim_n}}}}}}}}-1 generate  -- outer dim, for 3D arrays
+          gen_m: for idx_m in 0 to {{{{{{{{dim_m}}}}}}}}-1 generate -- inner dim, for 2D arrays
+            constant l_idx : natural := (idx_n*{{{{{{{{dim_m}}}}}}}} + idx_m) ;
+          begin
+            inst_{{{{{{{{reg.inst_name}}}}}}}}: entity desyrdl.{node.type_name}_{{{{{{{{reg.type_name}}}}}}}}
+              port map(
+                pi_clock        => pi_clock,
+                pi_reset        => pi_reset,
+                -- to/from adapter
+                pi_decoder_rd_stb => reg_rd_stb({{{{{{{{index}}}}}}}} + {{regcount}}*outer_idx_m + l_idx),
+                pi_decoder_wr_stb => reg_wr_stb({{{{{{{{index}}}}}}}} + {{regcount}}*outer_idx_m + l_idx),
+                pi_decoder_data   => reg_data_in,
+                po_decoder_data   => reg_data_out_vect({{{{{{{{index}}}}}}}} + {{regcount}}*outer_idx_m + l_idx),
+
+                pi_reg  => pi_addrmap.{{regfile.inst_name}}(outer_idx_m).{{{{{{{{{{{{{{{{reg.inst_name}}}}}}}}}}}}}}}}(idx_n,idx_m),
+                po_reg  => po_addrmap.{{regfile.inst_name}}(outer_idx_m).{{{{{{{{{{{{{{{{reg.inst_name}}}}}}}}}}}}}}}}(idx_n,idx_m)
+              );
+          end generate;
+        end generate; --}}}}}}}}
+      end block; --}}}}
+    end generate; --}} --{{context:if:eq:dim:3:
+    gen_n : for outer_idx_n in 0 to {{dim_n}}-1 generate  -- outer dim, for 3D arrays
+      gen_m: for outer_idx_m in 0 to {{dim_m}}-1 generate -- inner dim, for 2D arrays
+        constant l_idx : natural := (outer_idx_n*{{dim_m}} + outer_idx_m) * {{{{regcount}}}} ;
+      begin
+        -- ===========================================================================
+        -- generated registers instances{{{{regitems:repeat:
+        -- ---------------------------------------------------------------------------
+        -- reg name: {{{{{{{{reg.inst_name}}}}}}}}  reg type: {{{{{{{{reg.type_name}}}}}}}}
+        -- ---------------------------------------------------------------------------
+        blk_{{{{{{{{i}}}}}}}}_{{{{{{{{name}}}}}}}} : block
+        begin  --{{{{{{{{context:if:eq:dim:1:
+          inst_{{{{{{{{name}}}}}}}}: entity desyrdl.{node.type_name}_{{{{{{{{reg.type_name}}}}}}}}
+            port map(
+              pi_clock        => pi_clock,
+              pi_reset        => pi_reset,
+              -- to/from adapter
+              pi_decoder_rd_stb => reg_rd_stb({{{{{{{{index}}}}}}}} + l_idx),
+              pi_decoder_wr_stb => reg_wr_stb({{{{{{{{index}}}}}}}} + l_idx),
+              pi_decoder_data   => reg_data_in,
+              po_decoder_data   => reg_data_out_vect({{{{{{{{index}}}}}}}} + l_idx),
+
+              pi_reg  => pi_addrmap.{{regfile.inst_name}}(outer_idx_n,outer_idx_m).{{{{{{{{{{{{{{{{reg.inst_name}}}}}}}}}}}}}}}},
+              po_reg  => po_addrmap.{{regfile.inst_name}}(outer_idx_n,outer_idx_m).{{{{{{{{{{{{{{{{reg.inst_name}}}}}}}}}}}}}}}}
+            ); --}}}}}}}} --{{{{{{{{context:if:eq:dim:2:
+          gen_m: for inner_idx_m in 0 to {{{{{{{{dim_m}}}}}}}}-1 generate
+            inst_{{{{{{{{name}}}}}}}}: entity desyrdl.{node.type_name}_{{{{{{{{reg.type_name}}}}}}}}
+              port map(
+                pi_clock        => pi_clock,
+                pi_reset        => pi_reset,
+                -- to/from adapter
+                pi_decoder_rd_stb => reg_rd_stb({{{{{{{{index}}}}}}}} + l_idx + inner_idx_m),
+                pi_decoder_wr_stb => reg_wr_stb({{{{{{{{index}}}}}}}} + l_idx + inner_idx_m),
+                pi_decoder_data   => reg_data_in,
+                po_decoder_data   => reg_data_out_vect({{{{{{{{index}}}}}}}} + l_idx + inner_idx_m),
+
+                pi_reg  => pi_addrmap.{{regfile.inst_name}}(outer_idx_n,outer_idx_m).{{{{{{{{{{{{{{{{reg.inst_name}}}}}}}}}}}}}}}}(inner_idx_m),
+                po_reg  => po_addrmap.{{regfile.inst_name}}(outer_idx_n,outer_idx_m).{{{{{{{{{{{{{{{{reg.inst_name}}}}}}}}}}}}}}}}(inner_idx_m)
+              );
+          end generate; --}}}}}}}} --{{{{{{{{context:if:eq:dim:3:
+          gen_n : for inner_idx_n in 0 to {{{{{{{{dim_n}}}}}}}}-1 generate  -- outer dim, for 3D arrays
+            gen_m: for inner_idx_m in 0 to {{{{{{{{dim_m}}}}}}}}-1 generate -- inner dim, for 2D arrays
+              constant ll_idx : natural := (inner_idx_n*{{{{{{{{dim_m}}}}}}}} + inner_idx_m) ;
+            begin
+              inst_{{{{{{{{reg.inst_name}}}}}}}}: entity desyrdl.{node.type_name}_{{{{{{{{reg.type_name}}}}}}}}
+                port map(
+                  pi_clock        => pi_clock,
+                  pi_reset        => pi_reset,
+                  -- to/from adapter
+                  pi_decoder_rd_stb => reg_rd_stb({{{{{{{{index}}}}}}}} + l_idx + ll_idx),
+                  pi_decoder_wr_stb => reg_wr_stb({{{{{{{{index}}}}}}}} + l_idx + ll_idx),
+                  pi_decoder_data   => reg_data_in,
+                  po_decoder_data   => reg_data_out_vect({{{{{{{{index}}}}}}}} + l_idx + ll_idx),
+
+                  pi_reg  => pi_addrmap.{{regfile.inst_name}}(outer_idx_n,outer_idx_m).{{{{{{{{{{{{{{{{reg.inst_name}}}}}}}}}}}}}}}}(inner_idx_n,inner_idx_m),
+                  po_reg  => po_addrmap.{{regfile.inst_name}}(outer_idx_n,outer_idx_m).{{{{{{{{{{{{{{{{reg.inst_name}}}}}}}}}}}}}}}}(inner_idx_n,inner_idx_m)
+                );
+            end generate;
+          end generate; --}}}}}}}}
+        end block; --}}}}
+      end generate;
+    end generate; --}}
   end block; --}
 
   mem_ack <= '1'; -- not used at the moment from external memories
