@@ -206,7 +206,6 @@ class DesyListener(RDLListener):
 
                 reset |= (field_reset << field.low) & mask
 
-
             context["i"] = i
             # When inside a regfile, the name needs special handling. It must
             # include the name and array index of the regfile instance.
@@ -650,15 +649,20 @@ class DesyListener(RDLListener):
 
     def get_data_type_fixed(self, node):
         datatype = str(node.get_property("desyrdl_data_type") or '')
-        pattern = '.*fixed([-]*\d*)'
-        srch = re.search(pattern, datatype)
-        if srch:
-            if srch.group(1) == '':
+        pattern_fix = '.*fixed([-]*\d*)'
+        pattern_fp = 'ieee754'
+        srch_fix = re.search(pattern_fix, datatype.lower())
+
+        if srch_fix:
+            if srch_fix.group(1) == '':
                 return ''
             else:
-                return int(srch.group(1))
-        else:
-            return 0
+                return int(srch_fix.group(1))
+
+        if pattern_fp == pattern_fp:
+            return 'IEEE754'
+
+        return 0
 
     def get_generated_files(self):
         return self.generated_files
