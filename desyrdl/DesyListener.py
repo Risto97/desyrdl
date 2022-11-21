@@ -63,7 +63,6 @@ class DesyListener(RDLListener):
 
     def process_templates(self, node):
         for tpl,tplstr in self.templates:
-            print(f'processing template {tpl}')
             with tpl.open('r') as f_in:
                 s_in = f_in.read()
 

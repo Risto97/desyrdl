@@ -50,7 +50,11 @@ class RdlFormatter(string.Formatter):
             # "args" is the template string
             results = []
             for x in value:
-                results.append(self.format(args, context=x, **x))
+                try:
+                    results.append(self.format(args, context=x, **x))
+                except Exception as e:
+                    print(f'Failing template:\n{args}\nContext:\n{x}')
+                    raise
 
             return "".join(results)
 
@@ -64,7 +68,11 @@ class RdlFormatter(string.Formatter):
             # "value" is the value to apply the check to
             (check,name,compareval,template) = args.split(":", maxsplit=3)
             def do_format():
-                return self.format(template, context=value, **value)
+                try:
+                    return self.format(template, context=value, **value)
+                except Exception as e:
+                    print(f'Failing template:\n{template}\nContext:\n{value}')
+                    raise
 
             # compare with int, if string cannot be coveted to string compare strings
             try:
@@ -88,9 +96,14 @@ class RdlFormatter(string.Formatter):
                     return do_format()
             except ValueError:
                 print(f'if with string can by used only with eq,ne; if:{check}:{name}:{compareval} ')
+                raise
 
             # return an empty string if the check fails
             return ""
 
         else:
-            return super(RdlFormatter, self).format_field(value, spec)
+            try:
+                return super(RdlFormatter, self).format_field(value, spec)
+            except Exception as e:
+                print(f'Failing template:\n{template}')
+                raise
