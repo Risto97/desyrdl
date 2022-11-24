@@ -53,7 +53,7 @@ package pkg_{node.orig_type_name} is
   ----------}
 
   -- register items
-  constant C_REGISTER_INFO : t_reg_info_array(0 to {n_regitems}) := ( --{regitems:repeat:
+  constant C_REGISTER_INFO : t_reg_info_array(0 to {n_regitems}) := ( --{regitems_with_regfiles:repeat:
     {{i}} => (address => x"{{reladdr:08x}}", fields => C_{{type:upper}}_FIELDS, dim_n => {{dim_n}}, dim_m => {{dim_m}}, elements => {{elements}}, index => {{index}}), --}
     others => C_REG_NONE
   );
@@ -84,7 +84,7 @@ package pkg_{node.orig_type_name} is
   -- ===========================================================================
   -- Writing a custom testbench is easier when there is a mapping from name to
   -- index. It can be used to access the INFO arrays.
-  --{regitems:repeat:
+  --{regitems_with_regfiles:repeat:
   constant C_{{name:upper}}_ID : integer := {{i}}; --}
   --{memitems:repeat:
   constant C_{{name:upper}}_ID : integer := {{i}}; --}
@@ -126,6 +126,32 @@ package pkg_{node.orig_type_name} is
   ------------------------------}
 
   -- ===========================================================================
+  -- REGFILE interface
+  -- ---------------------------------------------------------------------------
+  --{regfiletypes:repeat:
+  -----------------------------------------------
+  -- regfile type: {{regfiletype.type_name}} (dev note: should be identical: {{name}})
+  type t_regfile_{{regfiletype.type_name}}_in is record
+    --{{regitems:repeat:{{{{context:if:eq:dim:1:
+    {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_in; --}}}}{{{{context:if:eq:dim:2:
+    {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_2d_in(0 to {{{{dim_m}}}}-1); --}}}}{{{{context:if:eq:dim:3:
+    {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_3d_in(0 to {{{{dim_n}}}}-1, 0 to {{{{dim_m}}}}-1); --}}}} }}
+  end record;
+
+  type t_regfile_{{regfiletype.type_name}}_out is record
+    --{{regitems:repeat:{{{{context:if:eq:dim:1:
+    {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_out; --}}}}{{{{context:if:eq:dim:2:
+    {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_2d_out(0 to {{{{dim_m}}}}-1); --}}}}{{{{context:if:eq:dim:3:
+    {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_3d_out(0 to {{{{dim_n}}}}-1, 0 to {{{{dim_m}}}}-1); --}}}} }}
+  end record;
+  type t_regfile_{{regfiletype.type_name}}_2d_in is array (integer range <>) of t_regfile_{{regfiletype.type_name}}_in;
+  type t_regfile_{{regfiletype.type_name}}_2d_out is array (integer range <>) of t_regfile_{{regfiletype.type_name}}_out;
+  type t_regfile_{{regfiletype.type_name}}_3d_in is array (integer range <>, integer range <>) of t_regfile_{{regfiletype.type_name}}_in;
+  type t_regfile_{{regfiletype.type_name}}_3d_out is array (integer range <>, integer range <>) of t_regfile_{{regfiletype.type_name}}_out;
+  ------------------------------}
+
+
+  -- ===========================================================================
   -- MEMORIES interface
   -- ---------------------------------------------------------------------------
   --{memtypes:repeat:
@@ -148,6 +174,10 @@ package pkg_{node.orig_type_name} is
     {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_in; --}}{{context:if:eq:dim:2:
     {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_2d_in(0 to {{{{dim_m}}}}-1); --}}{{context:if:eq:dim:3:
     {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_3d_in(0 to {{{{dim_n}}}}-1, 0 to {{{{dim_m}}}}-1); --}}}
+    --{regfileitems:repeat:{{context:if:eq:dim:1:
+    {{{{regfile.inst_name}}}} : t_regfile_{{{{regfile.type_name}}}}_in; --}}{{context:if:eq:dim:2:
+    {{{{regfile.inst_name}}}} : t_regfile_{{{{regfile.type_name}}}}_2d_in(0 to {{{{dim_m}}}}-1); --}}{{context:if:eq:dim:3:
+    {{{{regfile.inst_name}}}} : t_regfile_{{{{regfile.type_name}}}}_3d_in(0 to {{{{dim_n}}}}-1, 0 to {{{{dim_m}}}}-1); --}}}
     --{memitems:repeat:
     {{mem.inst_name}} : t_mem_{{mem.type_name}}_in; --}
     --{extitems:repeat:
@@ -159,6 +189,10 @@ package pkg_{node.orig_type_name} is
     {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_out; --}}{{context:if:eq:dim:2:
     {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_2d_out(0 to {{{{dim_m}}}}-1); --}}{{context:if:eq:dim:3:
     {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_3d_out(0 to {{{{dim_n}}}}-1, 0 to {{{{dim_m}}}}-1); --}}}
+    --{regfileitems:repeat:{{context:if:eq:dim:1:
+    {{{{regfile.inst_name}}}} : t_regfile_{{{{regfile.type_name}}}}_out; --}}{{context:if:eq:dim:2:
+    {{{{regfile.inst_name}}}} : t_regfile_{{{{regfile.type_name}}}}_2d_out(0 to {{{{dim_m}}}}-1); --}}{{context:if:eq:dim:3:
+    {{{{regfile.inst_name}}}} : t_refileg_{{{{regfile.type_name}}}}_3d_out(0 to {{{{dim_n}}}}-1, 0 to {{{{dim_m}}}}-1); --}}}
     --{memitems:repeat:
     {{mem.inst_name}} : t_mem_{{mem.type_name}}_out; --}
     --{extitems:repeat:
