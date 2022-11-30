@@ -12,7 +12,23 @@
 #define {{addrmap_name}}_DATA_WIDTH  {{width:>12}}
 #define {{addrmap_name}}_FRACBITS    {{fixedpoint:>12}}
 #define {{addrmap_name}}_IS_SIGNED   {{signed:>12}}
-#define {{addrmap_name}}_ACCESS_TYPE         "{{rw}}"}
+#define {{addrmap_name}}_ACCESS_TYPE         "{{rw}}"
+#define {{addrmap_name}}_DEFVAL      {{reset_hex:>12}}
+
+{{fields:repeat:
+/*
+ * Module: {{addrmap}} Register: {{name}} Field: {{{{name}}}}
+ *
+ */
+#define {{addrmap_name}}_{{{{name}}}}_UPPER_BIT   {{{{field.high:>12}}}}
+#define {{addrmap_name}}_{{{{name}}}}_LOWER_BIT   {{{{field.low:>12}}}}
+#define {{addrmap_name}}_{{{{name}}}}_WIDTH       {{{{field.width:>12}}}}
+#define {{addrmap_name}}_{{{{name}}}}_INCRWIDTH   {{{{incrwidth:>12}}}}
+#define {{addrmap_name}}_{{{{name}}}}_DECRWIDTH   {{{{decrwidth:>12}}}}
+#define {{addrmap_name}}_{{{{name}}}}_MASK        {{{{mask_hex:>12}}}}
+#define {{addrmap_name}}_{{{{name}}}}_DEFVAL      {{{{reset_hex:>12}}}}
+}}}
+
 {memitems:repeat:
 /*
  * Memory: {{addrmap_name}}

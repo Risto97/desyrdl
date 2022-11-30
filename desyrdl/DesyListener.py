@@ -23,6 +23,7 @@ Context dictionaries are used by the template engine.
 import re
 from math import ceil, log2
 from pathlib import Path  # get filenames
+from bitarray import bitarray
 
 from systemrdl import RDLListener
 from systemrdl.node import (AddrmapNode, FieldNode,  # AddressableNode,
@@ -181,10 +182,22 @@ class DesyListener(RDLListener):
             fields = [f for f in self.gen_fields(regx)]
             totalwidth = 0
             n_fields = 0
+            reset = 0
+
             for field in regx.fields():
-                totalwidth = totalwidth + field.get_property("fieldwidth")
+                totalwidth += field.get_property("fieldwidth")
                 n_fields += 1
-           
+                mask = bitarray(field.get_property("fieldwidth"))
+                mask[:] = 1
+                mask = int(mask.to01()) << field.low
+                field_reset = 0
+
+                if(field.get_property("reset")):
+                    field_reset = field.get_property("reset")
+
+                reset |= (field_reset << field.low) & mask
+
+
             context["i"] = i
             # When inside a regfile, the name needs special handling. It must
             # include the name and array index of the regfile instance.
@@ -244,6 +257,8 @@ class DesyListener(RDLListener):
             context["dtype"] = regx.get_property("desyrdl_data_type") or "uint"
             context["signed"] = self.get_data_type_sign(regx)
             context["fixedpoint"] = self.get_data_type_fixed(regx)
+            context["reset"] = reset
+            context["reset_hex"] = hex(reset)
 
             # "internal_offset" is needed for indexing of flattened arrays in VHDL
             # port definitions. Improve VHDL code to get rid of it.
@@ -554,6 +569,7 @@ class DesyListener(RDLListener):
                 context["rw"] = "RW"
             context["const"] = 1 if fldx.get_property("hw").name == "na" or fldx.get_property("hw").name == "r" else 0
             context["reset"] = 0 if fldx.get_property("reset") is None else self.to_int32(fldx.get_property("reset"))
+            context["reset_hex"] = hex(context["reset"])
             context["decrwidth"] = fldx.get_property("decrwidth") if fldx.get_property("decrwidth") is not None else 1
             context["incrwidth"] = fldx.get_property("incrwidth") if fldx.get_property("incrwidth") is not None else 1
             context["name"] = fldx.type_name
@@ -564,6 +580,12 @@ class DesyListener(RDLListener):
             md = desyrdlmarkup() # parse description with markup lanugage, disable Mardown
             context["desc"] = fldx.get_property("desc") or ""
             context["desc_html"] = fldx.get_html_desc(md) or ""
+
+            mask = bitarray(fldx.get_property("fieldwidth"))
+            mask[:] = 1
+
+            context["mask"] = int(mask.to01()[::-1], 2) << fldx.low
+            context["mask_hex"] = hex(context["mask"])
 
             # add all non-native explicitly set properties
             for p in node.list_properties(include_native=False):
