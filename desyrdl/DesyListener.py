@@ -23,13 +23,23 @@ Context dictionaries are used by the template engine.
 import re
 from math import ceil, log2
 from pathlib import Path  # get filenames
-from bitarray import bitarray
 
 from systemrdl import RDLListener
 from systemrdl.node import (AddrmapNode, FieldNode,  # AddressableNode,
                             MemNode, RegfileNode, RegNode, RootNode)
 
 from desyrdl.rdlformatcode import desyrdlmarkup
+
+
+def bitmask(width):
+    '''
+        Generates a bitmask filled with '1' with bit width equal to 'width'
+    '''
+    mask = 0
+    for i in range(width):
+        mask |= (1 << i)
+
+    return mask
 
 
 class DesyListener(RDLListener):
@@ -187,9 +197,8 @@ class DesyListener(RDLListener):
             for field in regx.fields():
                 totalwidth += field.get_property("fieldwidth")
                 n_fields += 1
-                mask = bitarray(field.get_property("fieldwidth"))
-                mask[:] = 1
-                mask = int(mask.to01()) << field.low
+                mask = bitmask(field.get_property("fieldwidth"))
+                mask = mask << field.low
                 field_reset = 0
 
                 if(field.get_property("reset")):
@@ -581,10 +590,9 @@ class DesyListener(RDLListener):
             context["desc"] = fldx.get_property("desc") or ""
             context["desc_html"] = fldx.get_html_desc(md) or ""
 
-            mask = bitarray(fldx.get_property("fieldwidth"))
-            mask[:] = 1
+            mask = bitmask(fldx.get_property("fieldwidth"))
 
-            context["mask"] = int(mask.to01()[::-1], 2) << fldx.low
+            context["mask"] = mask << fldx.low
             context["mask_hex"] = hex(context["mask"])
 
             # add all non-native explicitly set properties
