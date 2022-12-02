@@ -13,9 +13,8 @@
  5. add reset to external bus, generate reset on timeout
 
  6. add signed info to fields
- 7. add data type info to fields and fixed point
+ 7. add data type info to fields, fixed and floating point
  8. default value to unsigned or signed based on signed info
 
  9. add counter field type
  10. add interrupt field type
-
