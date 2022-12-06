@@ -29,6 +29,9 @@ use desyrdl.common.all;
 ------------------------------------------------------------------------------
 --! @brief AXI4 to II translation
 entity axi4l_to_ibus is
+  generic (
+    G_BUS_TIMEOUT : natural := 4095
+  );
   port (
     -- AXI4 slave port
     pi_reset          : in  std_logic;
@@ -57,18 +60,18 @@ architecture rtl of axi4l_to_ibus is
                    ST_WRITE_RESP,
                    ST_READ_DATA_PUSH,
                    ST_WAIT_AFTER_TRN);
-  signal SIG_STATE   : t_state;
-  signal SIG_LEN     : std_logic_vector(7 downto 0);
+  signal sig_state   : t_state;
+  signal sig_len     : std_logic_vector(7 downto 0);
 
-  signal SIG_RENA    : std_logic;
-  signal SIG_WENA    : std_logic;
-  signal SIG_ADDR    : std_logic_vector(31 downto 0) := (others => '0');
+  signal sig_rena    : std_logic;
+  signal sig_wena    : std_logic;
+  signal sig_addr    : std_logic_vector(31 downto 0) := (others => '0');
 
-  signal SIG_M2S     : t_axi4l_m2s := C_AXI4L_M2S_DEFAULT;
-  signal SIG_S2M     : t_axi4l_s2m := C_AXI4L_S2M_DEFAULT;
+  signal sig_m2s     : t_axi4l_m2s := c_axi4l_m2s_default;
+  signal sig_s2m     : t_axi4l_s2m := c_axi4l_s2m_default;
 
-    -- signal SIG_WAIT_CNT : natural:=0;
-
+  signal wd_reset : std_logic;
+  signal wd_cnt   : natural := 0;
   ---------------------------------------------------------------------------
 begin
 
@@ -88,14 +91,15 @@ begin
   po_m_ext.rena   <=  sig_rena when rising_edge(pi_clock); -- delay one clock cycle to have 1 clock cycle delay after data on bus
   po_m_ext.wena   <=  sig_wena when rising_edge(pi_clock);
 
-  process(pi_clock)
+  prs_main_fsm: process(pi_clock)
   begin
     if rising_edge(pi_clock) then
-      if (pi_reset = '1') then
+      if ( pi_reset = '1' or wd_reset = '1' ) then
         sig_state      <= ST_IDLE;
         sig_rena       <= '0';
         sig_wena       <= '0';
         sig_s2m.bvalid <= '0';
+        po_m_ext.data  <= (others => '0');
       else
         sig_rena <= '0';
         sig_wena <= '0';
@@ -189,7 +193,7 @@ begin
         end case;
       end if;
     end if;
-  end process;
+  end process prs_main_fsm;
 
   proc_axi_hds : process(sig_state, sig_m2s)
   begin
@@ -214,5 +218,24 @@ begin
       when others =>
     end case;
   end process;
+
+  prs_watchdog: process(pi_clock)
+  begin
+    if rising_edge(pi_clock) then
+      if ( pi_reset = '1' ) then
+        wd_reset <= '1';
+        wd_cnt   <= 0;
+      else
+        if sig_state = ST_IDLE then
+          wd_reset <= '0';
+          wd_cnt   <= 0;
+        elsif wd_cnt >= G_BUS_TIMEOUT then
+          wd_reset <= '1';
+        else
+          wd_cnt <= wd_cnt + 1;
+        end if;
+      end if;
+    end if;
+  end process prs_watchdog;
 
 end rtl;

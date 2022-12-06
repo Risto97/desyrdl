@@ -83,8 +83,10 @@ architecture arch of decoder_axi4l is
     ST_READ_IDLE,
     ST_READ_SELECT,
     ST_READ_VALID,
+    ST_READ_DONE,
     ST_READ_REG_BUSY,
     ST_READ_MEM_BUSY,
+    ST_READ_EXT_ADDR,
     ST_READ_EXT_BUSY
   );
   signal state_read : t_state_read;
@@ -141,11 +143,11 @@ architecture arch of decoder_axi4l is
   signal ext_bvalid  : std_logic := '0';
   signal ext_bready  : std_logic := '0';
 
-  constant read_timeout  : natural := 1023;
-  constant write_timeout : natural := 1023;
+  constant read_timeout  : natural := 8191;
+  constant write_timeout : natural := 8191;
   signal read_time_cnt   : natural := 0;
   signal write_time_cnt  : natural := 0;
-
+  signal invalid_rdata   : std_logic ;
 begin
 
   -- ===========================================================================
@@ -159,8 +161,8 @@ begin
       if pi_reset = '1' then
         state_read <= ST_READ_IDLE;
         ext_arvalid <= '0'; -- TODO axi ext move to separate process
-        ext_rready  <= '0';
         read_time_cnt <= 0;
+        invalid_rdata <= '0';
       else
         case state_read is
           when ST_READ_IDLE =>
@@ -170,9 +172,8 @@ begin
             end if;
 
             ext_arvalid   <= '0';
-            ext_rready    <= '0';
             read_time_cnt <= 0;
-
+            invalid_rdata <= '0';
           when ST_READ_SELECT =>
             if rtarget = REG then
               state_read    <= ST_READ_VALID;
@@ -182,8 +183,7 @@ begin
 
             elsif rtarget = EXT then
               ext_arvalid <= '1';
-              ext_rready  <= '1';
-              state_read  <= ST_READ_EXT_BUSY;
+              state_read  <= ST_READ_EXT_ADDR;
 
             else
               state_read <= ST_READ_REG_BUSY;
@@ -191,34 +191,45 @@ begin
 
           when ST_READ_REG_BUSY =>
             state_read <= ST_READ_VALID;
- 
+
           when ST_READ_MEM_BUSY =>
             read_time_cnt <= read_time_cnt + 1;
             if mem_rd_ack = '1' then
                state_read <= ST_READ_VALID;
             elsif read_time_cnt >= read_timeout then
+              invalid_rdata <= '1';
+              state_read <= ST_READ_VALID;
+            end if;
+
+          when ST_READ_EXT_ADDR =>
+            read_time_cnt <= read_time_cnt + 1;
+
+            if ext_arready = '1' then
+              ext_arvalid  <= '0';
+              read_time_cnt <= 0;
+              state_read <= ST_READ_EXT_BUSY ;
+            elsif read_time_cnt >= read_timeout then
+              invalid_rdata <= '1';
               state_read <= ST_READ_VALID;
             end if;
 
           when ST_READ_EXT_BUSY =>
             read_time_cnt <= read_time_cnt + 1;
 
-            if ext_arready = '1' then
-              ext_arvalid  <= '0';
-            end if;
-
-            if ext_rvalid = '1' then
-              ext_rready <= '0';
-              state_read <= ST_READ_VALID;
+            if ext_rvalid = '1' and pi_s_top.rready = '1' then
+              state_read <= ST_READ_DONE;
             elsif read_time_cnt >= read_timeout then
+              invalid_rdata <= '1';
               state_read <= ST_READ_VALID;
             end if;
 
           when ST_READ_VALID =>
-
             if pi_s_top.rready = '1' then
-              state_read <= ST_READ_IDLE;
+              state_read <= ST_READ_DONE;
             end if;
+
+          when ST_READ_DONE =>
+              state_read <= ST_READ_IDLE;
 
           when others =>
             state_read <= ST_READ_IDLE;
@@ -229,17 +240,21 @@ begin
     end if;
   end process;
 
+  ext_rready <= pi_s_top.rready;
+
   po_s_top.rresp <= "00";
 
   ------------------------------------------------------------------------------
   -- read data mux
-  prs_rdata_mux: process(rtarget,rdata_reg,rdata_mem,rdata_ext)
+  prs_rdata_mux: process(rtarget,rdata_reg,rdata_mem,rdata_ext,invalid_rdata)
   begin
-    if rtarget = REG then
+    if invalid_rdata = '1' then
+      po_s_top.rdata <= (others => '0' ) ;
+    elsif rtarget = REG then
       po_s_top.rdata <= rdata_reg ;
     elsif rtarget = MEM then
       po_s_top.rdata <= rdata_mem ;
-    else
+    elsif rtarget = EXT then
       po_s_top.rdata <= rdata_ext ;
     end if;
   end process prs_rdata_mux;
@@ -256,9 +271,11 @@ begin
     end case;
   end process;
   -- RVALID flag handling
-  prs_axi_rvalid: process (state_read)
+  prs_axi_rvalid: process (state_read, ext_rvalid)
   begin
     case state_read is
+      when ST_READ_EXT_BUSY =>
+        po_s_top.rvalid <= ext_rvalid;
       when ST_READ_VALID =>
         po_s_top.rvalid <= '1';
       when others =>
@@ -306,7 +323,7 @@ begin
           end if;
         end loop;
 
-      elsif state_read = ST_READ_VALID then
+      elsif state_read = ST_READ_DONE then
         --rtarget    <= NONE;
         if G_REGITEMS > 0 then
           reg_rd_stb <= (others => '0');
@@ -617,7 +634,7 @@ begin
     po_ext(idx).arvalid                                          <= ext_arvalid and ext_rd_stb(idx);
     po_ext(idx).araddr(G_EXT_INFO(idx).addrwidth - 1 downto 0)   <= raddr(G_EXT_INFO(idx).addrwidth - 1 downto 0);
     po_ext(idx).araddr(po_ext(idx).araddr'left downto G_EXT_INFO(idx).addrwidth) <= (others => '0');
-    po_ext(idx).rready                                           <= ext_rready and ext_rd_stb(idx);
+    po_ext(idx).rready                                           <= ext_rready; -- and ext_rd_stb(idx);
     -- po_ext(idx).rready                                           <= pi_s_top.rready and ext_rd_stb(idx);
 
     po_ext(idx).awvalid                                          <= ext_awvalid and ext_wr_stb(idx);
@@ -626,7 +643,7 @@ begin
     po_ext(idx).wvalid                                           <= ext_wvalid and ext_wr_stb(idx);
     po_ext(idx).wdata(31 downto 0)                               <= wdata;
     po_ext(idx).wstrb(3 downto 0)                                <= wstrb;
-    po_ext(idx).bready                                           <= ext_bready and ext_wr_stb(idx);
+    po_ext(idx).bready                                           <= ext_bready;-- and ext_wr_stb(idx);
   end generate;
 
   prs_ext_rd_mux: process(ext_rd_stb,pi_ext)
