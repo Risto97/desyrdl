@@ -659,7 +659,7 @@ class DesyListener(RDLListener):
             else:
                 return int(srch_fix.group(1))
 
-        if pattern_fp == pattern_fp:
+        if pattern_fp == datatype.lower():
             return 'IEEE754'
 
         return 0
