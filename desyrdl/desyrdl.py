@@ -172,7 +172,7 @@ def main():
             print('======================')
             print('Generating VHDL files')
             print('======================')
-            listener = VhdlListener(vf, tpl_files, out_dir)
+            listener = VhdlListener(vf, tpl_files, out_dir, separator='_')
             tpl_walker = RDLWalker(unroll=True)
             tpl_walker.walk(top_node, listener)
         elif out_format == 'map':

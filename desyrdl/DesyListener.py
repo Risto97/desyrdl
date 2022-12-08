@@ -182,7 +182,7 @@ class DesyListener(RDLListener):
 
             context = dict()
 
-            addrmap_segments    = regx.owning_addrmap.get_path_segments(array_suffix='.{index:d}')
+            addrmap_segments    = regx.owning_addrmap.get_path_segments(array_suffix=f'{self.separator}{{index:d}}')
             addrmap             = addrmap_segments[-1]
             # full path of the addrmap only
             addrmap_full = self.separator.join(addrmap_segments)
@@ -215,32 +215,32 @@ class DesyListener(RDLListener):
                     if len(regx.parent.array_dimensions) == 2:
                         cur_n = regx.parent.current_idx[0]
                         cur_m = regx.parent.current_idx[1]
-                        context["name"] = f'{name}_{cur_n}_{cur_m}_{regx.inst_name}'
-                        context["addrmap_name"] = f'{addrmap}{self.separator}{name}_{cur_n}_{cur_m}_{regx.inst_name}'
-                        context["addrmap_full_name"] = f'{addrmap_full}{self.separator}{name}_{cur_n}_{cur_m}_{regx.inst_name}'
-                        context["addrmap_full_notop_name"] = f'{addrmap_full_notop}{self.separator}{name}_{cur_n}_{cur_m}_{regx.inst_name}'
+                        context["name"] = self.separator.join([name, str(cur_n), str(cur_m), regx.inst_name])
+                        context["addrmap_name"] = self.separator.join([addrmap, name, str(cur_n), str(cur_m), regx.inst_name])
+                        context["addrmap_full_name"] = self.separator.join([addrmap_full, name, str(cur_n), str(cur_m), regx.inst_name])
+                        context["addrmap_full_notop_name"] = self.separator.join([addrmap_full_notop, name, str(cur_n), str(cur_m), regx.inst_name])
                     elif len(regx.parent.array_dimensions) == 1:
                         cur_m = regx.parent.current_idx[0]
-                        context["name"] = f'{name}_{cur_m}_{regx.inst_name}'
-                        context["addrmap_name"] = f'{addrmap}{self.separator}{name}_{cur_m}_{regx.inst_name}'
-                        context["addrmap_full_name"] = f'{addrmap_full}{self.separator}{name}_{cur_m}_{regx.inst_name}'
-                        context["addrmap_full_notop_name"] = f'{addrmap_full_notop}{self.separator}{name}_{cur_m}_{regx.inst_name}'
+                        context["name"] = self.separator.join([name, str(cur_m), regx.inst_name])
+                        context["addrmap_name"] = self.separator.join([addrmap, name, str(cur_m), regx.inst_name])
+                        context["addrmap_full_name"] = self.separator.join([addrmap_full, name, str(cur_m), regx.inst_name])
+                        context["addrmap_full_notop_name"] = self.separator.join([addrmap_full_notop, name, str(cur_m), regx.inst_name])
                     else:
                         raise Exception('Unhandled number of array dimensions')
                 # No array
                 else:
                     context["name"] = regx.inst_name
-                    context["addrmap_name"] = f'{addrmap}{self.separator}{name}_{regx.inst_name}'
-                    context["addrmap_full_name"] = f'{addrmap_full}{self.separator}{name}_{regx.inst_name}'
-                    context["addrmap_full_notop_name"] = f'{addrmap_full_notop}{self.separator}{name}_{regx.inst_name}'
+                    context["addrmap_name"] = self.separator.join([addrmap, name, regx.inst_name])
+                    context["addrmap_full_name"] = self.separator.join([addrmap_full, name, regx.inst_name])
+                    context["addrmap_full_notop_name"] = self.separator.join([addrmap_full_notop, name, regx.inst_name])
 
                 context["reladdr"] = regx.parent.address_offset + regx.address_offset
             # Normal register, not inside a regfile or memory
             else:
                 context["name"] = regx.inst_name
-                context["addrmap_name"] = f'{addrmap}{self.separator}{regx.inst_name}'
-                context["addrmap_full_name"] = f'{addrmap_full}{self.separator}{regx.inst_name}'
-                context["addrmap_full_notop_name"] = f'{addrmap_full_notop}{self.separator}{regx.inst_name}'
+                context["addrmap_name"] = self.separator.join([addrmap, regx.inst_name])
+                context["addrmap_full_name"] = self.separator.join([addrmap_full, regx.inst_name])
+                context["addrmap_full_notop_name"] = self.separator.join([addrmap_full_notop, regx.inst_name])
                 context["reladdr"] = regx.address_offset
 
             context["type"] = regx.type_name
@@ -249,8 +249,6 @@ class DesyListener(RDLListener):
             context["addrmap_full_notop"] = addrmap_full_notop
             context["absaddr_base"] = regx.absolute_address
             context["absaddr_high"] = regx.absolute_address+int(regx.total_size)-1
-
-            # context["name_full_notop"] = "_".join([x.upper() for i,x in enumerate(addrmap_segments[1:])])
 
             context["reg"] = regx
             context["dim_n"] = dim_n
@@ -334,8 +332,6 @@ class DesyListener(RDLListener):
             context["absaddr_base"] = rfx.absolute_address
             context["absaddr_high"] = rfx.absolute_address+int(rfx.total_size)-1
 
-            # context["name_full_notop"] = "_".join([x.upper() for i,x in enumerate(addrmap_segments[1:])])
-
             context["regfile"] = rfx
             context["dim_n"] = dim_n
             context["dim_m"] = dim_m
@@ -368,7 +364,7 @@ class DesyListener(RDLListener):
 
             context = dict()
 
-            addrmap_segments = memx.get_path_segments(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap_segments = memx.get_path_segments(array_suffix=f'{self.separator}{{index:d}}', empty_array_suffix='')
             addrmap = addrmap_segments[-2]
             addrmap_name = self.separator.join(addrmap_segments[-2:])
             addrmap_full = self.separator.join(addrmap_segments[:-1])
@@ -385,8 +381,6 @@ class DesyListener(RDLListener):
             context["addrmap_full_name"] = addrmap_full_name
             context["addrmap_full_notop"] = addrmap_full_notop
             context["addrmap_full_notop_name"] = addrmap_full_notop_name
-
-            # context["name_full_notop"] = "_".join([x.upper() for i,x in enumerate(addrmap_segments[1:])])
 
             context["reladdr"] = memx.address_offset
             context["absaddr_base"] = memx.absolute_address
@@ -430,7 +424,7 @@ class DesyListener(RDLListener):
 
             context = dict()
 
-            addrmap_segments = extx.get_path_segments(array_suffix='.{index:d}', empty_array_suffix='')
+            addrmap_segments = extx.get_path_segments(array_suffix=f'{self.separator}{{index:d}}', empty_array_suffix='')
             addrmap = addrmap_segments[-2]
             addrmap_name = self.separator.join(addrmap_segments[-2:])
             addrmap_full = self.separator.join(addrmap_segments[:-1])
@@ -454,8 +448,6 @@ class DesyListener(RDLListener):
             md = desyrdlmarkup() # parse description with markup lanugage, disable Mardown
             context["desc"] = extx.get_property("desc")
             context["desc_html"] = extx.get_html_desc(md)
-
-            # context["name_full_notop"] = "_".join([x.upper() for i,x in enumerate(addrmap_segments[1:])])
 
             context["ext"] = extx
             context["size"] = int(extx.total_size)
