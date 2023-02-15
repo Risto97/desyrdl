@@ -22,13 +22,12 @@ Context dictionaries are used by the template engine.
 
 import re
 from math import ceil, log2
-from pathlib import Path
+from pathlib import Path, PurePath
 from systemrdl import AddressableNode, RDLListener
 from systemrdl.node import (AddrmapNode, FieldNode,  # AddressableNode,
                             MemNode, RegfileNode, RegNode, RootNode)
-
-from jinja2 import Template
-import desyrdl
+# import desyrdl
+import jinja2
 
 from desyrdl.rdlformatcode import desyrdlmarkup
 
@@ -74,6 +73,8 @@ class DesyListener(RDLListener):
         self.context['node'] = node
         self.context['type_name'] = node.type_name
         self.context['inst_name'] = node.inst_name
+        self.context['type_name_org'] = node.inst.original_def.type_name if node.inst.original_def is not None else node.type_name
+
         self.context['interface_type'] = node.get_property('desyrdl_interface')
         self.context['access_channel'] = self.get_access_channel(node)
 
@@ -248,7 +249,7 @@ class DesyListener(RDLListener):
         context['regs']  = list()
         self.gen_items(memx, context)
 
-            # =========================================================================
+    # =========================================================================
     def gen_rfitem (self, regf: RegfileNode, context):
         context['items']  = list()
         context['regs']  = list()
@@ -264,6 +265,7 @@ class DesyListener(RDLListener):
             mask |= (1 << i)
         return mask
 
+    # =========================================================================
     def to_int32(self,value):
         "make sure we have int32"
         masked = value & (pow(2,32)-1)
@@ -272,6 +274,7 @@ class DesyListener(RDLListener):
         else:
             return masked
 
+    # =========================================================================
     def get_ftype(self, node):
         # Expects FieldNode type
         assert isinstance(node, FieldNode)
@@ -289,6 +292,7 @@ class DesyListener(RDLListener):
             print("ERROR: can't make out the type of field for {}".format(node.get_path()))
             return "WIRE"
 
+    # =========================================================================
     def get_access_channel(self, node):
         # Starting point for finding the top node
         cur_node = node
@@ -307,6 +311,7 @@ class DesyListener(RDLListener):
                     raise
         return ch
 
+    # =========================================================================
     def get_data_type_sign(self, node):
         datatype = str(node.get_property("desyrdl_data_type") or '')
         pattern = '(^int.*|^fixed.*)'
@@ -315,6 +320,7 @@ class DesyListener(RDLListener):
         else:
             return 0
 
+    # =========================================================================
     def get_data_type_fixed(self, node):
         datatype = str(node.get_property("desyrdl_data_type") or '')
         pattern_fix = '.*fixed([-]*\d*)'
@@ -332,72 +338,55 @@ class DesyListener(RDLListener):
 
         return 0
 
-
+###############################################################################
 # Types, names and counts are needed. Clear after each exit_Addrmap
-class TemplateListener(DesyListener):
+class DesyRdlProcessor(DesyListener):
+
+    def __init__(self, tpl_dir, lib_dir, out_dir, out_formats):
+        super().__init__()
+
+        self.out_formats = out_formats
+        self.lib_dir = lib_dir
+        self.out_dir = out_dir
+
+        # create Jinja template loaders, one loader per output type
+        prefixLoaderDict = dict()
+        for out_format in out_formats:
+            prefixLoaderDict[out_format] =  jinja2.FileSystemLoader(Path(tpl_dir / out_format))
+        tplLoader = jinja2.PrefixLoader(prefixLoaderDict)
+
+        self.jinja2Env = jinja2.Environment(
+            loader=tplLoader,
+            autoescape=jinja2.select_autoescape()
+        )
+
+    # =========================================================================
     def exit_Addrmap(self, node : AddrmapNode):
         super().exit_Addrmap(node)
 
-#         if isinstance(node.parent, RootNode):
-#             print(" ---- Root name:" + str(node.inst_name))
+        # formats to generate per address mapp
+        if 'vhdl' in self.out_formats:
+            if node.get_property('desyrdl_generate_hdl') is None or \
+               node.get_property('desyrdl_generate_hdl') is True:
 
-        # generate if no property set or is set to true
-        # if node.get_property('desyrdl_generate_hdl') is None or \
-        #    node.get_property('desyrdl_generate_hdl') is True:
-        #     self.process_templates(node)
+                self.render_vhdl()
 
+        # formats to generate on top
+        # if isinstance(node.parent, RootNode):
+        #             print(" ---- Root name:" + str(node.inst_name))
 
-#         template= """========
-# {%- for item in items %}
-# {%- if item.type == "REGFILE" %}
-#         Regfile {% endif %}
-# {{ item.node.inst_name }} : {{ item.node.raw_absolute_address }} : {{ item.node.size }}
-# {%- endfor %}
-# ========"""
-#         template2= """
-# ========
-# {{path_notop}}
-# ========
-# {%- for reg in regs %}
-# {{ path_addrmap_name }}.{{ reg.inst_name }} : {{ reg.absolute_address }} : {{ reg.node.size }} - {{ reg.desc }}
-#         {%- for field in reg.fields %}
-#         {{ field.node.type_name }} [{{ field.node.high }}:{{ field.node.low}}]
-#         {%- endfor %}
-# {%- endfor %}
-# {%- for item in items %}
-# {%- if item.node_type == "REGFILE" %}
-#         REGFILE {{item.name}} {{item.path}}
-# {%- endif %}
-# {%- if item.node_type == "ADDRMAP" %}
-#        PARENT {{interface_type}}-{{ item.desyrdl_interface }} {{ item.inst_name }}
-# {%- endif %}
-# {%- endfor %}"""
-#         template3= """
-# ========
-# {{path_notop}}
-# ========
-# {%- for item in items %}
-#         {%- if item.dim == 0 and item.node_type == "REGFILE"  %}
-# REGFILE {{item.name}} {{item.path}}
-#         {%- for rfreg in item.regs %}
-#             REGISTER : {{rfreg.inst_name}}
-# {%- endfor %}
-#         {%- endif %}
-#         {%- for idx in range(item.dim_m) if item.dim == 1 and item.node_type == "REGFILE"  %}
+    # =========================================================================
+    def render_vhdl (self):
+        # get templates list and theyir ouput from include file
+        template = self.jinja2Env.get_template("vhdl/include.txt")
+        tpl_list = template.render(self.context).split()
 
-#         REGFILE {{item.name}}.{{idx}} {{item.path}}
-#              {%- for rfreg in item.regs %}
-#             REGISTER : {{rfreg.inst_name}}
-# {%- endfor %}
-#         {%- endfor %}
-# {%- endfor %}"""
-
-#         # print("--------")
-#         # print("Node name:" + str(node.inst_name))
-
-#         if isinstance(node.parent, RootNode):
-#             print(" ---- Root name:" + str(node.inst_name))
-
-#         j2_template = Template(template3)
-
-#         print(j2_template.render(self.context))
+        # render template list and save in out
+        for tplidx in range(0,len(tpl_list),2):
+            # get template
+            template = self.jinja2Env.get_template("vhdl/" + tpl_list[tplidx])
+            # create out dir if needed
+            outFilePath = Path(self.out_dir / tpl_list[tplidx+1])
+            outFilePath.parents[0].mkdir(exist_ok=True)
+            # render template and stream it directly to out file
+            template.stream(self.context).dump(str(outFilePath.resolve()))

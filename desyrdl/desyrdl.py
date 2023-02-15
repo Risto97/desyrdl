@@ -28,7 +28,9 @@ from systemrdl import RDLCompileError, RDLCompiler, RDLWalker  # RDLListener
 from systemrdl.node import (AddrmapNode, FieldNode, MemNode,  # AddressableNode
                             RegfileNode, RegNode, RootNode)
 
-from desyrdl.DesyListener import TemplateListener
+from desyrdl.DesyListener import DesyRdlProcessor
+
+# import jinja2
 
 # *****************************************************************************
 def main():
@@ -112,9 +114,8 @@ def main():
         sys.exit(2)
 
     # -------------------------------------------------------------------------
-    # walk over the tree and generate
     walker = RDLWalker(unroll=False)
-    listener = TemplateListener()
+    listener = DesyRdlProcessor(tpl_dir, lib_dir, out_dir, args.out_format)
     walker.walk(top_node, listener)
 
     # # ----------------------------------
