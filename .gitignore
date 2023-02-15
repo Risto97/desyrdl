@@ -5,3 +5,5 @@ __pycache__/
 # Distribution / packaging
 *.egg-info/
 *.eggs
+venv/
+test/out/
