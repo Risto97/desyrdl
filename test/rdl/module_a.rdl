@@ -13,7 +13,7 @@ addrmap submodule_a {
 addrmap module_a {
   name = "Example module A address space";
   desc = "Example provides all suported constructs by DesyRDL tool";
-  desyrdl_interface = "IBUS";
+  desyrdl_interface = "AXI4L";
 
   reg { //constant in user logic
     desc = "Identification number" ;

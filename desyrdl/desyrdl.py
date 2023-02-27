@@ -118,6 +118,16 @@ def main():
     listener = DesyRdlProcessor(tpl_dir, lib_dir, out_dir, args.out_format)
     walker.walk(top_node, listener)
 
+    generated_files = listener.get_generated_files()
+    for out_format in args.out_format:
+        # target file where to list all output files, either copied from
+        # libraries or generated
+        fname_out_list = Path(out_dir / f'gen_files_{out_format}.txt')
+        with fname_out_list.open('w') as f_out:
+            # copy all common files of the selected format into the out folder
+            for fname in generated_files[out_format]:
+                f_out.write(f'{fname!s}\n')
+
     # # ----------------------------------
     # # GENERATE OUT
     # # ----------------------------------

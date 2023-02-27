@@ -27,223 +27,140 @@ use desyrdl.common.all;
 -- library desy;
 -- use desy.common_axi.all;
 
-package pkg_{node.orig_type_name} is
+package pkg_{{type_name_org}} is
 
   -----------------------------------------------
   -- per addrmap / module
   -----------------------------------------------
-  constant C_ADDR_WIDTH : integer := {addrwidth};
+  constant C_ADDR_WIDTH : integer := {{addrwidth}};
   constant C_DATA_WIDTH : integer := 32;
 
   -- ===========================================================================
   -- ---------------------------------------------------------------------------
   -- registers
   -- ---------------------------------------------------------------------------
-  -- always add +1 for the dummy
-  constant C_REGTYPES_COUNT : integer := {n_regtypes};
-  constant C_REGITEMS_COUNT : integer := {n_regitems};
-  constant C_REGCOUNT_TOTAL : integer := {n_regcount};
-
-  -- registers type fields definition
-  --{regtypes:repeat:
-  constant C_{{name:upper}}_FIELDS : t_field_info_array(0 to 31) := ( --{{fields:repeat:
-    {{{{i}}}} => (ftype => {{{{ftype}}}}, len => {{{{field.width}}}}, upper => {{{{field.high}}}}, lower => {{{{field.low}}}}, we => {{{{we}}}}, sw => C_{{{{sw:upper}}}}, hw => C_{{{{hw:upper}}}},  defval => {{{{reset}}}}, decrwidth => {{{{decrwidth}}}}, incrwidth => {{{{incrwidth}}}}), -- {{{{field.inst_name}}}} --}}
-    others => C_FIELD_NONE
-  );
-  ----------}
-
-  -- register items
-  constant C_REGISTER_INFO : t_reg_info_array(0 to {n_regitems}) := ( --{regitems_with_regfiles:repeat:
-    {{i}} => (address => x"{{reladdr:08x}}", fields => C_{{type:upper}}_FIELDS, dim_n => {{dim_n}}, dim_m => {{dim_m}}, elements => {{elements}}, index => {{index}}), --}
-    others => C_REG_NONE
-  );
-
-  -- ---------------------------------------------------------------------------
-  -- memories
-  -- ---------------------------------------------------------------------------
-  -- always add +1 for the dummy
-  constant C_MEMITEMS_COUNT : integer := {n_memitems};
-
-  constant C_MEM_INFO : t_mem_info_array(0 to {n_memitems}) := ( --{memitems:repeat:
-    {{i}} => (address => x"{{reladdr:08x}}", addrwidth => {{addrwidth}}, datawidth => {{datawidth}}, entries => {{entries}}, sw => C_{{sw:upper}}), --}
-    others => C_MEM_NONE
-  );
-
-  -- ---------------------------------------------------------------------------
-  -- external buses
-  -- ---------------------------------------------------------------------------
-  -- always add +1 for the dummy
-  constant C_EXTITEMS_COUNT : integer := {n_extitems};
-
-  constant C_EXT_INFO : t_ext_info_array(0 to {n_extitems}) := ( --{extitems:repeat:
-    {{i}} => (address => x"{{reladdr:08x}}", addrwidth => {{addrwidth}}, size => {{size}}), --}
-    others => C_EXT_NONE
-  );
-
-
-  -- ===========================================================================
-  -- Writing a custom testbench is easier when there is a mapping from name to
-  -- index. It can be used to access the INFO arrays.
-  --{regitems_with_regfiles:repeat:
-  constant C_{{name:upper}}_ID : integer := {{i}}; --}
-  --{memitems:repeat:
-  constant C_{{name:upper}}_ID : integer := {{i}}; --}
-  --{extitems:repeat:
-  constant C_{{name:upper}}_ID : integer := {{i}}; --}
-
 
   -- ===========================================================================
   -- REGISTERS interface
-  -- ---------------------------------------------------------------------------
-  -- TODO: in fields --{{{{context:if:eq:we:1: we : std_logic;--}}}}
-  --{regtypes:repeat:
-  -----------------------------------------------
+  -- ---------------------------------------------------------------------------{% for regtype in reg_types %}
   -- register type: {{regtype.type_name}}
-  -----------------------------------------------
-  --{{fields:repeat:
-  type t_field_signals_{{{{regtype.type_name}}}}_{{{{field.type_name}}}}_in is record
-    data : std_logic_vector({{{{width}}}}-1 downto 0);
-    we   : std_logic;
+  -----------------------------------------------{% for field in regtype.fields %}
+  type t_field_signals_{{regtype.type_name}}_{{field.type_name}}_in is record
+    data : std_logic_vector({{field.width}}-1 downto 0); --{% if field.we %}
+    we   : std_logic; --{% endif %}{% if field.ftype == "COUNTER" %}
     incr : std_logic;
-    decr : std_logic;
+    decr : std_logic; --{% endif %}
   end record;
-  type t_field_signals_{{{{regtype.type_name}}}}_{{{{field.type_name}}}}_out is record
-    data : std_logic_vector({{{{width}}}}-1 downto 0);
+  type t_field_signals_{{regtype.type_name}}_{{field.type_name}}_out is record
+    data : std_logic_vector({{field.width}}-1 downto 0);
     swacc : std_logic;
     swmod : std_logic;
-  end record; --}}
+  end record; --{% endfor %}
   -- The actual register types
-  type t_reg_{{regtype.type_name}}_in is record --{{fields:repeat:
-    {{{{field.type_name}}}} : t_field_signals_{{{{regtype.type_name}}}}_{{{{field.type_name}}}}_in; --}}
+  type t_reg_{{regtype.type_name}}_in is record--{% for field in regtype.fields %}
+    {{field.type_name}} : t_field_signals_{{regtype.type_name}}_{{field.type_name}}_in;--{% endfor %}
   end record;
-  type t_reg_{{regtype.type_name}}_out is record --{{fields:repeat:
-    {{{{field.type_name}}}} : t_field_signals_{{{{regtype.type_name}}}}_{{{{field.type_name}}}}_out; --}}
+  type t_reg_{{regtype.type_name}}_out is record--{% for field in regtype.fields %}
+    {{field.type_name}} : t_field_signals_{{regtype.type_name}}_{{field.type_name}}_out;--{% endfor %}
   end record;
   type t_reg_{{regtype.type_name}}_2d_in is array (integer range <>) of t_reg_{{regtype.type_name}}_in;
   type t_reg_{{regtype.type_name}}_2d_out is array (integer range <>) of t_reg_{{regtype.type_name}}_out;
   type t_reg_{{regtype.type_name}}_3d_in is array (integer range <>, integer range <>) of t_reg_{{regtype.type_name}}_in;
   type t_reg_{{regtype.type_name}}_3d_out is array (integer range <>, integer range <>) of t_reg_{{regtype.type_name}}_out;
-  ------------------------------}
+  -----------------------------------------------{% endfor %}
 
   -- ===========================================================================
   -- REGFILE interface
   -- ---------------------------------------------------------------------------
-  --{regfiletypes:repeat:
-  -----------------------------------------------
-  -- regfile type: {{regfiletype.type_name}} (dev note: should be identical: {{name}})
-  type t_regfile_{{regfiletype.type_name}}_in is record
-    --{{regitems:repeat:{{{{context:if:eq:dim:1:
-    {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_in; --}}}}{{{{context:if:eq:dim:2:
-    {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_2d_in(0 to {{{{dim_m}}}}-1); --}}}}{{{{context:if:eq:dim:3:
-    {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_3d_in(0 to {{{{dim_n}}}}-1, 0 to {{{{dim_m}}}}-1); --}}}} }}
-  end record;
 
-  type t_regfile_{{regfiletype.type_name}}_out is record
-    --{{regitems:repeat:{{{{context:if:eq:dim:1:
-    {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_out; --}}}}{{{{context:if:eq:dim:2:
-    {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_2d_out(0 to {{{{dim_m}}}}-1); --}}}}{{{{context:if:eq:dim:3:
-    {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_3d_out(0 to {{{{dim_n}}}}-1, 0 to {{{{dim_m}}}}-1); --}}}} }}
-  end record;
-  type t_regfile_{{regfiletype.type_name}}_2d_in is array (integer range <>) of t_regfile_{{regfiletype.type_name}}_in;
-  type t_regfile_{{regfiletype.type_name}}_2d_out is array (integer range <>) of t_regfile_{{regfiletype.type_name}}_out;
-  type t_regfile_{{regfiletype.type_name}}_3d_in is array (integer range <>, integer range <>) of t_regfile_{{regfiletype.type_name}}_in;
-  type t_regfile_{{regfiletype.type_name}}_3d_out is array (integer range <>, integer range <>) of t_regfile_{{regfiletype.type_name}}_out;
-  ------------------------------}
+  ------------------------------
 
 
   -- ===========================================================================
   -- MEMORIES interface
-  -- ---------------------------------------------------------------------------
-  --{memtypes:repeat:
+  -- ---------------------------------------------------------------------------{% for mem in mem_types %}
+  -- memory type: {{mem.type_name}}
+  -----------------------------------------------
   type t_mem_{{mem.type_name}}_out is record
     en   : std_logic;
+    addr : std_logic_vector({{mem.addrwidth}}-1 downto 0);
+    --{% if mem.node.is_sw_writable %}
     we   : std_logic;
-    addr : std_logic_vector({{addrwidth}}-1 downto 0);
-    data : std_logic_vector({{datawidth}}-1 downto 0);
+    data : std_logic_vector({{mem.datawidth}}-1 downto 0);--{% endif %}
   end record t_mem_{{mem.type_name}}_out;
   type t_mem_{{mem.type_name}}_in is record
-    data : std_logic_vector({{datawidth}}-1 downto 0);
+    data : std_logic_vector({{mem.datawidth}}-1 downto 0);
   end record t_mem_{{mem.type_name}}_in;
-  --}
+  type t_mem_{{mem.type_name}}_2d_in is array (integer range <>) of t_mem_{{mem.type_name}}_in;
+  type t_mem_{{mem.type_name}}_2d_out is array (integer range <>) of t_mem_{{mem.type_name}}_out;
+  -----------------------------------------------{% endfor %}
 
   -- ===========================================================================
-  -- {node.orig_type_name} : Top module address map interface
+  -- {{type_name_org}} : Top module address map interface
   -- ---------------------------------------------------------------------------
-  type t_addrmap_{node.orig_type_name}_in is record
-    --{regitems:repeat:{{context:if:eq:dim:1:
-    {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_in; --}}{{context:if:eq:dim:2:
-    {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_2d_in(0 to {{{{dim_m}}}}-1); --}}{{context:if:eq:dim:3:
-    {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_3d_in(0 to {{{{dim_n}}}}-1, 0 to {{{{dim_m}}}}-1); --}}}
-    --{regfileitems:repeat:{{context:if:eq:dim:1:
-    {{{{regfile.inst_name}}}} : t_regfile_{{{{regfile.type_name}}}}_in; --}}{{context:if:eq:dim:2:
-    {{{{regfile.inst_name}}}} : t_regfile_{{{{regfile.type_name}}}}_2d_in(0 to {{{{dim_m}}}}-1); --}}{{context:if:eq:dim:3:
-    {{{{regfile.inst_name}}}} : t_regfile_{{{{regfile.type_name}}}}_3d_in(0 to {{{{dim_n}}}}-1, 0 to {{{{dim_m}}}}-1); --}}}
-    --{memitems:repeat:
-    {{mem.inst_name}} : t_mem_{{mem.type_name}}_in; --}
-    --{extitems:repeat:
-    {{ext.inst_name}} : t_{{desyrdl_interface:lower}}_s2m; --}
+  type t_addrmap_{{type_name_org}}_in is record
+    --{% for reg in reg_insts %}{% if reg.dim == 1 %}
+    {{reg.inst_name}} : t_reg_{{reg.type_name}}_in;--{% elif reg.dim == 2 %}
+    {{reg.inst_name}} : t_reg_{{reg.type_name}}_2d_in(0 to {{reg.dim_m}}-1);--{% elif reg.dim == 3 %}
+    {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_in(0 to {{reg.dim_n}}-1, 0 to {{reg.dim_m}}-1);--{% endif %}{% endfor %}
+    --{% for mem in mem_insts %}{% if mem.dim == 1 %}
+    {{mem.inst_name}} : t_mem_{{mem.type_name}}_in;--{% elif mem.dim == 2 %}
+    {{mem.inst_name}} : t_mem_{{mem.type_name}}_2d_in(0 to {{mem.dim_m}}-1);--{% endif %}{% endfor %}
+    --{% for ext in ext_insts %}{% if ext.dim == 1 %}
+    {{ext.inst_name}} : t_{{ext.interface|lower}}_s2m;--{% elif ext.dim == 2 %}
+    {{ext.inst_name}} : t_{{ext.interface|lower}}_s2m_array;--{% endif %}{% endfor %}
   end record;
 
-  type t_addrmap_{node.orig_type_name}_out is record
-    --{regitems:repeat:{{context:if:eq:dim:1:
-    {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_out; --}}{{context:if:eq:dim:2:
-    {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_2d_out(0 to {{{{dim_m}}}}-1); --}}{{context:if:eq:dim:3:
-    {{{{reg.inst_name}}}} : t_reg_{{{{reg.type_name}}}}_3d_out(0 to {{{{dim_n}}}}-1, 0 to {{{{dim_m}}}}-1); --}}}
-    --{regfileitems:repeat:{{context:if:eq:dim:1:
-    {{{{regfile.inst_name}}}} : t_regfile_{{{{regfile.type_name}}}}_out; --}}{{context:if:eq:dim:2:
-    {{{{regfile.inst_name}}}} : t_regfile_{{{{regfile.type_name}}}}_2d_out(0 to {{{{dim_m}}}}-1); --}}{{context:if:eq:dim:3:
-    {{{{regfile.inst_name}}}} : t_refileg_{{{{regfile.type_name}}}}_3d_out(0 to {{{{dim_n}}}}-1, 0 to {{{{dim_m}}}}-1); --}}}
-    --{memitems:repeat:
-    {{mem.inst_name}} : t_mem_{{mem.type_name}}_out; --}
-    --{extitems:repeat:
-    {{ext.inst_name}} : t_{{desyrdl_interface:lower}}_m2s; --}
+  type t_addrmap_{{type_name_org}}_out is record
+    --{% for reg in reg_insts %}{% if reg.dim == 1 %}
+    {{reg.inst_name}} : t_reg_{{reg.type_name}}_out;--{% elif reg.dim == 2 %}
+    {{reg.inst_name}} : t_reg_{{reg.type_name}}_2d_out(0 to {{reg.dim_m}}-1);--{% elif reg.dim == 3 %}
+    {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_out(0 to {{reg.dim_n}}-1, 0 to {{reg.dim_m}}-1);--{% endif %}{% endfor %}
+    --{% for mem in mem_insts %}{% if mem.dim == 1 %}
+    {{mem.inst_name}} : t_mem_{{mem.type_name}}_out;--{% elif mem.dim == 2 %}
+    {{mem.inst_name}} : t_mem_{{mem.type_name}}_2d_out(0 to {{mem.dim_m}}-1);--{% endif %}{% endfor %}
+    --{% for ext in ext_insts %}{% if ext.dim == 1 %}
+    {{ext.inst_name}} : t_{{ext.interface|lower}}_m2s;--{% elif ext.dim == 2 %}
+    {{ext.inst_name}} : t_{{ext.interface|lower}}_m2s_array;--{% endif %}{% endfor %}
   end record;
 
   -- ===========================================================================
   -- top level component declaration
   -- must come after defining the interfaces
   -- ---------------------------------------------------------------------------
-  subtype t_{node.orig_type_name}_m2s is t_{desyrdl_interface:lower}_m2s;
-  subtype t_{node.orig_type_name}_s2m is t_{desyrdl_interface:lower}_s2m;
+  subtype t_{{type_name_org}}_m2s is t_{{interface|lower}}_m2s;
+  subtype t_{{type_name_org}}_s2m is t_{{interface|lower}}_s2m;
 
-  component {node.orig_type_name} is
-    port (
-      pi_clock : in std_logic;
-      pi_reset : in std_logic;
+  component {{type_name_org}} is
+      port (
+        pi_clock : in std_logic;
+        pi_reset : in std_logic;
+        -- TOP subordinate memory mapped interface
+        pi_s_top  : in  t_{{type_name_org}}_m2s;
+        po_s_top  : out t_{{type_name_org}}_s2m;
+        -- to logic interface
+        pi_addrmap : in  t_addrmap_{{type_name_org}}_in;
+        po_addrmap : out t_addrmap_{{type_name_org}}_out
+      );
+  end component {{type_name_org}};
 
-      -- TOP interface
-      pi_s_top : in  t_{node.orig_type_name}_m2s;
-      po_s_top : out t_{node.orig_type_name}_s2m;
-      -- pi_s_top : in  t_{desyrdl_interface:lower}_m2s;
-      -- po_s_top : out t_{desyrdl_interface:lower}_s2m;
-
-      -- logic
-      pi_addrmap : in  t_addrmap_{node.orig_type_name}_in;
-      po_addrmap : out t_addrmap_{node.orig_type_name}_out
-    );
-  end component {node.orig_type_name};
-
-end package pkg_{node.orig_type_name};
-
-package body pkg_{node.orig_type_name} is
-
+end package pkg_{{type_name_org}};
+--------------------------------------------------------------------------------
+package body pkg_{{type_name_org}} is
 end package body;
 
 --==============================================================================
 --------------------------------------------------------------------------------
-
---{regtypes:repeat:---------------------------------------------
+--{% for regtype in reg_types %}
 -- register type: {{regtype.type_name}}
 -----------------------------------------------
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-library desyrdl;
-use desyrdl.pkg_{node.orig_type_name}.all;
+use work.pkg_{{type_name_org}}.all;
 
-entity {node.type_name}_{{regtype.type_name}} is
+entity {{type_name_org}}_{{regtype.type_name}} is
   port (
     pi_clock        : in  std_logic;
     pi_reset        : in  std_logic;
@@ -256,52 +173,70 @@ entity {node.type_name}_{{regtype.type_name}} is
     pi_reg  : in t_reg_{{regtype.type_name}}_in ;
     po_reg  : out t_reg_{{regtype.type_name}}_out
   );
-end entity {node.type_name}_{{regtype.type_name}};
+end entity {{type_name_org}}_{{regtype.type_name}};
 
-architecture rtl of {node.type_name}_{{regtype.type_name}} is
+architecture rtl of {{type_name_org}}_{{regtype.type_name}} is
   signal data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
 begin
-
   -- resize field data out to the register bus width
-  -- do only if 1 field and signed{{context:if:eq:map_out:0:
-  po_decoder_data <= data_out;}}{{context:if:eq:map_out:1:
-  po_decoder_data <= data_out;}}{{context:if:eq:map_out:2:
-  po_decoder_data <= std_logic_vector(resize(signed(data_out(C_{{regtype.type_name:upper}}_FIELDS(0).upper downto C_{{regtype.type_name:upper}}_FIELDS(0).lower)),C_DATA_WIDTH));--}}
-  --{{fields:repeat:{{{{context:if:eq:ftype:STORAGE:
-  {{{{{{{{name}}}}}}}}_storage : entity work.reg_field_storage
-    generic map(
-      g_info => C_{{name:upper}}_FIELDS({{{{{{{{i}}}}}}}})
-    )
-    port map (
-      pi_clock     => pi_clock,
-      pi_reset     => pi_reset,
-      pi_sw_rd_stb => pi_decoder_rd_stb,
-      pi_sw_wr_stb => pi_decoder_wr_stb,
-      pi_sw_data   => pi_decoder_data({{{{{{{{field.high}}}}}}}} downto {{{{{{{{field.low}}}}}}}}),
-      po_sw_data   => data_out({{{{{{{{field.high}}}}}}}} downto {{{{{{{{field.low}}}}}}}}),
-      pi_hw_we     => pi_reg.{{{{{{{{name}}}}}}}}.we,
-      pi_hw_data   => pi_reg.{{{{{{{{name}}}}}}}}.data({{{{{{{{field.width}}}}}}}}-1 downto 0),
-      po_hw_data   => po_reg.{{{{{{{{name}}}}}}}}.data({{{{{{{{field.width}}}}}}}}-1 downto 0),
-      po_hw_swmod  => po_reg.{{{{{{{{name}}}}}}}}.swmod,
-      po_hw_swacc  => po_reg.{{{{{{{{name}}}}}}}}.swacc
-    );--}}}}{{{{context:if:eq:ftype:WIRE:
-  {{{{{{{{name}}}}}}}}_wire : block
+  -- do only if 1 field and signed--{% if regtype.signed == 1 and regtype.fields_count == 1%}
+  po_decoder_data <= std_logic_vector(resize(signed(data_out({{regtype.fields[0].high}} downto {{regtype.fields[0].low}})),C_DATA_WIDTH));--{% else %}
+  po_decoder_data <= data_out;--{% endif %}
+
+  ----------------------------------------------------------{% for field in regtype.fields %}{% if field.ftype == "STORAGE" %}
+  {{field.type_name}}_storage: block
+    signal l_field_reg   : std_logic_vector({{field.width}}-1 downto 0);
+    signal l_sw_wr_stb_q : std_logic;
+    signal l_sw_rd_stb_q : std_logic;
+  begin
+    prs_write : process(pi_clock)
+    begin
+      if rising_edge(pi_clock) then
+        if pi_reset = '1' then
+          l_field_reg <= std_logic_vector(to_signed({{field.reset}},{{field.width}}));
+          l_sw_wr_stb_q <= '0';
+          l_sw_rd_stb_q <= '0';
+        else
+          -- TODO handle software access side effects (rcl/rset, woclr/woset, swacc/swmod)
+          --{% if field.node.is_sw_writable %} Writable by software
+          if pi_decoder_wr_stb = '1' then
+            l_field_reg <= pi_decoder_data({{field.high}} downto {{field.low}});
+          end if;
+          l_sw_wr_stb_q <= pi_decoder_wr_stb;
+          --{% endif %}
+          --{% if field.we and field.node.is_hw_writable %} Writable by hardware
+          if pi_reg.{{field.type_name}}.we = '1' then
+            l_field_reg <= pi_reg.{{field.type_name}}.data;
+          end if;
+          --{% elif field.node.is_hw_writable %}
+          l_field_reg <= pi_reg.{{field.type_name}}.data;
+          --{% endif %}
+          l_sw_rd_stb_q <= pi_decoder_rd_stb;
+        end if;
+      end if;
+    end process;
+
+    po_reg.{{field.type_name}}.swacc <= (not l_sw_wr_stb_q and pi_decoder_wr_stb) or (not l_sw_rd_stb_q and pi_decoder_rd_stb ) when rising_edge(pi_clock);
+    --{% if field.sw == "w" or field.sw == "rw" %}
+    po_reg.{{field.type_name}}.swmod <= (not l_sw_wr_stb_q and pi_decoder_wr_stb) when rising_edge(pi_clock);--{% endif %}
+
+    data_out({{field.high}} downto {{field.low}}) <= l_field_reg;
+
+  end block {{field.type_name}}_storage;
+
+  ----------------------------------------------------------
+  --{% elif field.ftype == "WIRE" %}
+  {{field.type_name}}_wire : block
     signal decoder_rd_stb_q : std_logic;
   begin
-    hw_assign : if  {{{{{{{{const}}}}}}}} = 0 generate
-      data_out({{{{{{{{field.high}}}}}}}} downto {{{{{{{{field.low}}}}}}}}) <= pi_reg.{{{{{{{{name}}}}}}}}.data({{{{{{{{field.width}}}}}}}}-1 downto 0);
-    end generate;
-    const : if  {{{{{{{{const}}}}}}}} = 1 generate
-      data_out({{{{{{{{field.high}}}}}}}} downto {{{{{{{{field.low}}}}}}}}) <= std_logic_vector(to_signed({{{{{{{{reset}}}}}}}},{{{{{{{{field.width}}}}}}}}));
-    end generate;
-    po_reg.{{{{{{{{name}}}}}}}}.data  <= data_out({{{{{{{{field.high}}}}}}}} downto {{{{{{{{field.low}}}}}}}});
-    po_reg.{{{{{{{{name}}}}}}}}.swmod <= '0';
-    po_reg.{{{{{{{{name}}}}}}}}.swacc <= '1' when pi_decoder_rd_stb = '1' and decoder_rd_stb_q = '0' else '0';
+    --{% if field.const == 1%}
+    data_out({{field.high}} downto {{field.low}}) <= std_logic_vector(to_signed({{field.reset}},{{field.width}}));--{% else %}
+    data_out({{field.high}} downto {{field.low}}) <= pi_reg.{{field.type_name}}.data({{field.width}}-1 downto 0);--{% endif %}
+
+    po_reg.{{field.type_name}}.data  <= data_out({{field.high}} downto {{field.low}});
+    po_reg.{{field.type_name}}.swmod <= '0';
+    po_reg.{{field.type_name}}.swacc <= '1' when pi_decoder_rd_stb = '1' and decoder_rd_stb_q = '0' else '0';
     decoder_rd_stb_q <= pi_decoder_rd_stb when rising_edge(pi_clock);
-  end block;--}}}}
-  --}}
+  end block;--{% endif %}{% endfor %}
 end rtl;
---}
-
-
-
+-----------------------------------------------{% endfor %}

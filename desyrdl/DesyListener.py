@@ -22,7 +22,7 @@ Context dictionaries are used by the template engine.
 
 import re
 from math import ceil, log2
-from pathlib import Path, PurePath
+from pathlib import Path
 from systemrdl import AddressableNode, RDLListener
 from systemrdl.node import (AddrmapNode, FieldNode,  # AddressableNode,
                             MemNode, RegfileNode, RegNode, RootNode)
@@ -53,30 +53,50 @@ class DesyListener(RDLListener):
         self.top_context = dict()
 
         # local address map contect only
-        self.items = list()
-        self.regs = list()
-        self.mems = list()
-        self.exts = list()
-        self.regf = list()
+        # self.items = list()
+        # self.regs = list()
+        # self.mems = list()
+        # self.exts = list()
+        # self.regf = list()
         self.context = dict()
 
         self.md = desyrdlmarkup() # parse description with markup lanugage, disable Mardown
 
+    # =========================================================================
     def exit_Addrmap(self, node : AddrmapNode):
         self.context.clear();
-        self.context['items'] = list()
+        self.context['insts'] = list()
+        self.context['reg_insts'] = list()
+        self.context['mem_insts'] = list()
+        self.context['ext_insts'] = list()
+        self.context['rgf_insts'] = list()
+        self.context['reg_types'] = list()
+        self.context['mem_types'] = list()
+        self.context['ext_types'] = list()
+        self.context['rgf_types'] = list()
+        self.reg_types = list()
+        self.mem_types = list()
+        self.ext_types = list()
+        self.rgf_types = list()
+
         self.context['regs']  = list()
         self.context['mems']  = list()
         self.context['exts']  = list()
         self.context['regf']  = list()
+        self.context['n_regs'] = 0
+        self.context['n_mems'] = 0
+        self.context['n_exts'] = 0
+        self.context['n_regf'] = 0
 
+        #------------------------------------------
         self.context['node'] = node
         self.context['type_name'] = node.type_name
         self.context['inst_name'] = node.inst_name
         self.context['type_name_org'] = node.inst.original_def.type_name if node.inst.original_def is not None else node.type_name
 
-        self.context['interface_type'] = node.get_property('desyrdl_interface')
+        self.context['interface'] = node.get_property('desyrdl_interface')
         self.context['access_channel'] = self.get_access_channel(node)
+        self.context['addrwidth']=ceil(log2(node.size))
 
         self.context['desc'] = node.get_property("desc")
         self.context['desc_html'] = node.get_html_desc(self.md)
@@ -87,15 +107,58 @@ class DesyListener(RDLListener):
         self.context['path_notop'] = self.separator.join(path_segments[1:])
         self.context['path_addrmap_name'] = path_segments[-1]
 
+        #------------------------------------------
         self.gen_items(node, self.context)
+        self.context['regs'] = list(self.unroll_inst('reg_insts',self.context))
+        self.context['mems'] = list(self.unroll_inst('mem_insts',self.context))
+        self.context['regf'] = list(self.unroll_inst('rgf_insts',self.context))
+        self.context['exts'] = list(self.unroll_inst('ext_insts',self.context))
 
-        self.top_items.append(self.context['items'])
-        self.top_regs.append(self.context['regs'])
-        self.top_mems.append(self.context['mems'])
-        self.top_exts.append(self.context['exts'])
-        self.top_regf.append(self.context['regf'])
+        #------------------------------------------
+        self.context['n_reg_insts'] = len(self.context['reg_insts'])
+        self.context['n_mem_insts'] = len(self.context['mem_insts'])
+        self.context['n_ext_insts'] = len(self.context['ext_insts'])
+        self.context['n_rgf_insts'] = len(self.context['rgf_insts'])
 
-    def gen_items (self, node , context):
+        self.context['n_regs'] = len(self.context['regs'])
+        self.context['n_mems'] = len(self.context['mems'])
+        self.context['n_exts'] = len(self.context['exts'])
+        self.context['n_regf'] = len(self.context['regf'])
+
+        # for type in self.context['reg_types']:
+        #     print(type['type_name'])
+        #     for field in type['fields']:
+        #         print(field)
+
+        # print(self.context['reg_types'])
+        # print(type(self.context['reg_types']))
+        # self.top_items.append(self.context['items'])
+        # self.top_regs.append(self.context['regs_items'])
+        # self.top_mems.append(self.context['mems_items'])
+        # self.top_exts.append(self.context['exts_items'])
+        # self.top_regf.append(self.context['regf_items'])
+
+    # =========================================================================
+    def unroll_inst(self, insts, context):
+        # unroll all registers in addrmap + regfilex and recalculate index for insts
+        index = 0
+        idx_insts = list ()
+        for inst in context[insts]:
+            inst['idx'] = index
+            idx_insts.append(inst)
+            for idx in range(inst['elements']):
+                instc = inst.copy()
+                instc['idx'] = index
+                instc['address_offset'] = inst['address_offset'] + inst['array_stride'] * idx
+                instc['absolute_address'] = inst['absolute_address'] + inst['array_stride'] * idx
+                yield(instc)
+                index += 1
+
+        context[insts] = idx_insts
+
+
+    # =========================================================================
+    def gen_items (self, node, context):
 
         for item in node.children(unroll=False):
             itemContext = dict()
@@ -105,7 +168,9 @@ class DesyListener(RDLListener):
             itemContext['inst_name'] = item.inst_name
             itemContext['access_channel'] = self.get_access_channel(item)
             itemContext['address_offset'] = item.raw_address_offset
-            itemContext['absolute_address'] = item.raw_address_offset
+            itemContext['address_offset_high'] = item.raw_address_offset + int(item.total_size)-1
+            itemContext['absolute_address'] = item.raw_absolute_address
+            itemContext['absolute_address_high'] = item.raw_absolute_address + int(item.total_size)-1
             itemContext['array_stride'] = item.array_stride if item.array_stride is not None else 0
 
             itemContext['desc'] = item.get_property("desc")
@@ -121,41 +186,54 @@ class DesyListener(RDLListener):
             if isinstance(item, RegNode):
                 itemContext['node_type'] = "REG"
                 self.gen_regitem(item, context=itemContext)
-                context['regs'].append(itemContext)
+                context['reg_insts'].append(itemContext)
+                if item.type_name not in self.reg_types:
+                    self.reg_types.append(item.type_name)
+                    self.context['reg_types'].append(itemContext)
 
             elif isinstance(item, MemNode):
                 itemContext['node_type'] =  "MEM"
                 self.gen_memitem(item, context=itemContext)
-                context['mems'].append(itemContext)
+                context['mem_insts'].append(itemContext)
+                if item.type_name not in self.mem_types:
+                    self.mem_types.append(item.type_name)
+                    self.context['mem_types'].append(itemContext)
 
             elif isinstance(item, AddrmapNode):
                 itemContext['node_type'] = "ADDRMAP"
-                context['exts'].append(itemContext)
+                self.gen_extitem(item, context=itemContext)
+                context['ext_insts'].append(itemContext)
+                if item.type_name not in self.ext_types:
+                    self.ext_types.append(item.type_name)
+                    self.context['ext_types'].append(itemContext)
 
             elif isinstance(item, RegfileNode):
                  itemContext['node_type'] = "REGFILE"
                  self.gen_rfitem(item, context=itemContext)
-                 context['regf'].append(itemContext)
+                 context['rgf_insts'].append(itemContext)
+                 if item.type_name not in self.rgf_types:
+                    self.rgf_types.append(item.type_name)
+                    self.context['rgf_types'].append(itemContext)
 
             # append item contect to items list
-            context['items'].append(AttributeDict(itemContext))
+            context['insts'].append(AttributeDict(itemContext))
 
     # =========================================================================
     def set_item_dimmentions(self, item: AddressableNode, itemContext: dict):
         #-------------------------------------
         dim_n = 1
         dim_m = 1
-        dim = 0
+        dim = 1
 
         if item.is_array:
             if len(item.array_dimensions) == 2:
                 dim_n = item.array_dimensions[0]
                 dim_m = item.array_dimensions[1]
-                dim = 2
+                dim = 3
             elif len(item.array_dimensions) == 1:
                 dim_n = 1
                 dim_m = item.array_dimensions[0]
-                dim = 1
+                dim = 2
 
         itemContext["elements"] = dim_n * dim_m
         itemContext["dim_n"] = dim_n
@@ -164,8 +242,11 @@ class DesyListener(RDLListener):
 
 
     # =========================================================================
-    # def gen_extitem (self, extx: AddrmapNode, context):
-    #     extx.get_property("desyrdl_interface")
+    def gen_extitem (self, extx: AddrmapNode, context):
+        context['interface'] = extx.get_property('desyrdl_interface')
+        context['access_channel'] = self.get_access_channel(extx)
+        context['addrwidth']=ceil(log2(extx.size))
+
 
     # =========================================================================
     def gen_regitem (self, regx: RegNode, context):
@@ -205,10 +286,15 @@ class DesyListener(RDLListener):
         context["reset"] = reset
         context["reset_hex"] = hex(reset)
         context["fields"] = fields
+        context["fields_count"] = len(fields)
 
     # =========================================================================
     def gen_fielditem (self, fldx: FieldNode, context):
+        for prop in fldx.list_properties(list_all=True):
+            context[prop] = fldx.get_property(prop)
         context['node']  = fldx
+        context['type_name'] = fldx.type_name
+        context['inst_name'] = fldx.inst_name
         context["ftype"] = self.get_ftype(fldx)
         context["width"] = fldx.get_property("fieldwidth")
         context["sw"] = fldx.get_property("sw").name
@@ -222,6 +308,8 @@ class DesyListener(RDLListener):
         context["const"] = 1 if fldx.get_property("hw").name == "na" or fldx.get_property("hw").name == "r" else 0
         context["reset"] = 0 if fldx.get_property("reset") is None else self.to_int32(fldx.get_property("reset"))
         context["reset_hex"] = hex(context["reset"])
+        context["low"] = fldx.low
+        context["high"] = fldx.high
         context["decrwidth"] = fldx.get_property("decrwidth") if fldx.get_property("decrwidth") is not None else 1
         context["incrwidth"] = fldx.get_property("incrwidth") if fldx.get_property("incrwidth") is not None else 1
         context["dtype"] = fldx.get_property("desyrdl_data_type") or "uint"
@@ -245,15 +333,20 @@ class DesyListener(RDLListener):
             context["rw"] = "WO"
         else:
             context["rw"] = "RW"
-        context['items']  = list()
+        context['insts']  = list()
+        context['reg_insts']  = list()
         context['regs']  = list()
         self.gen_items(memx, context)
+        context['regs'] = self.unroll_inst('reg_insts',context)
+
 
     # =========================================================================
     def gen_rfitem (self, regf: RegfileNode, context):
-        context['items']  = list()
+        context['insts']  = list()
+        context['reg_insts'] = list()
         context['regs']  = list()
         self.gen_items(regf, context)
+        context['regs'] = self.unroll_inst('reg_insts',context)
 
     # =========================================================================
     def bitmask(self,width):
@@ -349,16 +442,26 @@ class DesyRdlProcessor(DesyListener):
         self.lib_dir = lib_dir
         self.out_dir = out_dir
 
+        self.generated_files = dict()
+        self.generated_files['vhdl'] = list()
+
         # create Jinja template loaders, one loader per output type
         prefixLoaderDict = dict()
         for out_format in out_formats:
             prefixLoaderDict[out_format] =  jinja2.FileSystemLoader(Path(tpl_dir / out_format))
+            prefixLoaderDict[out_format+"_lib"] =  jinja2.FileSystemLoader(Path(lib_dir / out_format))
         tplLoader = jinja2.PrefixLoader(prefixLoaderDict)
 
         self.jinja2Env = jinja2.Environment(
             loader=tplLoader,
-            autoescape=jinja2.select_autoescape()
+            autoescape=jinja2.select_autoescape(),
+            undefined=jinja2.StrictUndefined,
+            line_statement_prefix="--#"
         )
+
+    # =========================================================================
+    def get_generated_files(self):
+        return self.generated_files
 
     # =========================================================================
     def exit_Addrmap(self, node : AddrmapNode):
@@ -369,24 +472,26 @@ class DesyRdlProcessor(DesyListener):
             if node.get_property('desyrdl_generate_hdl') is None or \
                node.get_property('desyrdl_generate_hdl') is True:
 
-                self.render_vhdl()
+                self.render_templates(loader="vhdl", outdir="vhdl")
 
         # formats to generate on top
-        # if isinstance(node.parent, RootNode):
-        #             print(" ---- Root name:" + str(node.inst_name))
+        if isinstance(node.parent, RootNode):
+            if 'vhdl' in self.out_formats:
+                self.render_templates(loader="vhdl_lib", outdir="vhdl")
 
     # =========================================================================
-    def render_vhdl (self):
+    def render_templates (self, loader, outdir):
         # get templates list and theyir ouput from include file
-        template = self.jinja2Env.get_template("vhdl/include.txt")
+        template = self.jinja2Env.get_template(loader +"/include.txt")
         tpl_list = template.render(self.context).split()
 
         # render template list and save in out
         for tplidx in range(0,len(tpl_list),2):
             # get template
-            template = self.jinja2Env.get_template("vhdl/" + tpl_list[tplidx])
+            template = self.jinja2Env.get_template(loader + "/" + tpl_list[tplidx])
             # create out dir if needed
-            outFilePath = Path(self.out_dir / tpl_list[tplidx+1])
-            outFilePath.parents[0].mkdir(exist_ok=True)
+            outFilePath = Path(self.out_dir / outdir / tpl_list[tplidx+1])
+            outFilePath.parents[0].mkdir(parents=True,exist_ok=True)
             # render template and stream it directly to out file
             template.stream(self.context).dump(str(outFilePath.resolve()))
+            self.generated_files[outdir].append(outFilePath)
