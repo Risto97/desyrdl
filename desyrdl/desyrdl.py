@@ -24,6 +24,7 @@ import sys
 from pathlib import Path
 from shutil import copy
 
+from systemrdl.messages import MessageHandler, MessagePrinter, Severity
 from systemrdl import RDLCompileError, RDLCompiler, RDLWalker  # RDLListener
 from systemrdl.node import (AddrmapNode, FieldNode, MemNode,  # AddressableNode
                             RegfileNode, RegNode, RootNode)
@@ -69,20 +70,24 @@ def main():
 
     args = argParser.parse_args()
 
+    # compiler print log
+    msg_severity = Severity(5)
+    msg_printer = MessagePrinter()
+    # msg = MessageHandler(msg_printer)
     # -------------------------------------------------------------------------
     # setup variables
     # basedir = Path(__file__).parent.absolute()
     if args.tpl_dir is None:
         tpl_dir = Path(__file__).parent.resolve() / "./templates"
-        print('INFO: Using default templates directory: ' + str(tpl_dir))
+        msg_printer.print_message(msg_severity.INFO , "Using default templates directory:" + str(tpl_dir), src_ref=None)
     else:
         tpl_dir = Path(args.tpl_dir).resolve()
-        print('INFO: Using custom templates directory ' + str(tpl_dir))
+        msg_printer.print_message(msg_severity.INFO , "Using custom templates directory:" + str(tpl_dir), src_ref=None)
 
     # location of libraries that are provided for SystemRDL and each output
     # format
     lib_dir = Path(__file__).parent.resolve() / "./libraries"
-    print('INFO: Taking common libraries from ' + str(lib_dir))
+    msg_printer.print_message(msg_severity.INFO , "Taking common libraries from " + str(lib_dir), src_ref=None)
 
     out_dir = Path(args.out_dir).resolve()
     out_dir.mkdir(exist_ok=True)
@@ -102,7 +107,6 @@ def main():
         root = rdlc.elaborate()
     except Exception as e:  # RDLCompileError
         # A compilation error occurred. Exit with error code
-        print('\nERROR: Failed to compile RDL files: ' + str(e))
         sys.exit(1)
 
     # -------------------------------------------------------------------------
@@ -224,3 +228,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    

@@ -76,6 +76,17 @@ addrmap module_a {
   INFO INFO_NEW[4]; // new 4D table of INFO register
   INFO_NEW.data->reset = 32'd10; // change default value of data filed of INFO register type
 
+  reg { // counter register, sw and hw can read
+		default sw = r;
+		default hw = r;
+    default hwclr = true; // clear signal
+		field {counter;} cnt_a[16]; // default inc counter with incrvalue=1
+		field {
+      counter;
+      incrwidth=4;
+    } cnt_b[16]; //dynamic value, if incrwidth > 0 then use field signal of width incrwidth
+	} COUNTER ;
+
   external mem { // memory, always external for HW implementation
     memwidth = 32;
     mementries = 64;
