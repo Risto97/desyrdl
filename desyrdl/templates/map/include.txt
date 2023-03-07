@@ -1,4 +1,6 @@
-# lines starting with a '#' are ignored
-# format: <template file> <output file string template>
-mapfile.mapp.in mapfile_ch{desyrdl_access_channel}.mapp
-mapfile.mapt.in mapfile_ch{desyrdl_access_channel}.mapt
+{#- jinja2 template format #}
+{#- list of input template files and it output name #}
+{#- format: <template file> <output file string template> -#}
+{# pkg.vhd.in {{inst_name}}/pkg_{{type_name_org}}.vhd #}
+mapfile.mapp.jinja2 mapfile_ch{{access_channel}}.mapp
+mapfile.mapt.jinja2 mapfile_ch{{access_channel}}.mapt

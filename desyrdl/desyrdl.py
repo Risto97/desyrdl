@@ -77,12 +77,14 @@ def main():
     # -------------------------------------------------------------------------
     # setup variables
     # basedir = Path(__file__).parent.absolute()
+    msg_printer.print_message(msg_severity.INFO , "Generating output for formats: " + str(args.out_format), src_ref=None)
+
     if args.tpl_dir is None:
         tpl_dir = Path(__file__).parent.resolve() / "./templates"
-        msg_printer.print_message(msg_severity.INFO , "Using default templates directory:" + str(tpl_dir), src_ref=None)
+        msg_printer.print_message(msg_severity.INFO , "Using default templates directory: " + str(tpl_dir), src_ref=None)
     else:
         tpl_dir = Path(args.tpl_dir).resolve()
-        msg_printer.print_message(msg_severity.INFO , "Using custom templates directory:" + str(tpl_dir), src_ref=None)
+        msg_printer.print_message(msg_severity.INFO , "Using custom templates directory: " + str(tpl_dir), src_ref=None)
 
     # location of libraries that are provided for SystemRDL and each output
     # format
