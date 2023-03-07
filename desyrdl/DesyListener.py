@@ -137,6 +137,7 @@ class DesyListener(RDLListener):
 
         #------------------------------------------
         self.top_context['addrmaps'].append(self.context.copy())
+        self.top_context['access_channel'] = self.context['access_channel']
 
     # =========================================================================
     def unroll_inst(self, insts, context):
@@ -456,6 +457,7 @@ class DesyRdlProcessor(DesyListener):
         self.generated_files = dict()
         self.generated_files['vhdl'] = list()
         self.generated_files['map'] = list()
+        self.generated_files['h'] = list()
 
         # create Jinja template loaders, one loader per output type
         prefixLoaderDict = dict()
@@ -496,6 +498,10 @@ class DesyRdlProcessor(DesyListener):
             if 'map' in self.out_formats:
                 files = self.render_templates(loader="map", outdir="map",context=self.top_context)
                 self.generated_files["map"] = self.generated_files["map"] + files
+
+            if 'h' in self.out_formats:
+                files = self.render_templates(loader="h", outdir="h",context=self.top_context)
+                self.generated_files["h"] = self.generated_files["h"] + files
 
 
     # =========================================================================

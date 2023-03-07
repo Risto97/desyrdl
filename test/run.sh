@@ -10,4 +10,4 @@ done
 DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
 
-desyrdl -i $DIR/rdl/module_b.rdl $DIR/rdl/module_a.rdl $DIR/rdl/top.rdl -o ./out -f vhdl map
+desyrdl -i $DIR/rdl/module_b.rdl $DIR/rdl/module_a.rdl $DIR/rdl/top.rdl -o ./out -f vhdl map h
