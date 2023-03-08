@@ -55,6 +55,7 @@ class DesyListener(RDLListener):
         self.top_context = dict()
         self.top_context['addrmaps'] = list()
         self.top_context['separator'] = self.separator
+        self.top_context['interface_adapters'] = list()
         # local address map contect only
         # self.items = list()
         # self.regs = list()
@@ -93,6 +94,7 @@ class DesyListener(RDLListener):
         self.context['n_exts'] = 0
         self.context['n_regf'] = 0
 
+        self.context['interface_adapters'] = list()
         #------------------------------------------
         self.context['node'] = node
         self.context['type_name'] = node.type_name
@@ -138,6 +140,7 @@ class DesyListener(RDLListener):
         #------------------------------------------
         self.top_context['addrmaps'].append(self.context.copy())
         self.top_context['access_channel'] = self.context['access_channel']
+        self.top_context['interface_adapters'] = self.top_context['interface_adapters'] + self.context['interface_adapters'].copy()
 
     # =========================================================================
     def unroll_inst(self, insts, context):
@@ -218,6 +221,10 @@ class DesyListener(RDLListener):
                 itemContext['node_type'] = "ADDRMAP"
                 self.gen_extitem(item, context=itemContext)
                 context['ext_insts'].append(itemContext)
+                if itemContext['interface'] != context['interface']:
+                    adapter_name = context['interface'].lower() + "_to_" + itemContext['interface'].lower()
+                    if adapter_name not in context['interface_adapters']:
+                        context['interface_adapters'].append(adapter_name)
                 if item.type_name not in context['ext_type_names']:
                     context['ext_type_names'].append(item.type_name)
                     context['ext_types'].append(itemContext)
@@ -498,7 +505,7 @@ class DesyRdlProcessor(DesyListener):
         # formats to generate on top
         if isinstance(node.parent, RootNode):
             if 'vhdl' in self.out_formats:
-                files = self.render_templates(loader="vhdl_lib", outdir="vhdl", context=self.context)
+                files = self.render_templates(loader="vhdl_lib", outdir="vhdl", context=self.top_context)
                 self.generated_files["vhdl"] = files + self.generated_files["vhdl"]
 
             if 'map' in self.out_formats:
@@ -515,7 +522,7 @@ class DesyRdlProcessor(DesyListener):
         generated_files = list()
         # get templates list and theyir ouput from include file
         template = self.jinja2Env.get_template(loader +"/include.txt")
-        tpl_list = template.render(self.context).split()
+        tpl_list = template.render(context).split()
 
         # render template list and save in out
         for tplidx in range(0,len(tpl_list),2):

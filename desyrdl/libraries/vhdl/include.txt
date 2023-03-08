@@ -1,4 +1,6 @@
 {# library common files #}
 pkg_desyrdl_common.vhd desyrdl/pkg_desyrdl_common.vhd
-axi4l_to_ibus.vhd      desyrdl/axi4l_to_ibus.vhd
+{% for adapter in interface_adapters %}
+{{adapter}}.vhd      desyrdl/{{adapter}}.vhd
+{% endfor %}
 
