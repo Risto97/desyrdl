@@ -171,6 +171,7 @@ class DesyListener(RDLListener):
             itemContext['node'] = item
             itemContext['type_name'] = item.type_name
             itemContext['inst_name'] = item.inst_name
+            itemContext['type_name_org'] = item.inst.original_def.type_name if item.inst.original_def is not None else item.type_name
             itemContext['access_channel'] = self.get_access_channel(item)
             itemContext['address_offset'] = item.raw_address_offset
             itemContext['address_offset_high'] = item.raw_address_offset + int(item.total_size)-1
@@ -458,6 +459,7 @@ class DesyRdlProcessor(DesyListener):
         self.generated_files['vhdl'] = list()
         self.generated_files['map'] = list()
         self.generated_files['h'] = list()
+        self.generated_files['adoc'] = list()
 
         # create Jinja template loaders, one loader per output type
         prefixLoaderDict = dict()
@@ -488,6 +490,10 @@ class DesyRdlProcessor(DesyListener):
 
                 files = self.render_templates(loader="vhdl", outdir="vhdl", context=self.context)
                 self.generated_files["vhdl"] = self.generated_files["vhdl"] + files
+
+        if 'adoc' in self.out_formats:
+            files = self.render_templates(loader="adoc", outdir="adoc",context=self.context)
+            self.generated_files["adoc"] = self.generated_files["adoc"] + files
 
         # formats to generate on top
         if isinstance(node.parent, RootNode):
