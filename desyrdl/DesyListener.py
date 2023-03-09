@@ -464,9 +464,14 @@ class DesyRdlProcessor(DesyListener):
 
         self.generated_files = dict()
         self.generated_files['vhdl'] = list()
+        self.generated_files['vhdl_dict'] = dict()
         self.generated_files['map'] = list()
         self.generated_files['h'] = list()
         self.generated_files['adoc'] = list()
+        self.generated_files['tcl'] = list()
+        self.generated_files["vhdl_dict"]["desyrdl"] = list() # inset desyrdl key so it is first on the list
+
+        self.top_context['generated_files'] = self.generated_files
 
         # create Jinja template loaders, one loader per output type
         prefixLoaderDict = dict()
@@ -497,6 +502,7 @@ class DesyRdlProcessor(DesyListener):
 
                 files = self.render_templates(loader="vhdl", outdir="vhdl", context=self.context)
                 self.generated_files["vhdl"] = self.generated_files["vhdl"] + files
+                self.generated_files["vhdl_dict"][node.inst_name] = files
 
         if 'adoc' in self.out_formats:
             files = self.render_templates(loader="adoc", outdir="adoc",context=self.context)
@@ -507,6 +513,7 @@ class DesyRdlProcessor(DesyListener):
             if 'vhdl' in self.out_formats:
                 files = self.render_templates(loader="vhdl_lib", outdir="vhdl", context=self.top_context)
                 self.generated_files["vhdl"] = files + self.generated_files["vhdl"]
+                self.generated_files["vhdl_dict"]["desyrdl"] = files
 
             if 'map' in self.out_formats:
                 files = self.render_templates(loader="map", outdir="map",context=self.top_context)
@@ -515,6 +522,10 @@ class DesyRdlProcessor(DesyListener):
             if 'h' in self.out_formats:
                 files = self.render_templates(loader="h", outdir="h",context=self.top_context)
                 self.generated_files["h"] = self.generated_files["h"] + files
+
+            if 'tcl' in self.out_formats:
+                files = self.render_templates(loader="tcl", outdir="tcl",context=self.top_context)
+                self.generated_files["tcl"] = self.generated_files["tcl"] + files
 
 
     # =========================================================================
