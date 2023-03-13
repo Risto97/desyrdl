@@ -109,7 +109,10 @@ def main():
         root = rdlc.elaborate()
     except Exception as e:  # RDLCompileError
         # A compilation error occurred. Exit with error code
+        msg_printer.print_message(msg_severity.ERROR , str(e), src_ref=None)
         sys.exit(1)
+
+    msg_printer.print_message(msg_severity.INFO , "SystemRdl compiler done.", src_ref=None)
 
     # -------------------------------------------------------------------------
     # Check root node
@@ -118,6 +121,7 @@ def main():
     else:
         print('#\nERROR: root is not a RootNode')
         sys.exit(2)
+
 
     # -------------------------------------------------------------------------
     walker = RDLWalker(unroll=False)
@@ -133,6 +137,8 @@ def main():
             # copy all common files of the selected format into the out folder
             for fname in generated_files[out_format]:
                 f_out.write(f'{fname!s}\n')
+
+    msg_printer.print_message(msg_severity.INFO , "Generation of the output files done.", src_ref=None)
 
     # # ----------------------------------
     # # GENERATE OUT
@@ -230,4 +236,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
+
