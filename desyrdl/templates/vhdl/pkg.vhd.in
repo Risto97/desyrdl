@@ -65,16 +65,16 @@ package pkg_{{type_name_org}} is
     incrvalue : std_logic_vector({{field.incrwidth}}-1 downto 0);--{% endif %}
   end record;
 
-  {%- if field.node.is_hw_readable %}
   type t_field_signals_{{regtype_type_name}}_{{field.type_name}}_out is record
-    data : std_logic_vector({{field.width}}-1 downto 0);
+    {%- if field.node.is_hw_readable %}
+    data : std_logic_vector({{field.width}}-1 downto 0);--{% else %}
+    -- no data if field cannot be written from hw
+    data : std_logic_vector(-1 downto 0);--{% endif %}
     {%- if field.swacc %}
     swacc : std_logic; --{% endif %}
     {%- if field.swmod %}
     swmod : std_logic; --{% endif %}
-  end record; --{% else -%}
-  -- no signals if field cannot be readable by hw
-  subtype t_field_signals_{{regtype_type_name}}_{{field.type_name}}_out is std_logic_vector(-1 downto 0);--{% endif %}{% endfor %}
+  end record;--{% endfor %}
 
   -- The actual register types
   type t_reg_{{regtype_type_name}}_in is record--{% for field in regtype.fields %}
@@ -226,7 +226,9 @@ end entity {{type_name_org}}_{{regtype_type_name}};
 architecture rtl of {{type_name_org}}_{{regtype_type_name}} is
   signal data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
 begin
-  data_out(C_DATA_WIDTH-1 downto {{regtype.width}}) <= (others => '0');
+  --{% if regtype.width < 32 %}
+  data_out(C_DATA_WIDTH-1 downto {{regtype.width}}) <= (others => '0');--{% endif %}
+
   -- resize field data out to the register bus width
   -- do only if 1 field and signed--{% if regtype.signed == 1 and regtype.fields_count == 1%}
   po_decoder_data <= std_logic_vector(resize(signed(data_out({{regtype.fields[0].high}} downto {{regtype.fields[0].low}})),C_DATA_WIDTH));--{% else %}
@@ -308,8 +310,9 @@ begin
         end if;
       end if;
     end process;
-
-    po_reg.{{field.type_name}}.data  <= l_field_reg;
+    --{% if field.node.is_hw_readable %}
+    po_reg.{{field.type_name}}.data <= l_field_reg;--{% else %}no signal to read by HW
+    po_reg.{{field.type_name}}.data <= (others => '0');--{% endif %}
     --# if field.node.is_sw_writable and field.swacc:
     po_reg.{{field.type_name}}.swacc <= (not l_sw_wr_stb_q and pi_decoder_wr_stb) or (not l_sw_rd_stb_q and pi_decoder_rd_stb ) when rising_edge(pi_clock);
     --# elif field.swacc:
@@ -338,17 +341,17 @@ begin
 
   end block {{field.type_name}}_storage;
   ----------------------------------------------------------{% else %}--WIRE
-  {{field.type_name}}_wire : block
-    signal decoder_rd_stb_q : std_logic;
+  {{field.type_name}}_wire : block--{%if field.swacc: %}
+    signal decoder_rd_stb_q : std_logic;--{% endif %}
   begin
     --{% if field.const == 1%}
     data_out({{field.high}} downto {{field.low}}) <= std_logic_vector(to_signed({{field.reset}},{{field.width}}));--{% else %}
     data_out({{field.high}} downto {{field.low}}) <= pi_reg.{{field.type_name}}.data({{field.width}}-1 downto 0);--{% endif %}
     --{% if field.node.is_hw_readable %}
-    po_reg.{{field.type_name}}.data  <= data_out({{field.high}} downto {{field.low}});--{% else %}no signal to read by HW
-    po_reg.{{field.type_name}} <= (others => '0');--{% endif %}{%if field.swacc: %}
-    po_reg.{{field.type_name}}.swacc <= '1' when pi_decoder_rd_stb = '1' and decoder_rd_stb_q = '0' else '0';--{% endif %}
-    decoder_rd_stb_q <= pi_decoder_rd_stb when rising_edge(pi_clock);
+    po_reg.{{field.type_name}}.data <= data_out({{field.high}} downto {{field.low}});--{% else %}no signal to read by HW
+    po_reg.{{field.type_name}}.data <= (others => '0');--{% endif %}{%if field.swacc: %}
+    po_reg.{{field.type_name}}.swacc <= '1' when pi_decoder_rd_stb = '1' and decoder_rd_stb_q = '0' else '0';
+    decoder_rd_stb_q <= pi_decoder_rd_stb when rising_edge(pi_clock);--{% endif %}
   end block;--{%- endif %}{%- endfor %}
 end rtl;
 {%- endmacro %}

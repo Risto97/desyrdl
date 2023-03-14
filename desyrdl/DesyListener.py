@@ -221,7 +221,9 @@ class DesyListener(RDLListener):
                 itemContext['node_type'] = "ADDRMAP"
                 self.gen_extitem(item, context=itemContext)
                 context['ext_insts'].append(itemContext)
-                if itemContext['interface'] != context['interface']:
+                if itemContext['interface'] != context['interface'] and \
+                    context['interface'] is not None and \
+                    itemContext['interface'] is not None:
                     adapter_name = context['interface'].lower() + "_to_" + itemContext['interface'].lower()
                     if adapter_name not in context['interface_adapters']:
                         context['interface_adapters'].append(adapter_name)
@@ -341,7 +343,7 @@ class DesyListener(RDLListener):
         context["desc"] = fldx.get_property("desc") or ""
         context["desc_html"] = fldx.get_html_desc(self.md) or ""
         # check if we flag is set
-        if fldx.is_hw_writable and fldx.is_sw_writable and fldx.get_property("we") is False:
+        if fldx.is_hw_writable and fldx.is_sw_writable and fldx.get_property("we") and not fldx.is_virtual is False:
             self.msg.error(
                     f"missing 'we' flag. 'sw = {fldx.get_property('sw').name}' " + \
                     f"and 'hw = {fldx.get_property('hw').name}' both can write to the regiser. " + \
@@ -373,6 +375,8 @@ class DesyListener(RDLListener):
         context['reg_type_names'] = list()
         self.gen_items(memx, context)
         context['regs'] = self.unroll_inst('reg_insts',context)
+        context['n_reg_insts'] = len(context['reg_insts'])
+        context['n_regs'] = len(context['regs'])
 
 
     # =========================================================================
@@ -384,6 +388,7 @@ class DesyListener(RDLListener):
         context['reg_type_names'] = list()
         self.gen_items(regf, context)
         context['regs'] = self.unroll_inst('reg_insts',context)
+        context['n_reg_insts'] = len(context['reg_insts'])
         context['n_regs'] = len(context['regs'])
 
     # =========================================================================
@@ -499,12 +504,14 @@ class DesyRdlProcessor(DesyListener):
         if 'vhdl' in self.out_formats:
             if node.get_property('desyrdl_generate_hdl') is None or \
                node.get_property('desyrdl_generate_hdl') is True:
+                print(f"VHDL for: {node.inst_name} ({node.type_name})")
 
                 files = self.render_templates(loader="vhdl", outdir="vhdl", context=self.context)
                 self.generated_files["vhdl"] = self.generated_files["vhdl"] + files
                 self.generated_files["vhdl_dict"][node.inst_name] = files
 
         if 'adoc' in self.out_formats:
+            print(f"ASCIIDOC for: {node.inst_name} ({node.type_name})")
             files = self.render_templates(loader="adoc", outdir="adoc",context=self.context)
             self.generated_files["adoc"] = self.generated_files["adoc"] + files
 
@@ -526,7 +533,6 @@ class DesyRdlProcessor(DesyListener):
             if 'tcl' in self.out_formats:
                 files = self.render_templates(loader="tcl", outdir="tcl",context=self.top_context)
                 self.generated_files["tcl"] = self.generated_files["tcl"] + files
-
 
     # =========================================================================
     def render_templates (self, loader, outdir, context):

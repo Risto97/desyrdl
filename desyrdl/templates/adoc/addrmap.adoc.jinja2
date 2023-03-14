@@ -29,7 +29,7 @@
 | {{"{:<40}".format(name)}} | {{"{:>4}".format(mem.mementries)}} | {{"{:>4}".format(mem.memwidth)}} | {{mem.dtype}} | {{mem.rw}} | +++{{mem.desc_html}}+++ +
 {%- endif %}
   {%- for reg in mem.reg_insts if mem.n_reg_insts > 1 %}
-    _{{reg.inst_name}}_ {{reg.dtype}}: +++{{reg.desc_html}}+++ +
+    _{{reg.inst_name}}_ ({{reg.dtype}}): +++{{reg.desc_html}}+++ +
   {%- endfor %}
 {%- endfor %}
 |===

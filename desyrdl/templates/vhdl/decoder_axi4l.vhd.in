@@ -214,7 +214,9 @@ begin
         --# if n_ext_insts > 0:
         ext_arvalid <= '0'; -- TODO axi ext move to separate process
         --# endif
+        --# if n_ext_insts > 0 or n_mem_insts > 0:
         read_time_cnt <= 0;
+        --# endif
         invalid_rdata <= '0';
       else
         case state_read is
@@ -226,7 +228,9 @@ begin
             --# if n_ext_insts > 0:
             ext_arvalid   <= '0';
             --# endif
+            --# if n_ext_insts > 0 or n_mem_insts >0:
             read_time_cnt <= 0;
+            --# endif
             invalid_rdata <= '0';
           when ST_READ_SELECT =>
             case rtarget is
@@ -389,7 +393,9 @@ begin
   begin
     if rising_edge(pi_clock) then
       if state_read = ST_READ_IDLE and pi_s_top.arvalid = '1' then
+        --# if n_ext_insts > 0 or n_mem_insts > 0:
         raddr      <= pi_s_top.araddr(G_ADDR_WIDTH-1 downto 0);
+        --# endif
         --# if n_reg_insts > 0:
         reg_rd_stb <= (others => '0');
         --# endif
@@ -477,7 +483,9 @@ begin
         ext_wvalid  <= '0';
         ext_bready  <= '0';
         --# endif
+        --# if n_ext_insts > 0 or n_mem_insts > 0:
         write_time_cnt <= 0;
+        --# endif
       else
         case state_write is
           when ST_WRITE_IDLE =>
@@ -495,8 +503,9 @@ begin
             ext_wvalid  <= '0';
             ext_bready  <= '0';
             --# endif
+            --# if n_ext_insts > 0 or n_mem_insts > 0:
             write_time_cnt <= 0;
-
+            --# endif
           when ST_WRITE_WAIT_DATA =>
             if pi_s_top.wvalid = '1' then
               state_write <= ST_WRITE_SELECT;
@@ -618,8 +627,9 @@ begin
   begin
     if rising_edge(pi_clock) then
       if (state_write = ST_WRITE_IDLE or state_write = ST_WRITE_WAIT_ADDR ) and pi_s_top.awvalid = '1' then
+        --# if n_ext_insts > 0 or n_mem_insts > 0:
         waddr      <= pi_s_top.awaddr(G_ADDR_WIDTH-1 downto 0) ;
-
+        --# endif
         --# if n_reg_insts > 0:
         reg_wr_stb <= (others => '0');
         --# endif
@@ -696,7 +706,9 @@ begin
     if rising_edge(pi_clock) then
       if state_write  = ST_WRITE_IDLE or state_write = ST_WRITE_WAIT_DATA then
         wdata <= pi_s_top.wdata;
+        --# if n_ext_insts > 0 :
         wstrb <= pi_s_top.wstrb;
+        --# endif
       end if;
     end if;
   end process prs_wdata_reg ;
