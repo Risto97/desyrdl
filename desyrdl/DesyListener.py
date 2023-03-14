@@ -343,13 +343,13 @@ class DesyListener(RDLListener):
         context["desc"] = fldx.get_property("desc") or ""
         context["desc_html"] = fldx.get_html_desc(self.md) or ""
         # check if we flag is set
-        if fldx.is_hw_writable and fldx.is_sw_writable and fldx.get_property("we") and not fldx.is_virtual is False:
-            self.msg.error(
+        if fldx.is_hw_writable and fldx.is_sw_writable and not fldx.get_property("we") and fldx.is_virtual is False:
+            self.msg.warning(
                     f"missing 'we' flag. 'sw = {fldx.get_property('sw').name}' " + \
-                    f"and 'hw = {fldx.get_property('hw').name}' both can write to the regiser. " + \
-                    "'sw' will be always overwritten",
+                    f"and 'hw = {fldx.get_property('hw').name}' both can write to the register filed. " + \
+                    f"'sw' will be always overwritten.\nRegister: {fldx.parent.inst_name}",
                     fldx.inst.property_src_ref.get('we', fldx.inst.def_src_ref) )
-            exit(1)
+            # exit(1)
 
     # =========================================================================
     def gen_memitem (self, memx: MemNode, context):
