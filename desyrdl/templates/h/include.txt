@@ -1,3 +1,5 @@
-# lines starting with a '#' are ignored
-# format: <template file> <output file string template>
-header.h.in desyrdl_ch{desyrdl_access_channel}.h
+{#- -*- mode:jinja2; -*- #}
+{#- list of input template files and it output name #}
+{#- format: <template file> <output file string template> -#}
+{# pkg.vhd.in {{inst_name}}/pkg_{{type_name_org}}.vhd #}
+header.h.jinja2 ch{{access_channel}}.h

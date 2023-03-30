@@ -10,7 +10,7 @@
 # @copyright Copyright 2021-2022 DESY
 # SPDX-License-Identifier: Apache-2.0
 # --------------------------------------------------------------------------- #
-# @date 2021-04-07
+# @date 2021-04-07/2023-02-15
 # @author Michael Buechler <michael.buechler@desy.de>
 # @author Lukasz Butkowski <lukasz.butkowski@desy.de>
 # --------------------------------------------------------------------------- #
@@ -22,599 +22,398 @@ Context dictionaries are used by the template engine.
 
 import re
 from math import ceil, log2
-from pathlib import Path  # get filenames
-
-from systemrdl import RDLListener
+from pathlib import Path
+from systemrdl import AddressableNode, RDLListener
+from systemrdl.messages import MessageHandler, MessagePrinter, Severity
 from systemrdl.node import (AddrmapNode, FieldNode,  # AddressableNode,
                             MemNode, RegfileNode, RegNode, RootNode)
+# import desyrdl
+import jinja2
 
 from desyrdl.rdlformatcode import desyrdlmarkup
 
+# class convert dict to attributes of object
+class AttributeDict(dict):
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
 
-def bitmask(width):
-    '''
-        Generates a bitmask filled with '1' with bit width equal to 'width'
-    '''
-    mask = 0
-    for i in range(width):
-        mask |= (1 << i)
-
-    return mask
-
-
+# Define a listener that will print out the register model hierarchy
 class DesyListener(RDLListener):
 
-    # formatter: RdlFormatter instance
-    # templates: array of tuples (tpl_file, tpl_tplstr)
-    # out_dir: path where to put output files
-    def __init__(self, formatter, templates, out_dir, separator="."):
-        for t,tplstr in templates:
-            assert isinstance(t, Path)
-        assert isinstance(out_dir, Path)
+    def __init__(self):
+        # def __init__(self, formatter, templates, out_dir, separator="."):
+        self.separator = "."
 
-        self.templates = templates
-        self.out_dir = out_dir
-        self.generated_files = list()
+        # global context
+        self.top_items = list()
+        self.top_regs = list()
+        self.top_mems = list()
+        self.top_exts = list()
+        self.top_regf = list()
 
-        self.separator = separator
-        self.formatter = formatter
+        self.top_context = dict()
+        self.top_context['addrmaps'] = list()
+        self.top_context['separator'] = self.separator
+        self.top_context['interface_adapters'] = list()
+        # local address map contect only
+        # self.items = list()
+        # self.regs = list()
+        # self.mems = list()
+        # self.exts = list()
+        # self.regf = list()
+        self.context = dict()
 
-        self.init_context()
+        self.md = desyrdlmarkup() # parse description with markup lanugage, disable Mardown
+        message_printer = MessagePrinter()
+        self.msg = MessageHandler(message_printer)
 
-    def init_context(self):
-        self.regitems = list()
-        self.regfileitems = list()
-        self.memitems = list()
-        self.extitems = list()
-        self.regtypes = list()
-        self.regfiletypes = list()
-        self.memtypes = list()
-        self.regcount = list()
-        self.regitems_with_regfiles = list()
+    # =========================================================================
+    def exit_Addrmap(self, node : AddrmapNode):
+        self.context.clear();
+        self.context['insts'] = list()
+        self.context['reg_insts'] = list()
+        self.context['mem_insts'] = list()
+        self.context['ext_insts'] = list()
+        self.context['rgf_insts'] = list()
+        self.context['reg_types'] = list()
+        self.context['mem_types'] = list()
+        self.context['ext_types'] = list()
+        self.context['rgf_types'] = list()
+        self.context['reg_type_names'] = list()
+        self.context['mem_type_names'] = list()
+        self.context['ext_type_names'] = list()
+        self.context['rgf_type_names'] = list()
 
-    def process_templates(self, node):
-        for tpl,tplstr in self.templates:
-            with tpl.open('r') as f_in:
-                s_in = f_in.read()
+        self.context['regs']  = list()
+        self.context['mems']  = list()
+        self.context['exts']  = list()
+        self.context['regf']  = list()
+        self.context['n_regs'] = 0
+        self.context['n_mems'] = 0
+        self.context['n_exts'] = 0
+        self.context['n_regf'] = 0
 
-            s_out = self.formatter.format(s_in, **self.context)
+        self.context['interface_adapters'] = list()
+        #------------------------------------------
+        self.context['node'] = node
+        self.context['type_name'] = node.type_name
+        self.context['inst_name'] = node.inst_name
+        self.context['type_name_org'] = node.inst.original_def.type_name if node.inst.original_def is not None else node.type_name
 
-            # get .in suffix and remove it, process only .in files
-            suffix = "".join(tpl.suffix)
-            if suffix != ".in":
-                continue
+        self.context['interface'] = node.get_property('desyrdl_interface')
+        self.context['access_channel'] = self.get_access_channel(node)
+        self.context['addrwidth']=ceil(log2(node.size))
 
-            out_file = self.formatter.format(tplstr, **self.context)
-            out_path = Path(self.out_dir / out_file)
+        self.context['desc'] = node.get_property("desc")
+        self.context['desc_html'] = node.get_html_desc(self.md)
 
-            with out_path.open('w') as f_out:
-                f_out.write(s_out)
-                if out_path not in self.generated_files:
-                    self.generated_files.append(out_path)
+        path_segments = node.get_path_segments(array_suffix=f'{self.separator}{{index:d}}', empty_array_suffix='')
+        self.context['path_segments'] = path_segments
+        self.context['path'] = self.separator.join(path_segments)
+        self.context['path_notop'] = self.separator.join(path_segments[1:])
+        self.context['path_addrmap_name'] = path_segments[-1]
 
-    def enter_Addrmap(self, node):
-        self.regtypes.append(dict())
-        self.regfiletypes.append(dict())
-        self.memtypes.append(dict())
-        self.regitems.append(list())
-        self.regfileitems.append(list())
-        self.regitems_with_regfiles.append(list())
-        self.memitems.append(list())
-        self.extitems.append(list())
-        self.regcount.append(0)
+        self.set_item_dimmentions(node, self.context)
+        #------------------------------------------
+        self.gen_items(node, self.context)
+        self.context['regs'] = self.unroll_inst('reg_insts',self.context)
+        self.context['mems'] = self.unroll_inst('mem_insts',self.context)
+        self.context['regf'] = self.unroll_inst('rgf_insts',self.context)
+        self.context['exts'] = self.unroll_inst('ext_insts',self.context)
 
-    # types are in the dictionary on the top of the stack
-    def enter_Component(self, node):
-        if isinstance(node, MemNode):
-            if node.type_name not in self.memtypes[-1]:
-                self.memtypes[-1][node.type_name] = node
+        #------------------------------------------
+        self.context['n_reg_insts'] = len(self.context['reg_insts'])
+        self.context['n_mem_insts'] = len(self.context['mem_insts'])
+        self.context['n_ext_insts'] = len(self.context['ext_insts'])
+        self.context['n_rgf_insts'] = len(self.context['rgf_insts'])
 
-        if isinstance(node, RegNode) and not node.external:
-            if node.type_name not in self.regtypes[-1]:
-                self.regtypes[-1][node.type_name] = node
+        self.context['n_regs'] = len(self.context['regs'])
+        self.context['n_mems'] = len(self.context['mems'])
+        self.context['n_exts'] = len(self.context['exts'])
+        self.context['n_regf'] = len(self.context['regf'])
 
-        if isinstance(node, RegfileNode) and not node.external:
-            if node.type_name not in self.regfiletypes[-1]:
-                self.regfiletypes[-1][node.type_name] = node
+        self.context['n_regf_regs'] = 0
+        for rf in self.context['regf']:
+            self.context['n_regf_regs'] += len(rf['regs'])
 
-    def exit_Addrmap(self, node):
+        #------------------------------------------
+        self.top_context['addrmaps'].append(self.context.copy())
+        self.top_context['access_channel'] = self.context['access_channel']
+        self.top_context['interface_adapters'] = self.top_context['interface_adapters'] + self.context['interface_adapters'].copy()
 
-        # There is no need for more than the generators before the actual
-        # context is created.
-        self.regitems[-1].extend(self.gen_node_names(node, [RegNode], False))
-        self.regfileitems[-1].extend(self.gen_node_names(node, [RegfileNode], False))
-        self.memitems[-1].extend(self.gen_node_names(node, [MemNode], True, first_only=False))
-        self.extitems[-1].extend(self.gen_node_names(node, [AddrmapNode, RegfileNode, RegNode], True, first_only=False))
-
-        # Registers inside regfiles must also be part of 'regitems', so that
-        # C_REGISTER_INFO can be constructed.
-        # Problem: they shouldn't appear on the port definition in top.vhd.in,
-        # so make a copy...
-        self.regitems_with_regfiles[-1].extend(self.gen_node_names(node, [RegNode], False))
-        for rf in self.gen_node_names(node, [RegfileNode], False, first_only=False):
-            self.regitems_with_regfiles[-1].extend(self.gen_node_names(rf[1], [RegNode], False, i0=len(self.regitems_with_regfiles[-1])))
-
-        print(f"path_segment = {node.get_path_segment()}")
-        print(f"node.inst_name = {node.inst_name}")
-        print(f"node.type_name = {node.type_name}")
-
-    # yields a tuple (i, node) for each child of node that matches a list of
-    # types and is either external or internal
-    def gen_node_names(self, node, types, external, first_only=True, i0=0):
-        # filter children according to arguments; result is an iterable
-        def is_wanted_child(child):
-            return type(child) in types and child.external is external
-        children = filter(is_wanted_child, node.children(unroll=True))
-
-        i = i0
-        for child in children:
-            # if the child is an array, only take
-            # the first element, otherwise return
-            if child.is_array and first_only is True:
-                if any(k != 0 for k in child.current_idx):
-                    continue
-            yield (i, child)
-            i += 1
-
-    def gen_regitems(self, gen_items, count_regs=True):
-        # For indexing of flattened arrays in VHDL port definitions.
-        # Move to a dict() or improve VHDL code.
+    # =========================================================================
+    def unroll_inst(self, insts, context):
+        # unroll all registers in addrmap + regfilex and recalculate index for insts
         index = 0
+        idx_insts = list ()
+        instsc = list ()
+        for inst in context[insts]:
+            inst['idx'] = index
+            idx_insts.append(inst)
+            for idx in range(inst['elements']):
+                instc = inst.copy()
+                instc['idx'] = index
+                instc['address_offset'] = inst['address_offset'] + inst['array_stride'] * idx
+                instc['absolute_address'] = inst['absolute_address'] + inst['array_stride'] * idx
+                if inst['node'].is_array:
+                    instc['address_offset_high'] = instc['address_offset'] + inst['array_stride']-1
+                    instc['absolute_address_high'] = instc['absolute_address'] + inst['array_stride']-1
+                instsc.append(instc)
+                index += 1
 
-        # apparently there is no need to do enumerate(gen_items)
-        for i, regx in gen_items:
+        context[insts] = idx_insts
+        return instsc
 
-            if regx.is_array:
-                if len(regx.array_dimensions) == 2:
-                    dim_n = regx.array_dimensions[0]
-                    dim_m = regx.array_dimensions[1]
-                    dim = 3
-                elif len(regx.array_dimensions) == 1:
-                    dim_n = 1
-                    dim_m = regx.array_dimensions[0]
-                    dim = 2
-            else:
+    # =========================================================================
+    def gen_items (self, node, context):
+
+        for item in node.children(unroll=False):
+            itemContext = dict()
+            # common to all items values
+            itemContext['node'] = item
+            itemContext['type_name'] = item.type_name
+            itemContext['inst_name'] = item.inst_name
+            itemContext['type_name_org'] = item.inst.original_def.type_name if item.inst.original_def is not None else item.type_name
+            itemContext['access_channel'] = self.get_access_channel(item)
+            itemContext['address_offset'] = item.raw_address_offset
+            itemContext['address_offset_high'] = item.raw_address_offset + int(item.total_size)-1
+            itemContext['absolute_address'] = item.raw_absolute_address
+            itemContext['absolute_address_high'] = item.raw_absolute_address + int(item.total_size)-1
+            itemContext['array_stride'] = item.array_stride if item.array_stride is not None else 0
+            itemContext['total_size'] = item.total_size
+            itemContext['total_words'] = int(item.total_size / 4)
+
+            # default
+            itemContext["width"] = 32
+            itemContext["dtype"] = "uint"
+            itemContext["signed"] = 0
+            itemContext["fixedpoint"] = 0
+            itemContext["rw"] = "RW"
+
+            itemContext['desc'] = item.get_property("desc")
+            itemContext['desc_html'] = item.get_html_desc(self.md)
+
+            self.set_item_dimmentions(item, itemContext)
+
+            # add all non-native explicitly set properties
+            for prop in item.list_properties(list_all=True):
+                itemContext[prop] = item.get_property(prop)
+
+            # item specyfic context
+            if isinstance(item, RegNode):
+                itemContext['node_type'] = "REG"
+                self.gen_regitem(item, context=itemContext)
+                context['reg_insts'].append(itemContext)
+                if item.type_name not in context['reg_type_names']:
+                    context['reg_type_names'].append(item.type_name)
+                    context['reg_types'].append(itemContext)
+
+            elif isinstance(item, MemNode):
+                itemContext['node_type'] =  "MEM"
+                self.gen_memitem(item, context=itemContext)
+                context['mem_insts'].append(itemContext)
+                if item.type_name not in context['mem_type_names']:
+                    context['mem_type_names'].append(item.type_name)
+                    context['mem_types'].append(itemContext)
+
+            elif isinstance(item, AddrmapNode):
+                itemContext['node_type'] = "ADDRMAP"
+                self.gen_extitem(item, context=itemContext)
+                context['ext_insts'].append(itemContext)
+                if itemContext['interface'] != context['interface'] and \
+                    context['interface'] is not None and \
+                    itemContext['interface'] is not None:
+                    adapter_name = context['interface'].lower() + "_to_" + itemContext['interface'].lower()
+                    if adapter_name not in context['interface_adapters']:
+                        context['interface_adapters'].append(adapter_name)
+                if item.type_name not in context['ext_type_names']:
+                    context['ext_type_names'].append(item.type_name)
+                    context['ext_types'].append(itemContext)
+
+            elif isinstance(item, RegfileNode):
+                 itemContext['node_type'] = "REGFILE"
+                 self.gen_rfitem(item, context=itemContext)
+                 context['rgf_insts'].append(itemContext)
+                 if item.type_name not in context['rgf_type_names']:
+                    context['rgf_type_names'].append(item.type_name)
+                    context['rgf_types'].append(itemContext)
+
+            # append item contect to items list
+            context['insts'].append(AttributeDict(itemContext))
+
+    # =========================================================================
+    def set_item_dimmentions(self, item: AddressableNode, itemContext: dict):
+        #-------------------------------------
+        dim_n = 1
+        dim_m = 1
+        dim = 1
+
+        if item.is_array:
+            if len(item.array_dimensions) == 2:
+                dim_n = item.array_dimensions[0]
+                dim_m = item.array_dimensions[1]
+                dim = 3
+            elif len(item.array_dimensions) == 1:
                 dim_n = 1
-                dim_m = 1
-                dim = 1
+                dim_m = item.array_dimensions[0]
+                dim = 2
 
-            elements = dim_n * dim_m
+        itemContext["elements"] = dim_n * dim_m
+        itemContext["dim_n"] = dim_n
+        itemContext["dim_m"] = dim_m
+        itemContext["dim"] = dim
 
-            context = dict()
 
-            addrmap_segments    = regx.owning_addrmap.get_path_segments(array_suffix=f'{self.separator}{{index:d}}')
-            addrmap             = addrmap_segments[-1]
-            # full path of the addrmap only
-            addrmap_full = self.separator.join(addrmap_segments)
-            # in some use cases the top level node must be omitted
-            addrmap_full_notop = self.separator.join(addrmap_segments[1:])
+    # =========================================================================
+    def gen_extitem (self, extx: AddrmapNode, context):
+        context['interface'] = extx.get_property('desyrdl_interface')
+        context['access_channel'] = self.get_access_channel(extx)
+        context['addrwidth']=ceil(log2(extx.size))
 
-            fields = [f for f in self.gen_fields(regx)]
-            totalwidth = 0
-            n_fields = 0
-            reset = 0
 
-            for field in regx.fields():
-                totalwidth += field.get_property("fieldwidth")
-                n_fields += 1
-                mask = bitmask(field.get_property("fieldwidth"))
-                mask = mask << field.low
-                field_reset = 0
-
-                if(field.get_property("reset")):
-                    field_reset = field.get_property("reset")
-
+    # =========================================================================
+    def gen_regitem (self, regx: RegNode, context):
+        #-------------------------------------
+        totalwidth = 0
+        n_fields = 0
+        reset = 0
+        fields = list()
+        for field in regx.fields():
+            totalwidth += field.get_property("fieldwidth")
+            n_fields += 1
+            field_reset = 0
+            fieldContext = dict()
+            mask = self.bitmask(field.get_property("fieldwidth"))
+            mask = mask << field.low
+            fieldContext['mask'] = mask
+            fieldContext['mask_hex'] = hex(mask)
+            if(field.get_property("reset")):
+                field_reset = field.get_property("reset")
                 reset |= (field_reset << field.low) & mask
+            fieldContext['node'] = field
+            self.gen_fielditem(field, fieldContext)
+            fieldC = AttributeDict(fieldContext)
+            fields.append(fieldC)
+            #print(fieldC.mask)
 
-            context["i"] = i
-            # When inside a regfile, the name needs special handling. It must
-            # include the name and array index of the regfile instance.
-            if isinstance(regx.parent, RegfileNode) or isinstance(regx.parent, MemNode):
-                name = regx.parent.inst_name
-                if regx.parent.is_array:
-                    if len(regx.parent.array_dimensions) == 2:
-                        cur_n = regx.parent.current_idx[0]
-                        cur_m = regx.parent.current_idx[1]
-                        context["name"] = self.separator.join([name, str(cur_n), str(cur_m), regx.inst_name])
-                        context["addrmap_name"] = self.separator.join([addrmap, name, str(cur_n), str(cur_m), regx.inst_name])
-                        context["addrmap_full_name"] = self.separator.join([addrmap_full, name, str(cur_n), str(cur_m), regx.inst_name])
-                        context["addrmap_full_notop_name"] = self.separator.join([addrmap_full_notop, name, str(cur_n), str(cur_m), regx.inst_name])
-                    elif len(regx.parent.array_dimensions) == 1:
-                        cur_m = regx.parent.current_idx[0]
-                        context["name"] = self.separator.join([name, str(cur_m), regx.inst_name])
-                        context["addrmap_name"] = self.separator.join([addrmap, name, str(cur_m), regx.inst_name])
-                        context["addrmap_full_name"] = self.separator.join([addrmap_full, name, str(cur_m), regx.inst_name])
-                        context["addrmap_full_notop_name"] = self.separator.join([addrmap_full_notop, name, str(cur_m), regx.inst_name])
-                    else:
-                        raise Exception('Unhandled number of array dimensions')
-                # No array
-                else:
-                    context["name"] = regx.inst_name
-                    context["addrmap_name"] = self.separator.join([addrmap, name, regx.inst_name])
-                    context["addrmap_full_name"] = self.separator.join([addrmap_full, name, regx.inst_name])
-                    context["addrmap_full_notop_name"] = self.separator.join([addrmap_full_notop, name, regx.inst_name])
+        context["width"] = totalwidth
+        context["dtype"] = regx.get_property("desyrdl_data_type") or "uint"
+        context["signed"] = self.get_data_type_sign(regx)
+        context["fixedpoint"] = self.get_data_type_fixed(regx)
+        if not regx.has_sw_writable and regx.has_sw_readable:
+            context["rw"] = "RO"
+        elif regx.has_sw_writable and not regx.has_sw_readable:
+            context["rw"] = "WO"
+        else:
+            context["rw"] = "RW"
+        context["reset"] = reset
+        context["reset_hex"] = hex(reset)
+        context["fields"] = fields
+        context["fields_count"] = len(fields)
 
-                context["reladdr"] = regx.parent.address_offset + regx.address_offset
-            # Normal register, not inside a regfile or memory
-            else:
-                context["name"] = regx.inst_name
-                context["addrmap_name"] = self.separator.join([addrmap, regx.inst_name])
-                context["addrmap_full_name"] = self.separator.join([addrmap_full, regx.inst_name])
-                context["addrmap_full_notop_name"] = self.separator.join([addrmap_full_notop, regx.inst_name])
-                context["reladdr"] = regx.address_offset
+    # =========================================================================
+    def gen_fielditem (self, fldx: FieldNode, context):
+        for prop in fldx.list_properties(list_all=True):
+            context[prop] = fldx.get_property(prop)
+        context['node']  = fldx
+        context['type_name'] = fldx.type_name
+        context['inst_name'] = fldx.inst_name
+        context["width"] = fldx.get_property("fieldwidth")
+        context["sw"] = fldx.get_property("sw").name
+        context["hw"] = fldx.get_property("hw").name
+        if not fldx.is_sw_writable and fldx.is_sw_readable:
+            context["rw"] = "RO"
+        elif fldx.is_sw_writable and not fldx.is_sw_readable:
+            context["rw"] = "WO"
+        else:
+            context["rw"] = "RW"
+        context["const"] = 1 if fldx.get_property("hw").name == "na" or fldx.get_property("hw").name == "r" else 0
+        context["reset"] = 0 if fldx.get_property("reset") is None else self.to_int32(fldx.get_property("reset"))
+        context["reset_hex"] = hex(context["reset"])
+        context["low"] = fldx.low
+        context["high"] = fldx.high
+        context["decrwidth"] = fldx.get_property("decrwidth") if fldx.get_property("decrwidth") is not None else 0
+        context["incrwidth"] = fldx.get_property("incrwidth") if fldx.get_property("incrwidth") is not None else 0
+        context["decrvalue"] = fldx.get_property("decrvalue") if fldx.get_property("decrvalue") is not None else 0
+        context["incrvalue"] = fldx.get_property("incrvalue") if fldx.get_property("incrvalue") is not None else 0
+        context["dtype"] = fldx.get_property("desyrdl_data_type") or "uint"
+        context["signed"] = self.get_data_type_sign(fldx)
+        context["fixedpoint"] = self.get_data_type_fixed(fldx)
+        context["desc"] = fldx.get_property("desc") or ""
+        context["desc_html"] = fldx.get_html_desc(self.md) or ""
+        # check if we flag is set
+        if fldx.is_hw_writable and fldx.is_sw_writable and not fldx.get_property("we") and fldx.is_virtual is False:
+            self.msg.warning(
+                    f"missing 'we' flag. 'sw = {fldx.get_property('sw').name}' " + \
+                    f"and 'hw = {fldx.get_property('hw').name}' both can write to the register filed. " + \
+                    f"'sw' will be always overwritten.\nRegister: {fldx.parent.inst_name}",
+                    fldx.inst.property_src_ref.get('we', fldx.inst.def_src_ref) )
+            # exit(1)
 
-            context["type"] = regx.type_name
-            context["addrmap"] = addrmap
-            context["addrmap_full"] = addrmap_full
-            context["addrmap_full_notop"] = addrmap_full_notop
-            context["absaddr_base"] = regx.absolute_address
-            context["absaddr_high"] = regx.absolute_address+int(regx.total_size)-1
+    # =========================================================================
+    def gen_memitem (self, memx: MemNode, context):
+        context["entries"] = memx.get_property("mementries")
+        context["addresses"] = memx.get_property("mementries") * 4
+        context["datawidth"] = memx.get_property("memwidth")
+        context["addrwidth"] = ceil(log2(memx.get_property("mementries") * 4))
+        context["width"] = context["datawidth"]
+        context["dtype"] = memx.get_property("desyrdl_data_type") or "uint"
+        context["signed"] = self.get_data_type_sign(memx)
+        context["fixedpoint"] = self.get_data_type_fixed(memx)
+        context["sw"] = memx.get_property("sw").name
+        if not memx.is_sw_writable and memx.is_sw_readable:
+            context["rw"] = "RO"
+        elif memx.is_sw_writable and not memx.is_sw_readable:
+            context["rw"] = "WO"
+        else:
+            context["rw"] = "RW"
+        context['insts']  = list()
+        context['reg_insts']  = list()
+        context['regs']  = list()
+        context['reg_types'] = list()
+        context['reg_type_names'] = list()
+        self.gen_items(memx, context)
+        context['regs'] = self.unroll_inst('reg_insts',context)
+        context['n_reg_insts'] = len(context['reg_insts'])
+        context['n_regs'] = len(context['regs'])
 
-            context["reg"] = regx
-            context["dim_n"] = dim_n
-            context["dim_m"] = dim_m
-            context["dim"] = dim
-            context["elements"] = elements
-            context["fields"] = fields
-            context["n_fields"] = n_fields
-            context["rw"] = "RW" if regx.has_sw_writable else "RO"
-            context["regwidth"] = regx.get_property("regwidth")
-            context["width"] = totalwidth
-            context["dtype"] = regx.get_property("desyrdl_data_type") or "uint"
-            context["signed"] = self.get_data_type_sign(regx)
-            context["fixedpoint"] = self.get_data_type_fixed(regx)
-            context["reset"] = reset
-            context["reset_hex"] = hex(reset)
 
-            # "internal_offset" is needed for indexing of flattened arrays in VHDL
-            # port definitions. Improve VHDL code to get rid of it.
-            if count_regs:
-                context["index"] = self.regcount[-1]
-                index += elements
-                self.regcount[-1] += elements
+    # =========================================================================
+    def gen_rfitem (self, regf: RegfileNode, context):
+        context['insts']  = list()
+        context['reg_insts'] = list()
+        context['regs']  = list()
+        context['reg_types'] = list()
+        context['reg_type_names'] = list()
+        self.gen_items(regf, context)
+        context['regs'] = self.unroll_inst('reg_insts',context)
+        context['n_reg_insts'] = len(context['reg_insts'])
+        context['n_regs'] = len(context['regs'])
 
-            md = desyrdlmarkup() # parse description with markup lanugage, disable Mardown
-            context["desc"] = regx.get_property("desc")
-            context["desc_html"] = regx.get_html_desc(md)
+    # =========================================================================
+    def bitmask(self,width):
+        '''
+        Generates a bitmask filled with '1' with bit width equal to 'width'
+        '''
+        mask = 0
+        for i in range(width):
+            mask |= (1 << i)
+        return mask
 
-            context["desyrdl_access_channel"] = self.get_access_channel(regx)
-
-            # add all non-native explicitly set properties
-            for p in regx.list_properties(include_native=False):
-                assert p not in context
-                context[p] = regx.get_property(p)
-
-            yield context
-
-    def gen_regfileitems(self, gen_items):
-        # For indexing of flattened arrays in VHDL port definitions.
-        # Move to a dict() or improve VHDL code.
-        index = 0
-
-        # apparently there is no need to do enumerate(gen_items)
-        for i, rfx in gen_items:
-
-            dim_n = 1
-            dim_m = 1
-            dim = 1
-            if rfx.is_array:
-                if len(rfx.array_dimensions) == 2:
-                    dim_n = rfx.array_dimensions[0]
-                    dim_m = rfx.array_dimensions[1]
-                    dim = 3
-                elif len(rfx.array_dimensions) == 1:
-                    dim_n = 1
-                    dim_m = rfx.array_dimensions[0]
-                    dim = 2
-
-            elements = dim_n * dim_m
-
-            context = dict()
-
-            addrmap_segments = rfx.get_path_segments(array_suffix='', empty_array_suffix='')
-            addrmap = addrmap_segments[-2]
-            addrmap_name = self.separator.join(addrmap_segments[-2:])
-            addrmap_full = self.separator.join(addrmap_segments[:-1])
-            addrmap_full_name = self.separator.join(addrmap_segments)
-            addrmap_full_notop = self.separator.join(addrmap_segments[1:-1])
-            addrmap_full_notop_name = self.separator.join(addrmap_segments[1:])
-
-            context["i"] = i
-            context["name"] = rfx.inst_name
-            context["type"] = rfx.type_name
-            context["addrmap"] = addrmap
-            context["addrmap_full"] = addrmap_full
-            context["addrmap_name"] = addrmap_name
-            context["addrmap_full_name"] = addrmap_full_name
-            context["addrmap_full_notop"] = addrmap_full_notop
-            context["addrmap_full_notop_name"] = addrmap_full_notop_name
-            context["reladdr"] = rfx.address_offset
-            context["absaddr_base"] = rfx.absolute_address
-            context["absaddr_high"] = rfx.absolute_address+int(rfx.total_size)-1
-
-            context["regfile"] = rfx
-            context["dim_n"] = dim_n
-            context["dim_m"] = dim_m
-            context["dim"] = dim
-            context["elements"] = elements
-            #context["rw"] = "RW" if rfx.has_sw_writable else "RO"
-            #context["regwidth"] = rfx.get_property("regwidth")
-            #context["width"] = totalwidth
-
-            # a regfile contains registers
-            gen_regs = self.gen_node_names(rfx, [RegNode], False)
-            context["regitems"] = [x for x in self.gen_regitems(gen_regs)]
-            context["regcount"] = sum(x["elements"] for x in context["regitems"])
-
-            md = desyrdlmarkup() # parse description with markup lanugage, disable Mardown
-            context["desc"] = rfx.get_property("desc")
-            context["desc_html"] = rfx.get_html_desc(md)
-
-            context["desyrdl_access_channel"] = self.get_access_channel(rfx)
-
-            # add all non-native explicitly set properties
-            for p in rfx.list_properties(include_native=False):
-                assert p not in context
-                context[p] = rfx.get_property(p)
-
-            yield context
-
-    def gen_memitems(self, gen_items):
-        for i, memx in gen_items:
-
-            context = dict()
-
-            addrmap_segments = memx.get_path_segments(array_suffix=f'{self.separator}{{index:d}}', empty_array_suffix='')
-            addrmap = addrmap_segments[-2]
-            addrmap_name = self.separator.join(addrmap_segments[-2:])
-            addrmap_full = self.separator.join(addrmap_segments[:-1])
-            addrmap_full_name = self.separator.join(addrmap_segments)
-            addrmap_full_notop = self.separator.join(addrmap_segments[1:-1])
-            addrmap_full_notop_name = self.separator.join(addrmap_segments[1:])
-
-            context["i"] = i
-            context["name"] = memx.inst_name
-            context["type"] = memx.type_name
-            context["addrmap"] = addrmap
-            context["addrmap_full"] = addrmap_full
-            context["addrmap_name"] = addrmap_name
-            context["addrmap_full_name"] = addrmap_full_name
-            context["addrmap_full_notop"] = addrmap_full_notop
-            context["addrmap_full_notop_name"] = addrmap_full_notop_name
-
-            context["reladdr"] = memx.address_offset
-            context["absaddr_base"] = memx.absolute_address
-            context["absaddr_high"] = memx.absolute_address+int(memx.total_size)-1
-
-            context["mem"] = memx
-            context["entries"] = memx.get_property("mementries")
-            context["addresses"] = memx.get_property("mementries") * 4
-            context["datawidth"] = memx.get_property("memwidth")
-            context["addrwidth"] = ceil(log2(memx.get_property("mementries") * 4))
-            context["sw"] = memx.get_property("sw").name
-            # virtual registers, e.g. for DMA regions
-            gen_vregs = self.gen_node_names(memx, [RegNode], False)
-            context["vregs"] = [x for x in self.gen_regitems(gen_vregs)]
-
-            context["dtype"] = memx.get_property("desyrdl_data_type") or "uint"
-            context["signed"] = self.get_data_type_sign(memx)
-            context["fixedpoint"] = self.get_data_type_fixed(memx)
-
-            md = desyrdlmarkup() # parse description with markup lanugage, disable Mardown
-            context["desc"] = memx.get_property("desc")
-            context["desc_html"] = memx.get_html_desc(md)
-
-            context["desyrdl_access_channel"] = self.get_access_channel(memx)
-            if not memx.is_sw_writable and memx.is_sw_readable:
-                context["rw"] = "RO"
-            elif memx.is_sw_writable and not memx.is_sw_readable:
-                context["rw"] = "WO"
-            else:
-                context["rw"] = "RW"
-
-            # add all non-native explicitly set properties
-            for p in memx.list_properties(include_native=False):
-                assert p not in context
-                context[p] = memx.get_property(p)
-
-            yield context
-
-    def gen_extitems(self, gen_items):
-        for i, extx in gen_items:
-
-            context = dict()
-
-            addrmap_segments = extx.get_path_segments(array_suffix=f'{self.separator}{{index:d}}', empty_array_suffix='')
-            addrmap = addrmap_segments[-2]
-            addrmap_name = self.separator.join(addrmap_segments[-2:])
-            addrmap_full = self.separator.join(addrmap_segments[:-1])
-            addrmap_full_name = self.separator.join(addrmap_segments)
-            addrmap_full_notop = self.separator.join(addrmap_segments[1:-1])
-            addrmap_full_notop_name = self.separator.join(addrmap_segments[1:])
-
-            context["i"] = i
-            context["name"] = extx.inst_name
-            context["type"] = extx.type_name
-            context["addrmap"] = addrmap
-            context["addrmap_full"] = addrmap_full
-            context["addrmap_name"] = addrmap_name
-            context["addrmap_full_name"] = addrmap_full_name
-            context["addrmap_full_notop"] = addrmap_full_notop
-            context["addrmap_full_notop_name"] = addrmap_full_notop_name
-            context["reladdr"] = extx.address_offset
-            context["absaddr_base"] = extx.absolute_address
-            context["absaddr_high"] = extx.absolute_address+int(extx.total_size)-1
-
-            md = desyrdlmarkup() # parse description with markup lanugage, disable Mardown
-            context["desc"] = extx.get_property("desc")
-            context["desc_html"] = extx.get_html_desc(md)
-
-            context["ext"] = extx
-            context["size"] = int(extx.total_size)
-            context["total_words"] = int(extx.total_size/4)
-            context["addrwidth"] = ceil(log2(extx.size))
-
-            context["desyrdl_interface"] = extx.get_property("desyrdl_interface")
-            context["desyrdl_access_channel"] = self.get_access_channel(extx)
-
-            # add all non-native explicitly set properties
-            for p in extx.list_properties(include_native=False):
-                if p not in context:
-                    context[p] = extx.get_property(p)
-
-            yield context
-
-    def gen_regtypes(self, types):
-        for i, regx in enumerate(types):
-            fields = [f for f in self.gen_fields(regx)]
-            fields_count = len(fields)
-            reg_sign = self.get_data_type_sign(regx)
-            context = dict()
-
-            context["i"] = i
-            context["regtype"] = regx
-            context["fields"] = fields
-            context["fields_count"] = fields_count
-            context["name"] = regx.type_name
-            context["signed"] = reg_sign
-            context["fixedpoint"] = self.get_data_type_fixed(regx)
-
-            context["desyrdl_access_channel"] = self.get_access_channel(regx)
-            if fields_count > 1:
-                map_out = 0
-            else:
-                if reg_sign == 0:
-                    map_out = 1
-                else:
-                    map_out = 2
-
-            context["map_out"] = map_out
-
-            # add all non-native explicitly set properties
-            for p in regx.list_properties(include_native=False):
-                assert p not in context
-                context[p] = regx.get_property(p)
-
-            yield context
-
-    def gen_regfiletypes(self, types):
-        for i, rfx in enumerate(types):
-            context = dict()
-
-            context["i"] = i
-            context["regfiletype"] = rfx
-            context["name"] = rfx.type_name
-
-            # a regfile contains registers
-            gen_regs = self.gen_node_names(rfx, [RegNode], False)
-            context["regitems"] = [x for x in self.gen_regitems(gen_regs, count_regs=False)]
-
-            context["desyrdl_access_channel"] = self.get_access_channel(rfx)
-
-            # add all non-native explicitly set properties
-            for p in rfx.list_properties(include_native=False):
-                assert p not in context
-                context[p] = rfx.get_property(p)
-
-            yield context
-
-    def gen_memtypes(self, types):
-        for i, memx in enumerate(types):
-            context = dict()
-
-            context["mem"] = memx
-            context["mementries"] = memx.get_property("mementries")
-            context["memwidth"] = memx.get_property("memwidth")
-            context["datawidth"] = memx.get_property("memwidth")
-            context["addresses"] = memx.get_property("mementries") * 4
-            context["addrwidth"] = ceil(log2(memx.get_property("mementries") * 4))
-
-            context["desyrdl_access_channel"] = self.get_access_channel(memx)
-
-            # add all non-native explicitly set properties
-            for p in memx.list_properties(include_native=False):
-                assert p not in context
-                context[p] = memx.get_property(p)
-
-            yield context
-
+    # =========================================================================
     def to_int32(self,value):
         "make sure we have int32"
         masked = value & (pow(2,32)-1)
         if masked > pow(2,31):
-            return -(pow(2,32)-masked)
+             return -(pow(2,32)-masked)
         else:
             return masked
 
-    def gen_fields(self, node):
-        for i, fldx in enumerate(node.fields()):
-
-            context = dict()
-
-            context["i"] = i
-            context["regtype"] = fldx.parent
-            context["field"] = fldx
-            context["ftype"] = self.get_ftype(fldx)
-            context["width"] = fldx.get_property("fieldwidth")
-            context["low"] = fldx.low
-            context["high"] = fldx.high
-            context["we"] = 0 if fldx.get_property("we") is False else 1
-            context["sw"] = fldx.get_property("sw").name
-            context["hw"] = fldx.get_property("hw").name
-            if not fldx.is_sw_writable and fldx.is_sw_readable:
-                context["rw"] = "RO"
-            elif fldx.is_sw_writable and not fldx.is_sw_readable:
-                context["rw"] = "WO"
-            else:
-                context["rw"] = "RW"
-            context["const"] = 1 if fldx.get_property("hw").name == "na" or fldx.get_property("hw").name == "r" else 0
-            context["reset"] = 0 if fldx.get_property("reset") is None else self.to_int32(fldx.get_property("reset"))
-            context["reset_hex"] = hex(context["reset"])
-            context["decrwidth"] = fldx.get_property("decrwidth") if fldx.get_property("decrwidth") is not None else 1
-            context["incrwidth"] = fldx.get_property("incrwidth") if fldx.get_property("incrwidth") is not None else 1
-            context["name"] = fldx.type_name
-            # FIXME parent should be used as default if not defined in field
-            context["dtype"] = fldx.get_property("desyrdl_data_type") or "uint"
-            context["signed"] = self.get_data_type_sign(fldx)
-            context["fixedpoint"] = self.get_data_type_fixed(fldx)
-            md = desyrdlmarkup() # parse description with markup lanugage, disable Mardown
-            context["desc"] = fldx.get_property("desc") or ""
-            context["desc_html"] = fldx.get_html_desc(md) or ""
-
-            mask = bitmask(fldx.get_property("fieldwidth"))
-
-            context["mask"] = mask << fldx.low
-            context["mask_hex"] = hex(context["mask"])
-
-            # add all non-native explicitly set properties
-            for p in node.list_properties(include_native=False):
-                assert p not in context
-                context[p] = node.get_property(p)
-
-            yield context
-
-    def get_ftype(self, node):
-        # Expects FieldNode type
-        assert isinstance(node, FieldNode)
-
-        if node.get_property("counter"):
-            return "COUNTER"
-        elif node.get_property("intr"):
-            return "INTERRUPT"
-        elif node.implements_storage:
-            return "STORAGE"
-        elif not node.is_virtual:
-            return "WIRE"
-        else:
-            # error (TODO: handle as such)
-            print("ERROR: can't make out the type of field for {}".format(node.get_path()))
-            return "WIRE"
-
+    # =========================================================================
     def get_access_channel(self, node):
-
         # Starting point for finding the top node
         cur_node = node
-
         ch = None
         while ch is None:
             try:
@@ -628,9 +427,9 @@ class DesyListener(RDLListener):
                 if isinstance(cur_node, RootNode):
                     print("ERROR: Couldn't find the access channel for " + node.inst_name)
                     raise
-
         return ch
 
+    # =========================================================================
     def get_data_type_sign(self, node):
         datatype = str(node.get_property("desyrdl_data_type") or '')
         pattern = '(^int.*|^fixed.*)'
@@ -639,10 +438,11 @@ class DesyListener(RDLListener):
         else:
             return 0
 
+    # =========================================================================
     def get_data_type_fixed(self, node):
         datatype = str(node.get_property("desyrdl_data_type") or '')
         pattern_fix = '.*fixed([-]*\d*)'
-        pattern_fp = 'ieee754'
+        pattern_fp = 'float'
         srch_fix = re.search(pattern_fix, datatype.lower())
 
         if srch_fix:
@@ -656,158 +456,101 @@ class DesyListener(RDLListener):
 
         return 0
 
+###############################################################################
+# Types, names and counts are needed. Clear after each exit_Addrmap
+class DesyRdlProcessor(DesyListener):
+
+    def __init__(self, tpl_dir, lib_dir, out_dir, out_formats):
+        super().__init__()
+
+        self.out_formats = out_formats
+        self.lib_dir = lib_dir
+        self.out_dir = out_dir
+
+        self.generated_files = dict()
+        self.generated_files['vhdl'] = list()
+        self.generated_files['vhdl_dict'] = dict()
+        self.generated_files['map'] = list()
+        self.generated_files['h'] = list()
+        self.generated_files['adoc'] = list()
+        self.generated_files['tcl'] = list()
+        self.generated_files["vhdl_dict"]["desyrdl"] = list() # inset desyrdl key so it is first on the list
+
+        self.top_context['generated_files'] = self.generated_files
+
+        # create Jinja template loaders, one loader per output type
+        prefixLoaderDict = dict()
+        for out_format in out_formats:
+            prefixLoaderDict[out_format] =  jinja2.FileSystemLoader(Path(tpl_dir / out_format))
+            prefixLoaderDict[out_format+"_lib"] =  jinja2.FileSystemLoader(Path(lib_dir / out_format))
+        tplLoader = jinja2.PrefixLoader(prefixLoaderDict)
+
+        self.jinja2Env = jinja2.Environment(
+            loader=tplLoader,
+            autoescape=jinja2.select_autoescape(),
+            undefined=jinja2.StrictUndefined,
+            line_statement_prefix="--#"
+        )
+
+    # =========================================================================
     def get_generated_files(self):
         return self.generated_files
 
-
-# Types, names and counts are needed. Clear after each exit_Addrmap
-class VhdlListener(DesyListener):
-
-    def exit_Addrmap(self, node):
+    # =========================================================================
+    def exit_Addrmap(self, node : AddrmapNode):
         super().exit_Addrmap(node)
 
-        param = dict();
-        param["n_regtypes"]=len(self.regtypes[-1])
-        param["n_regitems"]=len(self.regitems_with_regfiles[-1])
-        param["n_regfiletypes"]=len(self.regfiletypes[-1])
-        param["n_regfileitems"]=len(self.regfileitems[-1])
-        param["n_regcount"]=self.regcount[-1]
-        param["n_memtypes"]=len(self.memtypes[-1])
-        param["n_memitems"]=len(self.memitems[-1])
-        param["n_extitems"]=len(self.extitems[-1])
-        param["addrwidth"]=ceil(log2(node.size))
-        self.context = dict(
-                node=node,
-                regtypes=[x for x in self.gen_regtypes(self.regtypes[-1].values())],
-                memtypes=[x for x in self.gen_memtypes(self.memtypes[-1].values())],
-                memitems=[x for x in self.gen_memitems(self.memitems[-1])],
-                extitems=[x for x in self.gen_extitems(self.extitems[-1])],
-                param=param,
-                n_regtypes=len(self.regtypes[-1]),
-                n_regitems=len(self.regitems_with_regfiles[-1]),
-                n_regfiletypes=len(self.regfiletypes[-1]),
-                n_regfileitems=len(self.regfileitems[-1]),
-                n_memtypes=len(self.memtypes[-1]),
-                n_memitems=len(self.memitems[-1]),
-                n_extitems=len(self.extitems[-1]),
-                addrwidth=ceil(log2(node.size)))
+        # formats to generate per address mapp
+        if 'vhdl' in self.out_formats:
+            if node.get_property('desyrdl_generate_hdl') is None or \
+               node.get_property('desyrdl_generate_hdl') is True:
+                print(f"VHDL for: {node.inst_name} ({node.type_name})")
 
-        self.context["regitems"]=[x for x in self.gen_regitems(self.regitems[-1])]
-        self.context["regfiletypes"]=[x for x in self.gen_regfiletypes(self.regfiletypes[-1].values())]
-        self.context["regfileitems"]=[x for x in self.gen_regfileitems(self.regfileitems[-1])]
-        # regcount must be reset before generating another regitems context
-        self.regcount[-1] = 0
-        self.context["regitems_with_regfiles"]=[x for x in self.gen_regitems(self.regitems_with_regfiles[-1])]
-        self.context["n_regcount"]=self.regcount[-1]
+                files = self.render_templates(loader="vhdl", outdir="vhdl", context=self.context)
+                self.generated_files["vhdl"] = self.generated_files["vhdl"] + files
+                self.generated_files["vhdl_dict"][node.inst_name] = files
 
-        # add all non-native explicitly set properties
-        for p in node.list_properties(include_native=False):
-            assert p not in self.context
-            print(f"exit_Addrmap {node.inst_name}: Adding non-native property {p}")
-            self.context[p] = node.get_property(p)
+        if 'adoc' in self.out_formats:
+            print(f"ASCIIDOC for: {node.inst_name} ({node.type_name})")
+            files = self.render_templates(loader="adoc", outdir="adoc",context=self.context)
+            self.generated_files["adoc"] = self.generated_files["adoc"] + files
 
-        # generate if no property set or is set to true
-        if node.get_property('desyrdl_generate_hdl') is None or \
-           node.get_property('desyrdl_generate_hdl') is True:
-            self.process_templates(node)
-
-        self.regtypes.pop()
-        self.regitems.pop()
-        self.regfiletypes.pop()
-        self.regfileitems.pop()
-        self.regitems_with_regfiles.pop()
-        self.memtypes.pop()
-        self.memitems.pop()
-        self.extitems.pop()
-        self.regcount.pop()
-
-
-class MapfileListener(DesyListener):
-
-    def exit_Addrmap(self, node):
-        super().exit_Addrmap(node)
-
+        # formats to generate on top
         if isinstance(node.parent, RootNode):
-            all_regtypes = [y for x in self.regtypes for y in self.gen_regtypes(x.values())]
-            all_memtypes = [y for x in self.memtypes for y in self.gen_memtypes(x.values())]
-            all_regitems = [y for x in self.regitems_with_regfiles for y in self.gen_regitems(x)]
-            all_memitems = [y for x in self.memitems for y in self.gen_memitems(x)]
-            all_extitems = [y for x in self.extitems for y in self.gen_extitems(x)]
+            if 'vhdl' in self.out_formats:
+                files = self.render_templates(loader="vhdl_lib", outdir="vhdl", context=self.top_context)
+                self.generated_files["vhdl"] = files + self.generated_files["vhdl"]
+                self.generated_files["vhdl_dict"]["desyrdl"] = files
 
-            self.context = dict(
-                    node=node,
-                    regtypes=all_regtypes,
-                    memtypes=all_memtypes,
-                    memitems=all_memitems,
-                    extitems=all_extitems,
-                    n_regtypes=len(all_regtypes),
-                    n_regitems=len(all_regitems),
-                    n_memtypes=len(all_memtypes),
-                    n_memitems=len(all_memitems),
-                    n_extitems=len(all_extitems))
+            if 'map' in self.out_formats:
+                files = self.render_templates(loader="map", outdir="map",context=self.top_context)
+                self.generated_files["map"] = self.generated_files["map"] + files
 
-            self.context["regitems"] = all_regitems
-            self.context["n_regcount"] = sum(self.regcount)
+            if 'h' in self.out_formats:
+                files = self.render_templates(loader="h", outdir="h",context=self.top_context)
+                self.generated_files["h"] = self.generated_files["h"] + files
 
-            # add all non-native explicitly set properties
-            for p in node.list_properties(include_native=False):
-                assert p not in self.context
-                print(f"exit_Addrmap {node.inst_name}: Adding non-native property {p}")
-                self.context[p] = node.get_property(p)
+            if 'tcl' in self.out_formats:
+                files = self.render_templates(loader="tcl", outdir="tcl",context=self.top_context)
+                self.generated_files["tcl"] = self.generated_files["tcl"] + files
 
-            # The mapfile output filename is a template and relies on the access
-            # channel property.
-            if "desyrdl_access_channel" not in self.context:
-                self.context["desyrdl_access_channel"] = self.get_access_channel(node)
+    # =========================================================================
+    def render_templates (self, loader, outdir, context):
+        generated_files = list()
+        # get templates list and theyir ouput from include file
+        template = self.jinja2Env.get_template(loader +"/include.txt")
+        tpl_list = template.render(context).split()
 
-            self.process_templates(node)
+        # render template list and save in out
+        for tplidx in range(0,len(tpl_list),2):
+            # get template
+            template = self.jinja2Env.get_template(loader + "/" + tpl_list[tplidx])
+            # create out dir if needed
+            outFilePath = Path(self.out_dir / outdir / tpl_list[tplidx+1])
+            outFilePath.parents[0].mkdir(parents=True,exist_ok=True)
+            # render template and stream it directly to out file
+            template.stream(context).dump(str(outFilePath.resolve()))
+            generated_files.append(outFilePath)
+            # self.generated_files[outdir].append(outFilePath)
+        return generated_files
 
-class AdocListener(DesyListener):
-
-    def exit_Addrmap(self, node):
-        super().exit_Addrmap(node)
-        param = dict();
-        param["n_regtypes"]=len(self.regtypes[-1])
-        param["n_regitems"]=len(self.regitems_with_regfiles[-1])
-        param["n_regcount"]=self.regcount[-1]
-        param["n_memtypes"]=len(self.memtypes[-1])
-        param["n_memitems"]=len(self.memitems[-1])
-        param["n_extitems"]=len(self.extitems[-1])
-        param["addrwidth"]=ceil(log2(node.size))
-
-        self.context = dict(
-            node=node,
-            regtypes=[x for x in self.gen_regtypes(self.regtypes[-1].values())],
-            memtypes=[x for x in self.gen_memtypes(self.memtypes[-1].values())],
-            regitems=[x for x in self.gen_regitems(self.regitems_with_regfiles[-1])],
-            memitems=[x for x in self.gen_memitems(self.memitems[-1])],
-            extitems=[x for x in self.gen_extitems(self.extitems[-1])],
-            param=param,
-            n_regtypes=len(self.regtypes[-1]),
-            n_regitems=len(self.regitems[-1]),
-            n_regcount=self.regcount[-1],
-            n_memtypes=len(self.memtypes[-1]),
-            n_memitems=len(self.memitems[-1]),
-            n_extitems=len(self.extitems[-1]),
-            addrwidth=ceil(log2(node.size)))
-
-        # add all non-native explicitly set properties
-        for p in node.list_properties(include_native=False):
-            assert p not in self.context
-            print(f"exit_Addrmap {node.inst_name}: Adding non-native property {p}")
-            self.context[p] = node.get_property(p)
-
-        if "desyrdl_access_channel" not in self.context:
-            self.context["desyrdl_access_channel"] = self.get_access_channel(node)
-
-        self.process_templates(node)
-
-        self.regtypes.pop()
-        self.memtypes.pop()
-        self.regitems.pop()
-        self.regfiletypes.pop()
-        self.regfileitems.pop()
-        self.regitems_with_regfiles.pop()
-        self.memitems.pop()
-        self.extitems.pop()
-        self.regcount.pop()
