@@ -317,7 +317,7 @@ begin
   -- read data mux
   prs_rdata_mux: process(rtarget,
   {%- if n_reg_insts > 0 %}rdata_reg,{% endif %}
-  {%- if n_rgf_insts > 0 %}{% endif %}
+  {%- if n_rgf_insts > 0 %}rdata_rgf,{% endif %}
   {%- if n_mem_insts > 0 %}rdata_mem,{% endif %}
   {%- if n_ext_insts > 0 %}rdata_ext,{% endif %}invalid_rdata)
   begin
@@ -760,8 +760,12 @@ begin
         -- write transaction indicate
         if mem_wr_req = '1' and mem_rd_req = '0' then
           l_wr_trn <= '1';
+          po_mem_stb <= mem_wr_stb;
+          po_mem_we  <= '1';
         elsif mem_wr_req = '0' then
           l_wr_trn <= '0';
+          po_mem_stb <= mem_rd_stb;
+          po_mem_we  <= '0';
         end if;
 
         -- read has higher priority, but do not disturb pending write transaction
@@ -773,8 +777,6 @@ begin
             po_mem_addr(G_ADDR_WIDTH-1 downto {{mem.addrwidth}}-2) <= (others => '0');
           end if;
           {%- endfor %}
-          po_mem_stb <= mem_rd_stb;
-          po_mem_we  <= '0';
           l_rd_ack   <= pi_mem_ack;
 
         elsif mem_wr_req = '1'  and l_wr_ack = '0' then
@@ -784,17 +786,11 @@ begin
             po_mem_addr(G_ADDR_WIDTH-1 downto {{mem.addrwidth}}-2) <= (others => '0');
           end if;
           {%- endfor %}
-          po_mem_stb <= mem_wr_stb;
-          po_mem_we  <= '1';
           l_wr_ack   <= pi_mem_ack;
 
         elsif mem_rd_req = '0' and mem_wr_req = '0' then
           l_rd_ack   <= '0';
           l_wr_ack   <= '0';
-        else
-          po_mem_stb <= (others => '0');
-          po_mem_we  <= '0';
-
         end if;
       end if;
     end process prs_rdwr_arb;
