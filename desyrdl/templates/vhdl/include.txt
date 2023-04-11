@@ -3,5 +3,5 @@
 {#- format: <template file> <output file string template> -#}
 {# pkg.vhd.in {{inst_name}}/pkg_{{type_name_org}}.vhd #}
 pkg.vhd.in            {{inst_name}}/pkg_{{type_name_org}}.vhd
-decoder_axi4l.vhd.in  {{inst_name}}/{{type_name_org}}_decoder_axi4l.vhd.vhd
+decoder_{{interface|lower}}.vhd.in  {{inst_name}}/{{type_name_org}}_decoder_{{interface|lower}}.vhd
 top.vhd.in            {{inst_name}}/{{type_name_org}}.vhd
