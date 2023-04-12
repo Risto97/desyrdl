@@ -164,7 +164,7 @@ begin
 
         pi_reg  => pi_addrmap.{{reg.inst_name}},
         po_reg  => po_addrmap.{{reg.inst_name}}
-      );--{% elif reg.dim == 2 %}
+      ); --{% elif reg.dim == 2 %}
     gen_m: for idx_m in 0 to {{reg.dim_m}}-1 generate
       inst_{{reg.inst_name}}: entity work.{{type_name_org}}_{{reg.type_name}}
         port map(
@@ -179,7 +179,7 @@ begin
           pi_reg  => pi_addrmap.{{reg.inst_name}}(idx_m),
           po_reg  => po_addrmap.{{reg.inst_name}}(idx_m)
         );
-    end generate;--{% elif reg.dim == 3 %}
+    end generate; --{% elif reg.dim == 3 %}
     gen_n : for idx_n in 0 to {{reg.dim_n}}-1 generate  -- outer dim, for 3D arrays
       gen_m: for idx_m in 0 to {{reg.dim_m}}-1 generate -- inner dim, for 2D arrays
         constant l_idx : natural := (idx_n*{{reg.dim_m}} + idx_m) ;
@@ -198,8 +198,8 @@ begin
             po_reg  => po_addrmap.{{reg.inst_name}}(idx_n,idx_m)
           );
       end generate;
-    end generate;--{% endif %}
-  end block;--{% endfor %}
+    end generate; --{% endif %}
+  end block; --{% endfor %}
 
   -- ==========================================================================={% set rfns = namespace(reg_curr_idx = 0,reg_rf_idx = 0) %}
   -- generated registers instances in regfiles {% for rgf in rgf_insts %}
@@ -222,7 +222,7 @@ begin
 
           pi_reg  => pi_addrmap.{{rgf.inst_name}}.{{reg.inst_name}},
           po_reg  => po_addrmap.{{rgf.inst_name}}.{{reg.inst_name}}--{%- set rfns.reg_curr_idx = rfns.reg_curr_idx + 1 %}
-        );--{% elif reg.dim == 2 %}{% for idx_m in range(reg.dim_m) %}
+        ); --{% elif reg.dim == 2 %}{% for idx_m in range(reg.dim_m) %}
         inst_{{reg.inst_name}}_{{idx_m}}: entity work.{{type_name_org}}_{{rgf.type_name}}_{{reg.type_name}}
           port map(
             pi_clock        => pi_clock,
@@ -235,7 +235,7 @@ begin
 
             pi_reg  => pi_addrmap.{{rgf.inst_name}}.{{reg.inst_name}}({{idx_m}}),
             po_reg  => po_addrmap.{{rgf.inst_name}}.{{reg.inst_name}}({{idx_m}})--{%- set rfns.reg_curr_idx = rfns.reg_curr_idx + 1 %}
-          );--{% endfor %}{% elif reg.dim == 3 %}{% for idx_n in range(reg.dim_n) %}{% for idx_m in range(reg.dim_m) %}
+          ); --{% endfor %}{% elif reg.dim == 3 %}{% for idx_n in range(reg.dim_n) %}{% for idx_m in range(reg.dim_m) %}
         inst_{{reg.inst_name}}__{{idx_n}}__{{idx_m}}: entity work.{{type_name_org}}_{{rgf.type_name}}_{{reg.type_name}}
           port map(
             pi_clock        => pi_clock,
@@ -248,8 +248,8 @@ begin
 
             pi_reg  => pi_addrmap.{{rgf.inst_name}}.{{reg.inst_name}}(idx_n,idx_m),
             po_reg  => po_addrmap.{{rgf.inst_name}}.{{reg.inst_name}}(idx_n,idx_m)--{%- set rfns.reg_curr_idx = rfns.reg_curr_idx + 1 %}
-          );--{% endfor %}{% endfor %}{% endif %}
-    end block;--{% endfor %}{# end of register iteration #}
+          ); --{% endfor %}{% endfor %}{% endif %}
+    end block; --{% endfor %}{# end of register iteration #}
     --{% elif rgf.dim == 2 %}{% for outer_idx_m in range(rgf.dim) %}{% for reg in rgf.reg_insts %}
     blk_{{reg.inst_name}}_{{outer_idx_m}} : block
     begin  --{% if reg.dim == 1 %}
@@ -265,7 +265,7 @@ begin
 
           pi_reg  => pi_addrmap.{{rgf.inst_name}}({{outer_idx_m}}).{{reg.inst_name}},
           po_reg  => po_addrmap.{{rgf.inst_name}}({{outer_idx_m}}).{{reg.inst_name}}--{%- set rfns.reg_curr_idx = rfns.reg_curr_idx + 1 %}
-        );--{% elif reg.dim == 2 %}{% for idx_m in range(reg.dim_m) %}
+        ); --{% elif reg.dim == 2 %}{% for idx_m in range(reg.dim_m) %}
         inst_{{reg.inst_name}}_{{idx_m}}: entity work.{{type_name_org}}_{{rgf.type_name}}_{{reg.type_name}}
           port map(
             pi_clock        => pi_clock,
@@ -278,7 +278,7 @@ begin
 
             pi_reg  => pi_addrmap.{{rgf.inst_name}}({{outer_idx_m}}).{{reg.inst_name}}({{idx_m}}),
             po_reg  => po_addrmap.{{rgf.inst_name}}({{outer_idx_m}}).{{reg.inst_name}}({{idx_m}})--{%- set rfns.reg_curr_idx = rfns.reg_curr_idx + 1 %}
-          );--{% endfor %}{% elif reg.dim == 3 %}{% for idx_n in range(reg.dim_n) %}{% for idx_m in range(reg.dim_m) %}
+          ); --{% endfor %}{% elif reg.dim == 3 %}{% for idx_n in range(reg.dim_n) %}{% for idx_m in range(reg.dim_m) %}
         inst_{{reg.inst_name}}__{{idx_n}}__{{idx_m}}: entity work.{{type_name_org}}_{{rgf.type_name}}_{{reg.type_name}}
           port map(
             pi_clock        => pi_clock,
@@ -291,8 +291,8 @@ begin
 
             pi_reg  => pi_addrmap.{{rgf.inst_name}}({{outer_idx_m}}).{{reg.inst_name}}(idx_n,idx_m),
             po_reg  => po_addrmap.{{rgf.inst_name}}({{outer_idx_m}}).{{reg.inst_name}}(idx_n,idx_m)--{%- set rfns.reg_curr_idx = rfns.reg_curr_idx + 1 %}
-          );--{% endfor %}{% endfor %}{% endif %}
-    end block;--{% endfor %}{# end of register iteration#}{% endfor %}
+          ); --{% endfor %}{% endfor %}{% endif %}
+    end block; --{% endfor %}{# end of register iteration#}{% endfor %}
   --{% endif %}
   end block;
   -- ---------------------------------------------------------------------------{% endfor %}
@@ -306,17 +306,17 @@ begin
   -- ---------------------------------------------------------------------------
   blk_{{mem.inst_name}} : block
   begin--{% if mem.dim == 1 %}{% if mem.node.is_sw_readable %}
-    mem_data_out_vect({{mem.idx}})({{mem.datawidth}}-1 downto 0) <= pi_addrmap.{{mem.inst_name}}.data;--{% if mem.datawidth < 32%}
-    mem_data_out_vect({{mem.idx}})(C_DATA_WIDTH-1 downto {{mem.datawidth}}) <= (others => '0');--{% endif %}{% else %}
-    mem_data_out_vect({{mem.idx}}) <= (others => '0');--{% endif %}
+    mem_data_out_vect({{mem.idx}})({{mem.datawidth}}-1 downto 0) <= pi_addrmap.{{mem.inst_name}}.data; --{% if mem.datawidth < 32%}
+    mem_data_out_vect({{mem.idx}})(C_DATA_WIDTH-1 downto {{mem.datawidth}}) <= (others => '0'); --{% endif %}{% else %}
+    mem_data_out_vect({{mem.idx}}) <= (others => '0'); --{% endif %}
     po_addrmap.{{mem.inst_name}}.addr <= mem_addr({{mem.addrwidth}}-1 downto 0);
     po_addrmap.{{mem.inst_name}}.data <= mem_data_in({{mem.datawidth}}-1 downto 0);
     po_addrmap.{{mem.inst_name}}.en <= mem_stb({{mem.idx}});
-    po_addrmap.{{mem.inst_name}}.we <= mem_we;--{% elif mem.dim == 2 %}
+    po_addrmap.{{mem.inst_name}}.we <= mem_we; --{% elif mem.dim == 2 %}
     gen_m: for idx_m in 0 to {{mem.dim_m}}-1 generate--{% if mem.node.is_sw_readable %}
-      mem_data_out_vect({{mem.idx}}+idx_m)({{mem.datawidth}}-1 downto 0) <= pi_addrmap.{{mem.inst_name}}(idx_m).data;--{% if mem.datawidth < 32%}
-      mem_data_out_vect({{mem.idx}}+idx_m)(C_DATA_WIDTH-1 downto {{mem.datawidth}}) <= (others => '0');--{% endif %}{% else %}
-      mem_data_out_vect({{mem.idx}}+idx_m) <= (others => '0');--{% endif %}
+      mem_data_out_vect({{mem.idx}}+idx_m)({{mem.datawidth}}-1 downto 0) <= pi_addrmap.{{mem.inst_name}}(idx_m).data; --{% if mem.datawidth < 32%}
+      mem_data_out_vect({{mem.idx}}+idx_m)(C_DATA_WIDTH-1 downto {{mem.datawidth}}) <= (others => '0'); --{% endif %}{% else %}
+      mem_data_out_vect({{mem.idx}}+idx_m) <= (others => '0'); --{% endif %}
       po_addrmap.{{mem.inst_name}}(idx_m).addr <= mem_addr({{mem.addrwidth}}-1 downto 0);
       po_addrmap.{{mem.inst_name}}(idx_m).data <= mem_data_in({{mem.datawidth}}-1 downto 0);
       po_addrmap.{{mem.inst_name}}(idx_m).en <= mem_stb({{mem.idx}}+idx_m);
@@ -345,7 +345,7 @@ begin
       po_s_decoder => ext_if_i({{ext.idx}}),
       po_m_ext     => po_addrmap.{{ext.inst_name}},
       pi_m_ext     => pi_addrmap.{{ext.inst_name}}
-    );--{% endif %}
+    ); --{% endif %}
     ----{% elif ext.dim == 2 %}
     gen_m: for idx_m in 0 to {{ext.dim_m}}-1 generate
       --{% if ext.interface|lower == interface|lower %}
@@ -360,10 +360,10 @@ begin
         po_s_decoder => ext_if_i({{ext.idx}}+idx_m),
         po_m_ext     => po_addrmap.{{ext.inst_name}}(idx_m),
         pi_m_ext     => pi_addrmap.{{ext.inst_name}}(idx_m)
-      );--{% endif %}
+      ); --{% endif %}
     end generate;
     --{% endif %}
-  end block;--{% endfor %}
+  end block; --{% endfor %}
 
 end architecture;
 
