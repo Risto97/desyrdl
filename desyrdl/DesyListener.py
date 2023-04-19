@@ -514,7 +514,7 @@ class DesyRdlProcessor(DesyListener):
         self.top_context['generated_files'] = self.generated_files
 
         # create Jinja template loaders, one loader per output type
-        prefix_loader_dict = []
+        prefix_loader_dict = {}
         for out_format in out_formats:
             prefix_loader_dict[out_format] = jinja2.FileSystemLoader(Path(tpl_dir / out_format))
             prefix_loader_dict[out_format + "_lib"] = jinja2.FileSystemLoader(Path(lib_dir / out_format))
