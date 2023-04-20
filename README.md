@@ -61,21 +61,15 @@ To create useful information (or "context") for the template processing, its
 Walker/Listener method of traversing the compiled tree is used.
 
 `DesyListener` extends its `systemrdl.RDLListener` class. It extracts a fixed
-set of information from the compiled tree and passes it on to a custom template
-engine (`RdlFormatter`).
+set of information from the compiled tree and passes it on to a template engine
+(Jinja2).
 
 ![DesyRDL flow diagram](./doc/images/DesyRDL.svg "DesyRDL flow overview")
 
 ### Templates
 
-The custom template engine is inspired by
-https://github.com/ebrehault/superformatter. Everything within curly braces {}
-is interpreted as a "replacement field" and replaced by the output of the
-formatter. This is inherited from Python's `Formatter` class, so its behavior
-is very similar to a formatted print in Python. In addition to that it can also
-perform advanced actions, e.g. loop over all registers within an addrmap. For
-all this it relies on "context" which holds all the necessary information about
-the address space.
+Templates are written for the Jinja2 template engine. Users can provide their
+own templates.
 
 ### Context
 
