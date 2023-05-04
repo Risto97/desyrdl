@@ -7,10 +7,10 @@
 
 {#- ============================================================ #}
 {#- register macro #}
-{%- macro reg_macro(parent_name, reg) -%}
+{%- macro reg_macro(parent_name, reg, addr_offset = 0) -%}
     {%- set path = parent_name + separator + reg.inst_name -%}
 {#- {{item_macro(regpath, reg)}} #}
-{{"{:<50}".format(path)}} {{"{:>10}".format(reg.elements)}} {{" 0x{:>08X}".format(reg.absolute_address)}} {{"{:>12}".format(reg.total_size)}} {{"{:>4}".format(reg.access_channel)}} {{"{:>4}".format(reg.width)}} {{"{:>4}".format(reg.fixedpoint)}} {{"{:>4}".format(reg.signed)}} {{"{:>4}".format(reg.rw)}}
+{{"{:<50}".format(path)}} {{"{:>10}".format(reg.elements)}} {{" 0x{:>08X}".format(reg.absolute_address+addr_offset)}} {{"{:>12}".format(reg.total_size)}} {{"{:>4}".format(reg.access_channel)}} {{"{:>4}".format(reg.width)}} {{"{:>4}".format(reg.fixedpoint)}} {{"{:>4}".format(reg.signed)}} {{"{:>4}".format(reg.rw)}}
 {%- endmacro -%}
 
 {#- ============================================================ #}
@@ -33,10 +33,11 @@
   {%- elif mem.dim == 2 %}
     {%- for idx_m in range(mem.dim_m) -%}
     {%- set path = parent_name + separator + mem.inst_name + separator + "{}".format(idx_m) %}
+    {%- set addr_offset = mem.array_stride*idx_m %}
 {#- {{item_macro(mempath, mem)}} #}
-{{"{:<50}".format(path)}} {{"{:>10}".format(mem.mementries)}} {{" 0x{:>08X}".format(mem.absolute_address)}} {{"{:>12}".format(mem.array_stride)}} {{"{:>4}".format(mem.access_channel)}} {{"{:>4}".format(mem.width)}} {{"{:>4}".format(mem.fixedpoint)}} {{"{:>4}".format(mem.signed)}} {{"{:>4}".format(mem.rw)}}
+{{"{:<50}".format(path)}} {{"{:>10}".format(mem.mementries)}} {{" 0x{:>08X}".format(mem.absolute_address+addr_offset)}} {{"{:>12}".format(mem.array_stride)}} {{"{:>4}".format(mem.access_channel)}} {{"{:>4}".format(mem.width)}} {{"{:>4}".format(mem.fixedpoint)}} {{"{:>4}".format(mem.signed)}} {{"{:>4}".format(mem.rw)}}
       {%- for reg in mem.reg_insts -%}
-{{reg_macro(path, reg)}}
+{{reg_macro(path, reg, addr_offset)}}
       {%- endfor %}
     {%- endfor %}
   {%- endif %}
@@ -54,9 +55,10 @@
   {%- elif rgf.dim == 2 %}
     {%- for idx_m in range(rgf.dim_m) -%}
     {%- set path = parent_name + separator + rgf.inst_name + separator + "{}".format(idx_m) %}
-{{"{:<50}".format(path)}} {{"{:>10.0f}".format(rgf.total_words/rgf.dim_m)}} {{" 0x{:>08X}".format(rgf.absolute_address)}} {{"{:>12}".format(rgf.array_stride)}} {{"{:>4}".format(rgf.access_channel)}} {{"{:>4}".format(rgf.width)}} {{"{:>4}".format(rgf.fixedpoint)}} {{"{:>4}".format(rgf.signed)}} {{"{:>4}".format(rgf.rw)}}
+    {%- set addr_offset = rgf.array_stride*idx_m %}
+{{"{:<50}".format(path)}} {{"{:>10.0f}".format(rgf.total_words/rgf.dim_m)}} {{" 0x{:>08X}".format(rgf.absolute_address + addr_offset)}} {{"{:>12}".format(rgf.array_stride)}} {{"{:>4}".format(rgf.access_channel)}} {{"{:>4}".format(rgf.width)}} {{"{:>4}".format(rgf.fixedpoint)}} {{"{:>4}".format(rgf.signed)}} {{"{:>4}".format(rgf.rw)}}
       {%- for reg in rgf.reg_insts -%}
-{{reg_macro(path, reg)}}
+{{reg_macro(path, reg, addr_offset)}}
       {%- endfor %}
     {%- endfor %}
   {%- endif %}

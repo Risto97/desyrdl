@@ -17,14 +17,14 @@
 
 {#- ============================================================ #}
 {#- register macro #}
-{%- macro reg_macro(parent_name, reg) %}
+{%- macro reg_macro(parent_name, reg, addr_offset=0) %}
 /*
  * Module: {{parent_name}} Register: {{reg.inst_name}}
  * {{reg.desc}}
  */
 #define {{parent_name}}_{{reg.inst_name|upper}}_LEN         {{"{:>11}".format(reg.elements)}}U
-#define {{parent_name}}_{{reg.inst_name|upper}}_BASEADDR    {{"  0x{:>08X}".format(reg.absolute_address)}}
-#define {{parent_name}}_{{reg.inst_name|upper}}_HIGHADDR    {{"  0x{:>08X}".format(reg.absolute_address_high)}}
+#define {{parent_name}}_{{reg.inst_name|upper}}_BASEADDR    {{"  0x{:>08X}".format(reg.absolute_address+addr_offset)}}
+#define {{parent_name}}_{{reg.inst_name|upper}}_HIGHADDR    {{"  0x{:>08X}".format(reg.absolute_address_high+addr_offset)}}
 #define {{parent_name}}_{{reg.inst_name|upper}}_DATA_WIDTH  {{"{:>12}".format(reg.width)}}
 #define {{parent_name}}_{{reg.inst_name|upper}}_FRACBITS    {{"{:>12}".format(reg.fixedpoint)}}
 #define {{parent_name}}_{{reg.inst_name|upper}}_IS_SIGNED   {{"{:>12}".format(reg.signed)}}
@@ -71,20 +71,21 @@
     {%- endfor %}
   {%- elif mem.dim == 2 %}
     {%- for idx_m in range(mem.dim_m) -%}
+    {%- set addr_offset = mem.array_stride*idx_m %}
     {%- set path = parent_name + "_" + mem.inst_name + "__" + "{}".format(idx_m) %}
 /*
  * Memory: {{mem.inst_name}}  [{{idx_m}}]
  * {{mem.desc}}
  */
 #define {{parent_name}}_{{mem.inst_name|upper}}__{{"{}".format(idx_m)}}_LEN         {{"{:>11}".format(mem.mementries)}}U
-#define {{parent_name}}_{{mem.inst_name|upper}}__{{"{}".format(idx_m)}}_BASEADDR    {{"  0x{:>08X}".format(mem.absolute_address)}}
+#define {{parent_name}}_{{mem.inst_name|upper}}__{{"{}".format(idx_m)}}_BASEADDR    {{"  0x{:>08X}".format(mem.absolute_address+addr_offset)}}
 #define {{parent_name}}_{{mem.inst_name|upper}}__{{"{}".format(idx_m)}}_HIGHADDR    {{"  0x{:>08X}".format(mem.array_stride)}}
 #define {{parent_name}}_{{mem.inst_name|upper}}__{{"{}".format(idx_m)}}_DATA_WIDTH  {{"{:>12}".format(mem.width)}}
 #define {{parent_name}}_{{mem.inst_name|upper}}__{{"{}".format(idx_m)}}_FRACBITS    {{"{:>12}".format(mem.fixedpoint)}}
 #define {{parent_name}}_{{mem.inst_name|upper}}__{{"{}".format(idx_m)}}_IS_SIGNED   {{"{:>12}".format(mem.signed)}}
 #define {{parent_name}}_{{mem.inst_name|upper}}__{{"{}".format(idx_m)}}_ACCESS_TYPE {{"{:>12}".format("\"" + mem.rw + "\"")}}
       {%- for reg in mem.reg_insts -%}
-{{reg_macro(path, reg)}}
+{{reg_macro(path, reg, addr_offset)}}
       {%- endfor %}
     {%- endfor %}
   {%- endif %}
@@ -111,20 +112,21 @@
     {%- endfor %}
   {%- elif rgf.dim == 2 %}
     {%- for idx_m in range(rgf.dim_m) -%}
+    {%- set addr_offset = rgf.array_stride*idx_m %}
     {%- set path = parent_name + "_" + rgf.inst_name + "__" + "{}".format(idx_m) %}
 /*
  * RegFile: {{rgf.inst_name}} [{{idx_m}}]
  * {{rgf.desc}}
  */
 #define {{parent_name}}_{{rgf.inst_name|upper}}__{{"{}".format(idx_m)}}_LEN         {{"{:>11.0f}".format(rgf.total_words/rgf.dim_m)}}U
-#define {{parent_name}}_{{rgf.inst_name|upper}}__{{"{}".format(idx_m)}}_BASEADDR    {{"  0x{:>08X}".format(rgf.absolute_address)}}
+#define {{parent_name}}_{{rgf.inst_name|upper}}__{{"{}".format(idx_m)}}_BASEADDR    {{"  0x{:>08X}".format(rgf.absolute_address+addr_offset)}}
 #define {{parent_name}}_{{rgf.inst_name|upper}}__{{"{}".format(idx_m)}}_HIGHADDR    {{"  0x{:>08X}".format(rgf.array_stride)}}
 #define {{parent_name}}_{{rgf.inst_name|upper}}__{{"{}".format(idx_m)}}_DATA_WIDTH  {{"{:>12}".format(rgf.width)}}
 #define {{parent_name}}_{{rgf.inst_name|upper}}__{{"{}".format(idx_m)}}_FRACBITS    {{"{:>12}".format(rgf.fixedpoint)}}
 #define {{parent_name}}_{{rgf.inst_name|upper}}__{{"{}".format(idx_m)}}_IS_SIGNED   {{"{:>12}".format(rgf.signed)}}
 #define {{parent_name}}_{{rgf.inst_name|upper}}__{{"{}".format(idx_m)}}_ACCESS_TYPE {{"{:>12}".format("\"" + rgf.rw + "\"")}}
       {%- for reg in rgf.reg_insts -%}
-{{reg_macro(path, reg)}}
+{{reg_macro(path, reg, addr_offset)}}
       {%- endfor %}
     {%- endfor %}
   {%- endif %}
