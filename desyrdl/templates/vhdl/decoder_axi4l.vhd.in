@@ -732,7 +732,7 @@ begin
   po_rgf_reg_rd_stb <= regf_reg_rd_stb;
   po_rgf_reg_wr_stb <= regf_reg_wr_stb;
   po_rgf_reg_data   <= wdata;
-  rdata_rgf         <= pi_reg_data ;
+  rdata_rgf         <= pi_rgf_reg_data ;
 {%- endif %}
 
 {%- if n_mem_insts > 0 %}

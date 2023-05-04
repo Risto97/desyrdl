@@ -48,21 +48,21 @@ architecture arch of {{type_name_org}} is
   signal reg_data_out_vect : t_data_out({{n_regs}}-1 downto 0);
   signal reg_rd_stb   : std_logic_vector({{n_regs}}-1 downto 0);
   signal reg_wr_stb   : std_logic_vector({{n_regs}}-1 downto 0);
-  signal reg_data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0);
   signal reg_data_in  : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+  signal reg_data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
   --{%- endif %}{%- if n_rgf_insts > 0 %}
   signal rgf_reg_data_out_vect : t_data_out({{n_regf_regs}}-1 downto 0);
   signal rgf_reg_rd_stb   : std_logic_vector({{n_regf_regs}}-1 downto 0);
   signal rgf_reg_wr_stb   : std_logic_vector({{n_regf_regs}}-1 downto 0);
   signal rgf_reg_data_in  : std_logic_vector(C_DATA_WIDTH-1 downto 0);
-  signal rgf_reg_data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+  signal rgf_reg_data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
   --{%- endif %}{%- if n_mem_insts > 0 %}
   signal mem_data_out_vect : t_data_out({{n_mems}}-1 downto 0);
   signal mem_stb      : std_logic_vector({{n_mems}}-1 downto 0);
   signal mem_we       : std_logic;
   signal mem_addr     : std_logic_vector(C_ADDR_WIDTH-1 downto 0);
-  signal mem_data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0);
   signal mem_data_in  : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+  signal mem_data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
   signal mem_ack      : std_logic;
   --{%- endif %}{%- if n_ext_insts > 0 %}
   signal ext_if_i     : t_{{interface|lower}}_s2m_array({{n_exts}}-1 downto 0);
@@ -250,7 +250,7 @@ begin
             po_reg  => po_addrmap.{{rgf.inst_name}}.{{reg.inst_name}}(idx_n,idx_m)--{%- set rfns.reg_curr_idx = rfns.reg_curr_idx + 1 %}
           );--{% endfor %}{% endfor %}{% endif %}
     end block;--{% endfor %}{# end of register iteration #}
-    --{% elif rgf.dim == 2 %}{% for outer_idx_m in range(rgf.dim) %}{% for reg in rgf.reg_insts %}
+    --{% elif rgf.dim == 2 %}{% for outer_idx_m in range(rgf.dim_m) %}{% for reg in rgf.reg_insts %}
     blk_{{reg.inst_name}}_{{outer_idx_m}} : block
     begin  --{% if reg.dim == 1 %}
       inst_{{reg.inst_name}}: entity work.{{type_name_org}}_{{rgf.type_name}}_{{reg.type_name}}
