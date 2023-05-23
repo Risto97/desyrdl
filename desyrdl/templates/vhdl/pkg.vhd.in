@@ -44,13 +44,13 @@ package pkg_{{type_name_org}} is
   -----------------------------------------------{% for field in regtype.fields %}
   type t_field_signals_{{regtype_type_name}}_{{field.type_name}}_in is record
     {%- if field.node.is_hw_writable %}
-    data : std_logic_vector({{field.width}}-1 downto 0);--{% else %}
+    data : std_logic_vector({{field.width}}-1 downto 0); --{% else %}
     -- no data if field cannot be written from hw
-    data : std_logic_vector(-1 downto 0);--{% endif %}
+    data : std_logic_vector(-1 downto 0); --{% endif %}
     {%- if field.we %}
-    we   : std_logic;--{% endif %}
+    we   : std_logic; --{% endif %}
     {%- if field.wel %}
-    wel  : std_logic;--{% endif %}
+    wel  : std_logic; --{% endif %}
     {%- if field.hwclr %}
     hwclr: std_logic; --{% endif %}
     {%- if field.hwset %}
@@ -60,28 +60,28 @@ package pkg_{{type_name_org}} is
     {%- if field.node.is_down_counter %}
     decr : std_logic; --{% endif %}
     {%- if field.decrwidth > 0 %}
-    decrvalue : std_logic_vector({{field.decrwidth}}-1 downto 0);--{% endif %}
+    decrvalue : std_logic_vector({{field.decrwidth}}-1 downto 0); --{% endif %}
     {%- if field.incrwidth > 0 %}
-    incrvalue : std_logic_vector({{field.incrwidth}}-1 downto 0);--{% endif %}
+    incrvalue : std_logic_vector({{field.incrwidth}}-1 downto 0); --{% endif %}
   end record;
 
   type t_field_signals_{{regtype_type_name}}_{{field.type_name}}_out is record
     {%- if field.node.is_hw_readable %}
-    data : std_logic_vector({{field.width}}-1 downto 0);--{% else %}
+    data : std_logic_vector({{field.width}}-1 downto 0); --{% else %}
     -- no data if field cannot be written from hw
-    data : std_logic_vector(-1 downto 0);--{% endif %}
+    data : std_logic_vector(-1 downto 0); --{% endif %}
     {%- if field.swacc %}
     swacc : std_logic; --{% endif %}
     {%- if field.swmod %}
     swmod : std_logic; --{% endif %}
-  end record;--{% endfor %}
+  end record; --{% endfor %}
 
   -- The actual register types
   type t_reg_{{regtype_type_name}}_in is record--{% for field in regtype.fields %}
-    {{field.type_name}} : t_field_signals_{{regtype_type_name}}_{{field.type_name}}_in;--{% endfor %}
+    {{field.type_name}} : t_field_signals_{{regtype_type_name}}_{{field.type_name}}_in; --{% endfor %}
   end record;
   type t_reg_{{regtype_type_name}}_out is record--{% for field in regtype.fields %}
-    {{field.type_name}} : t_field_signals_{{regtype_type_name}}_{{field.type_name}}_out;--{% endfor %}
+    {{field.type_name}} : t_field_signals_{{regtype_type_name}}_{{field.type_name}}_out; --{% endfor %}
   end record;
   type t_reg_{{regtype_type_name}}_2d_in is array (integer range <>) of t_reg_{{regtype_type_name}}_in;
   type t_reg_{{regtype_type_name}}_2d_out is array (integer range <>) of t_reg_{{regtype_type_name}}_out;
@@ -105,14 +105,14 @@ package pkg_{{type_name_org}} is
   -- REGFILE interface
   -- -----------------------------------------------------------------------------{% for rftype in rgf_types %}
   type t_rgf_{{rftype.type_name}}_in is record --{% for reg in rftype.reg_insts %}{% if reg.dim == 1 %}
-    {{reg.inst_name}} : t_reg_{{rftype.type_name}}_{{reg.type_name}}_in;--{% elif reg.dim == 2 %}
-    {{reg.inst_name}} : t_reg_{{rftype.type_name}}_{{reg.type_name}}_2d_in(0 to {{reg.dim_m}}-1);--{% elif reg.dim == 3 %}
-    {{reg.inst_name}} : t_reg_{{rftype.type_name}}_{{reg.type_name}}_3d_in(0 to {{reg.dim_n}}-1, 0 to {{reg.dim_m}}-1);--{% endif %}{% endfor %}
+    {{reg.inst_name}} : t_reg_{{rftype.type_name}}_{{reg.type_name}}_in; --{% elif reg.dim == 2 %}
+    {{reg.inst_name}} : t_reg_{{rftype.type_name}}_{{reg.type_name}}_2d_in(0 to {{reg.dim_m}}-1); --{% elif reg.dim == 3 %}
+    {{reg.inst_name}} : t_reg_{{rftype.type_name}}_{{reg.type_name}}_3d_in(0 to {{reg.dim_n}}-1, 0 to {{reg.dim_m}}-1); --{% endif %}{% endfor %}
   end record;
   type t_rgf_{{rftype.type_name}}_out is record --{% for reg in rftype.reg_insts %}{% if reg.dim == 1 %}
-    {{reg.inst_name}} : t_reg_{{rftype.type_name}}_{{reg.type_name}}_out;--{% elif reg.dim == 2 %}
-    {{reg.inst_name}} : t_reg_{{rftype.type_name}}_{{reg.type_name}}_2d_out(0 to {{reg.dim_m}}-1);--{% elif reg.dim == 3 %}
-    {{reg.inst_name}} : t_reg_{{rftype.type_name}}_{{reg.type_name}}_3d_out(0 to {{reg.dim_n}}-1, 0 to {{reg.dim_m}}-1);--{% endif %}{% endfor %}
+    {{reg.inst_name}} : t_reg_{{rftype.type_name}}_{{reg.type_name}}_out; --{% elif reg.dim == 2 %}
+    {{reg.inst_name}} : t_reg_{{rftype.type_name}}_{{reg.type_name}}_2d_out(0 to {{reg.dim_m}}-1); --{% elif reg.dim == 3 %}
+    {{reg.inst_name}} : t_reg_{{rftype.type_name}}_{{reg.type_name}}_3d_out(0 to {{reg.dim_n}}-1, 0 to {{reg.dim_m}}-1); --{% endif %}{% endfor %}
   end record;
   type t_rgf_{{rftype.type_name}}_2d_in is array (integer range <>) of t_rgf_{{rftype.type_name}}_in;
   type t_rgf_{{rftype.type_name}}_2d_out is array (integer range <>) of t_rgf_{{rftype.type_name}}_out;
@@ -128,13 +128,13 @@ package pkg_{{type_name_org}} is
     addr : std_logic_vector({{mem.addrwidth}}-1 downto 0);
     --{% if mem.node.is_sw_writable %}
     we   : std_logic;
-    data : std_logic_vector({{mem.datawidth}}-1 downto 0);--{% endif %}
+    data : std_logic_vector({{mem.datawidth}}-1 downto 0); --{% endif %}
   end record t_mem_{{mem.type_name}}_out;
   type t_mem_{{mem.type_name}}_in is record
     --{% if mem.node.is_sw_readable %}
     data : std_logic_vector({{mem.datawidth}}-1 downto 0);
     --{% else %}no data if field cannot be read from sw
-    data : std_logic_vector(-1 downto 0);--{% endif %}
+    data : std_logic_vector(-1 downto 0); --{% endif %}
   end record t_mem_{{mem.type_name}}_in;
   type t_mem_{{mem.type_name}}_2d_in is array (integer range <>) of t_mem_{{mem.type_name}}_in;
   type t_mem_{{mem.type_name}}_2d_out is array (integer range <>) of t_mem_{{mem.type_name}}_out;
@@ -145,34 +145,34 @@ package pkg_{{type_name_org}} is
   -- ---------------------------------------------------------------------------
   type t_addrmap_{{type_name_org}}_in is record
     --{% for reg in reg_insts %}{% if reg.dim == 1 %}
-    {{reg.inst_name}} : t_reg_{{reg.type_name}}_in;--{% elif reg.dim == 2 %}
-    {{reg.inst_name}} : t_reg_{{reg.type_name}}_2d_in(0 to {{reg.dim_m}}-1);--{% elif reg.dim == 3 %}
-    {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_in(0 to {{reg.dim_n}}-1, 0 to {{reg.dim_m}}-1);--{% endif %}{% endfor %}
+    {{reg.inst_name}} : t_reg_{{reg.type_name}}_in; --{% elif reg.dim == 2 %}
+    {{reg.inst_name}} : t_reg_{{reg.type_name}}_2d_in(0 to {{reg.dim_m}}-1); --{% elif reg.dim == 3 %}
+    {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_in(0 to {{reg.dim_n}}-1, 0 to {{reg.dim_m}}-1); --{% endif %}{% endfor %}
     --{% for rgf in rgf_insts %}{% if rgf.dim == 1 %}
-    {{rgf.inst_name}} : t_rgf_{{rgf.type_name}}_in;--{% elif rgf.dim == 2 %}
-    {{rgf.inst_name}} : t_rgf_{{rgf.type_name}}_2d_in(0 to {{rgf.dim_m}}-1);--{% endif %}{% endfor %}
+    {{rgf.inst_name}} : t_rgf_{{rgf.type_name}}_in; --{% elif rgf.dim == 2 %}
+    {{rgf.inst_name}} : t_rgf_{{rgf.type_name}}_2d_in(0 to {{rgf.dim_m}}-1); --{% endif %}{% endfor %}
     --{% for mem in mem_insts %}{% if mem.dim == 1 %}
-    {{mem.inst_name}} : t_mem_{{mem.type_name}}_in;--{% elif mem.dim == 2 %}
-    {{mem.inst_name}} : t_mem_{{mem.type_name}}_2d_in(0 to {{mem.dim_m}}-1);--{% endif %}{% endfor %}
+    {{mem.inst_name}} : t_mem_{{mem.type_name}}_in; --{% elif mem.dim == 2 %}
+    {{mem.inst_name}} : t_mem_{{mem.type_name}}_2d_in(0 to {{mem.dim_m}}-1); --{% endif %}{% endfor %}
     --{% for ext in ext_insts %}{% if ext.dim == 1 %}
-    {{ext.inst_name}} : t_{{ext.interface|lower}}_s2m;--{% elif ext.dim == 2 %}
-    {{ext.inst_name}} : t_{{ext.interface|lower}}_s2m_array;--{% endif %}{% endfor %}
+    {{ext.inst_name}} : t_{{ext.interface|lower}}_s2m; --{% elif ext.dim == 2 %}
+    {{ext.inst_name}} : t_{{ext.interface|lower}}_s2m_array; --{% endif %}{% endfor %}
   end record;
 
   type t_addrmap_{{type_name_org}}_out is record
     --{% for reg in reg_insts %}{% if reg.dim == 1 %}
-    {{reg.inst_name}} : t_reg_{{reg.type_name}}_out;--{% elif reg.dim == 2 %}
-    {{reg.inst_name}} : t_reg_{{reg.type_name}}_2d_out(0 to {{reg.dim_m}}-1);--{% elif reg.dim == 3 %}
-    {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_out(0 to {{reg.dim_n}}-1, 0 to {{reg.dim_m}}-1);--{% endif %}{% endfor %}
+    {{reg.inst_name}} : t_reg_{{reg.type_name}}_out; --{% elif reg.dim == 2 %}
+    {{reg.inst_name}} : t_reg_{{reg.type_name}}_2d_out(0 to {{reg.dim_m}}-1); --{% elif reg.dim == 3 %}
+    {{reg.inst_name}} : t_reg_{{reg.type_name}}_3d_out(0 to {{reg.dim_n}}-1, 0 to {{reg.dim_m}}-1); --{% endif %}{% endfor %}
     --{% for rgf in rgf_insts %}{% if rgf.dim == 1 %}
-    {{rgf.inst_name}} : t_rgf_{{rgf.type_name}}_out;--{% elif rgf.dim == 2 %}
-    {{rgf.inst_name}} : t_rgf_{{rgf.type_name}}_2d_out(0 to {{rgf.dim_m}}-1);--{% endif %}{% endfor %}
+    {{rgf.inst_name}} : t_rgf_{{rgf.type_name}}_out; --{% elif rgf.dim == 2 %}
+    {{rgf.inst_name}} : t_rgf_{{rgf.type_name}}_2d_out(0 to {{rgf.dim_m}}-1); --{% endif %}{% endfor %}
     --{% for mem in mem_insts %}{% if mem.dim == 1 %}
-    {{mem.inst_name}} : t_mem_{{mem.type_name}}_out;--{% elif mem.dim == 2 %}
-    {{mem.inst_name}} : t_mem_{{mem.type_name}}_2d_out(0 to {{mem.dim_m}}-1);--{% endif %}{% endfor %}
+    {{mem.inst_name}} : t_mem_{{mem.type_name}}_out; --{% elif mem.dim == 2 %}
+    {{mem.inst_name}} : t_mem_{{mem.type_name}}_2d_out(0 to {{mem.dim_m}}-1); --{% endif %}{% endfor %}
     --{% for ext in ext_insts %}{% if ext.dim == 1 %}
-    {{ext.inst_name}} : t_{{ext.interface|lower}}_m2s;--{% elif ext.dim == 2 %}
-    {{ext.inst_name}} : t_{{ext.interface|lower}}_m2s_array;--{% endif %}{% endfor %}
+    {{ext.inst_name}} : t_{{ext.interface|lower}}_m2s; --{% elif ext.dim == 2 %}
+    {{ext.inst_name}} : t_{{ext.interface|lower}}_m2s_array; --{% endif %}{% endfor %}
   end record;
 
   -- ===========================================================================
@@ -227,12 +227,12 @@ architecture rtl of {{type_name_org}}_{{regtype_type_name}} is
   signal data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
 begin
   --{% if regtype.width < 32 %}
-  data_out(C_DATA_WIDTH-1 downto {{regtype.width}}) <= (others => '0');--{% endif %}
+  data_out(C_DATA_WIDTH-1 downto {{regtype.width}}) <= (others => '0'); --{% endif %}
 
   -- resize field data out to the register bus width
   -- do only if 1 field and signed--{% if regtype.signed == 1 and regtype.fields_count == 1%}
-  po_decoder_data <= std_logic_vector(resize(signed(data_out({{regtype.fields[0].high}} downto {{regtype.fields[0].low}})),C_DATA_WIDTH));--{% else %}
-  po_decoder_data <= data_out;--{% endif %}
+  po_decoder_data <= std_logic_vector(resize(signed(data_out({{regtype.fields[0].high}} downto {{regtype.fields[0].low}})),C_DATA_WIDTH)); --{% else %}
+  po_decoder_data <= data_out; --{% endif %}
 
   ----------------------------------------------------------{% for field in regtype.fields %}{% if field.node.implements_storage%}--STORAGE
   {{field.type_name}}_storage: block
@@ -311,8 +311,8 @@ begin
       end if;
     end process;
     --{% if field.node.is_hw_readable %}
-    po_reg.{{field.type_name}}.data <= l_field_reg;--{% else %}no signal to read by HW
-    po_reg.{{field.type_name}}.data <= (others => '0');--{% endif %}
+    po_reg.{{field.type_name}}.data <= l_field_reg; --{% else %}no signal to read by HW
+    po_reg.{{field.type_name}}.data <= (others => '0'); --{% endif %}
     --# if field.node.is_sw_writable and field.swacc:
     po_reg.{{field.type_name}}.swacc <= (not l_sw_wr_stb_q and pi_decoder_wr_stb) or (not l_sw_rd_stb_q and pi_decoder_rd_stb ) when rising_edge(pi_clock);
     --# elif field.swacc:
@@ -342,17 +342,17 @@ begin
   end block {{field.type_name}}_storage;
   ----------------------------------------------------------{% else %}--WIRE
   {{field.type_name}}_wire : block--{%if field.swacc: %}
-    signal decoder_rd_stb_q : std_logic;--{% endif %}
+    signal decoder_rd_stb_q : std_logic; --{% endif %}
   begin
     --{% if field.const == 1%}
-    data_out({{field.high}} downto {{field.low}}) <= std_logic_vector(to_signed({{field.reset}},{{field.width}}));--{% else %}
-    data_out({{field.high}} downto {{field.low}}) <= pi_reg.{{field.type_name}}.data({{field.width}}-1 downto 0);--{% endif %}
+    data_out({{field.high}} downto {{field.low}}) <= std_logic_vector(to_signed({{field.reset}},{{field.width}})); --{% else %}
+    data_out({{field.high}} downto {{field.low}}) <= pi_reg.{{field.type_name}}.data({{field.width}}-1 downto 0); --{% endif %}
     --{% if field.node.is_hw_readable %}
-    po_reg.{{field.type_name}}.data <= data_out({{field.high}} downto {{field.low}});--{% else %}no signal to read by HW
-    po_reg.{{field.type_name}}.data <= (others => '0');--{% endif %}{%if field.swacc: %}
+    po_reg.{{field.type_name}}.data <= data_out({{field.high}} downto {{field.low}}); --{% else %}no signal to read by HW
+    po_reg.{{field.type_name}}.data <= (others => '0'); --{% endif %}{%if field.swacc: %}
     po_reg.{{field.type_name}}.swacc <= '1' when pi_decoder_rd_stb = '1' and decoder_rd_stb_q = '0' else '0';
-    decoder_rd_stb_q <= pi_decoder_rd_stb when rising_edge(pi_clock);--{% endif %}
-  end block;--{%- endif %}{%- endfor %}
+    decoder_rd_stb_q <= pi_decoder_rd_stb when rising_edge(pi_clock); --{% endif %}
+  end block; --{%- endif %}{%- endfor %}
 end rtl;
 {%- endmacro %}
 

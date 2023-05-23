@@ -6,7 +6,7 @@ proc init {} {
 proc setSources {} {
   variable Sources
   {%- for file in generated_files.vhdl %}
-  lappend Sources {{file}}
+  lappend Sources [list {{file}} "VHDL"]
   {%- endfor %}
 }
 
