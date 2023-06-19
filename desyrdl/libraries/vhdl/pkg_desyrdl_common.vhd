@@ -111,12 +111,10 @@ package common is
     data   : std_logic_vector(31 downto 0);
     rena   : std_logic;
     wena   : std_logic;
-    clk    : std_logic;
   end record t_ibus_m2s;
 
   -- Output signals of IBUS. Through this record the application send data/commands to the bus
   type t_ibus_s2m is record
-    clk    : std_logic;
     data   : std_logic_vector(31 downto 0);
     rack   : std_logic;
     wack   : std_logic;
@@ -133,12 +131,10 @@ package common is
     addr => (others => '0'),
     data => (others => '0'),
     rena => '0',
-    wena => '0',
-    clk  => '0'
+    wena => '0'
   );
   -- Default IBUS connections for the input (All entries equals 0)
   constant C_IBUS_S2M_DEFAULT : t_ibus_s2m := (
-    clk  => '0',
     data => (others => '0'),
     rack => '0',
     wack => '0'

@@ -78,14 +78,12 @@ begin
   -- unsed AXI4 Signals: SIG_M2S.AWSIZE  SIG_M2S.AWBURST  SIG_M2S.WSTRB
   -- unsed AXI4 Signals: SIG_M2S.ARSIZE  SIG_M2S.ARBURST  SIG_M2S.WLAST
 
-  po_s_decoder   <= sig_s2m;
-  sig_m2s          <= pi_s_decoder;
+  po_s_decoder    <= sig_s2m;
+  sig_m2s         <= pi_s_decoder;
   ------------------------------------
-  sig_s2m.rresp    <=  "00";
+  sig_s2m.rresp   <=  "00";
 
-  sig_s2m.bresp    <=  "00";
-
-  po_m_ext.clk    <=  pi_clock;
+  sig_s2m.bresp   <=  "00";
 
   po_m_ext.addr   <=  sig_addr;
   po_m_ext.rena   <=  sig_rena when rising_edge(pi_clock); -- delay one clock cycle to have 1 clock cycle delay after data on bus

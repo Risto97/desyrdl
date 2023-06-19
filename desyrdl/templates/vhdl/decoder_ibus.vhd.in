@@ -1,0 +1,535 @@
+------------------------------------------------------------------------------
+--          ____  _____________  __                                         --
+--         / __ \/ ____/ ___/\ \/ /                 _   _   _               --
+--        / / / / __/  \__ \  \  /                 / \ / \ / \              --
+--       / /_/ / /___ ___/ /  / /               = ( M | S | K )=            --
+--      /_____/_____//____/  /_/                   \_/ \_/ \_/              --
+--                                                                          --
+------------------------------------------------------------------------------
+--! @copyright Copyright 2020-2022 DESY
+--! SPDX-License-Identifier: Apache-2.0
+------------------------------------------------------------------------------
+--! @date 2020-05-25/2021-10-12
+--! @author Lukasz Butkowski <lukasz.butkowski@desy.de>
+--! @author Michael Büchler <michael.buechler@desy.de>
+------------------------------------------------------------------------------
+--! @brief
+--! ax4-lite address decoder for DesyRdl
+------------------------------------------------------------------------------
+
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+library desyrdl;
+use desyrdl.common.all;
+
+entity {{type_name_org}}_decoder_ibus is
+  generic (
+    G_ADDR_WIDTH    : integer := 32;
+    G_DATA_WIDTH    : integer := 32
+  );
+  port (
+    pi_clock  : in std_logic;
+    pi_reset  : in std_logic;
+    --{%- if n_reg_insts > 0 %}
+    po_reg_rd_stb  : out std_logic_vector({{n_regs}}-1 downto 0);
+    po_reg_wr_stb  : out std_logic_vector({{n_regs}}-1 downto 0);
+    po_reg_data    : out std_logic_vector(G_DATA_WIDTH-1 downto 0);
+    pi_reg_data    : in  std_logic_vector(G_DATA_WIDTH-1 downto 0);
+    --{%- endif %}
+    --{%- if n_rgf_insts > 0 %}
+    po_rgf_reg_rd_stb  : out std_logic_vector({{n_regf_regs}}-1 downto 0);
+    po_rgf_reg_wr_stb  : out std_logic_vector({{n_regf_regs}}-1 downto 0);
+    po_rgf_reg_data    : out std_logic_vector(G_DATA_WIDTH-1 downto 0);
+    pi_rgf_reg_data    : in  std_logic_vector(G_DATA_WIDTH-1 downto 0);
+    --{%- endif %}
+    --{%- if n_mem_insts > 0 %}
+    po_mem_stb     : out std_logic_vector({{n_mems}}-1 downto 0);
+    po_mem_we      : out std_logic;
+    po_mem_addr    : out std_logic_vector(G_ADDR_WIDTH-1 downto 0);
+    po_mem_data    : out std_logic_vector(G_DATA_WIDTH-1 downto 0);
+    pi_mem_data    : in  std_logic_vector(G_DATA_WIDTH-1 downto 0);
+    pi_mem_ack     : in  std_logic;
+    --{%- endif %}
+    --{%- if n_ext_insts > 0 %}
+    pi_ext    : in  t_ibus_s2m_array({{n_exts}}-1 downto 0);
+    po_ext    : out t_ibus_m2s_array({{n_exts}}-1 downto 0);
+    --{%- endif %}
+    pi_s_reset : in std_logic;
+    pi_s_top   : in  t_ibus_m2s ;
+    po_s_top   : out t_ibus_s2m
+);
+end entity {{type_name_org}}_decoder_ibus;
+
+architecture arch of {{type_name_org}}_decoder_ibus is
+
+  type t_target is (
+  {%- if n_reg_insts > 0 %}REG, {% endif %}
+  {%- if n_rgf_insts > 0 %}RGF, {% endif %}
+  {%- if n_mem_insts > 0 %}MEM, {% endif %}
+  {%- if n_ext_insts > 0 %}EXT, {% endif %} NONE );
+
+  signal target  : t_target := NONE;
+
+  -- Standard  statements
+  {%- if n_reg_insts > 0 %}
+  {%- endif %}
+  {%- if n_rgf_insts > 0 %}
+  {%- endif %}
+  {%- if n_mem_insts > 0 %}
+  {%- endif %}
+  {%- if n_ext_insts > 0 %}
+  {%- endif %}
+
+-- INLINE statement with -- #
+  --# if n_reg_insts > 0:
+  --# endif
+  --# if n_rgf_insts > 0:
+  --# endif
+  --# if n_mem_insts > 0:
+  --# endif
+  --# if n_ext_insts > 0:
+  --# endif
+  ----------------------------------------------------------
+  -- read
+  type t_state is (
+    ST_IDLE,
+    ST_TARGET_SELECT,
+    ST_VALID,
+    ST_REG_BUSY,
+  {%- if n_reg_insts > 0 %}
+  {%- endif %}
+  {%- if n_rgf_insts > 0 %}
+  {%- endif %}
+  {%- if n_mem_insts > 0 %}
+    ST_MEM_BUSY,
+  {%- endif %}
+  {%- if n_ext_insts > 0 %}
+    ST_EXT_BUSY,
+  {%- endif %}
+    ST_ACK,
+    ST_DONE
+  );
+  signal state_rw : t_state;
+
+  signal rdata_reg : std_logic_vector(G_DATA_WIDTH-1 downto 0);
+  signal rdata_rgf : std_logic_vector(G_DATA_WIDTH-1 downto 0);
+  signal rdata_mem : std_logic_vector(G_DATA_WIDTH-1 downto 0);
+  signal rdata_ext : std_logic_vector(G_DATA_WIDTH-1 downto 0);
+
+  signal wdata     : std_logic_vector(G_DATA_WIDTH-1 downto 0) := (others => '0');
+  signal addr     : std_logic_vector(G_ADDR_WIDTH-1 downto 0) := (others => '0');
+  signal addr_int : integer;
+
+  -----------------------------------------------------------
+  {%- if n_reg_insts > 0 %}
+  signal reg_rd_stb  : std_logic_vector({{n_regs}}-1 downto 0) := (others => '0');
+  signal reg_wr_stb  : std_logic_vector({{n_regs}}-1 downto 0) := (others => '0');
+  {%- endif %}
+
+  {%- if n_rgf_insts > 0 %}
+  signal regf_stb   : std_logic_vector({{n_regf}}-1 downto 0) := (others => '0');
+  signal regf_reg_rd_stb  : std_logic_vector({{n_regf_regs}}-1 downto 0) := (others => '0');
+  signal regf_reg_wr_stb  : std_logic_vector({{n_regf_regs}}-1 downto 0) := (others => '0');
+  signal regf_addr_int : integer;
+  {%- endif %}
+
+  -- external bus
+  {%- if n_ext_insts > 0 %}
+  signal ext_stb  : std_logic_vector({{n_exts}}-1 downto 0) := (others => '0');
+  signal ext_rack : std_logic := '0';
+  signal ext_wack : std_logic := '0';
+  {%- endif %}
+
+  {%- if n_mem_insts > 0 %}
+  signal mem_stb  : std_logic_vector({{n_mems}}-1 downto 0) := (others => '0');
+  signal mem_req  : std_logic := '0';
+  signal mem_rack : std_logic := '0';
+  signal mem_wack : std_logic := '0';
+  {%- endif %}
+
+  constant access_timeout  : natural := 8191;
+  signal access_time_cnt   : natural := 0;
+  signal invalid_rdata     : std_logic ;
+
+  signal reset : std_logic;
+
+  signal rena  : std_logic;
+  signal wena  : std_logic;
+
+begin
+
+  -- main reset - global or bus reset
+  reset <= pi_reset or pi_s_reset;
+
+  -- ===========================================================================
+  ------------------------------------------------------------------------------
+  -- main state machine
+  ------------------------------------------------------------------------------
+  prs_state_main: process (pi_clock)
+  begin
+    if rising_edge(pi_clock) then
+      if reset = '1' then
+        state_rw <= ST_IDLE;
+        wena <= '0';
+        rena <= '0';
+        po_s_top.wack <= '0';
+        po_s_top.rack <= '0';
+        --# if n_ext_insts > 0 or n_mem_insts > 0:
+        access_time_cnt <= 0;
+        --# endif
+        invalid_rdata <= '0';
+      else
+        case state_rw is
+          when ST_IDLE =>
+
+            if pi_s_top.rena = '1' then
+              state_rw <= ST_TARGET_SELECT;
+              rena <= '1';
+            elsif pi_s_top.wena = '1'  then
+              state_rw <= ST_TARGET_SELECT;
+              wena <= '1';
+            else
+              rena <= '0';
+              wena <= '0';
+            end if;
+            po_s_top.wack <= '0';
+            po_s_top.rack <= '0';
+            --# if n_ext_insts > 0 or n_mem_insts >0:
+            access_time_cnt <= 0;
+            --# endif
+            invalid_rdata <= '0';
+          when ST_TARGET_SELECT =>
+            case target is
+              --# if n_reg_insts > 0:
+              when REG =>
+                po_s_top.wack <= wena;
+                po_s_top.rack <= rena;
+                state_rw <= ST_ACK;
+              --# endif
+              --# if n_rgf_insts > 0:
+              when RGF =>
+                state_rw <= ST_REG_BUSY;
+              --# endif
+              --# if n_mem_insts > 0:
+              when MEM =>
+                state_rw <= ST_MEM_BUSY;
+              --# endif
+              --# if n_ext_insts > 0:
+              when EXT =>
+                state_rw  <= ST_EXT_BUSY;
+              --# endif
+              when others =>
+                state_rw <= ST_REG_BUSY;
+            end case;
+
+          when ST_REG_BUSY =>
+            state_rw <= ST_ACK;
+            po_s_top.wack <= wena;
+            po_s_top.rack <= rena;
+            rena <= '0';
+            wena <= '0';
+          --# if n_mem_insts > 0:
+          when ST_MEM_BUSY =>
+            access_time_cnt <= access_time_cnt + 1;
+
+            if mem_wack = '1' or mem_rack = '1' then
+              state_rw <= ST_ACK;
+              po_s_top.wack <= wena;
+              po_s_top.rack <= rena;
+              rena <= '0';
+              wena <= '0';
+            elsif access_time_cnt >= access_timeout then
+              invalid_rdata <= '1';
+              state_rw <= ST_ACK;
+              po_s_top.wack <= wena;
+              po_s_top.rack <= rena;
+              rena <= '0';
+              wena <= '0';
+            end if;
+        --# endif
+
+        --# if n_ext_insts > 0:
+          when ST_EXT_BUSY =>
+            access_time_cnt <= access_time_cnt + 1;
+
+            if ext_wack = '1' or ext_rack = '1' then
+              po_s_top.wack <= wena;
+              po_s_top.rack <= rena;
+              rena <= '0';
+              wena <= '0';
+              state_rw <= ST_ACK;
+            elsif access_time_cnt >= access_timeout then
+              po_s_top.wack <= wena;
+              po_s_top.rack <= rena;
+              rena <= '0';
+              wena <= '0';
+              invalid_rdata <= '1';
+              state_rw <= ST_ACK;
+            end if;
+          -- when ST_EXT_ACK =>
+          --   po_s_top.wack <= wena;
+          --   po_s_top.rack <= rena;
+          --   state_rw <= ST_ACK;
+        --# endif
+          when ST_ACK =>
+            -- po_s_top.wack <= wena;
+            -- po_s_top.rack <= rena;
+            rena <= '0';
+            wena <= '0';
+            state_rw <= ST_IDLE;
+          -- when ST_DONE => -- wait for ack to go to '0'
+            po_s_top.wack <= '0';
+            po_s_top.rack <= '0';
+          --   state_rw <= ST_IDLE;
+          when others =>
+            state_rw <= ST_IDLE;
+
+        end case;
+
+      end if;
+    end if;
+  end process;
+
+  prs_wdata: process(pi_clock)
+  begin
+    if rising_edge(pi_clock) then
+      if pi_s_top.wena = '1' then
+        wdata <= pi_s_top.data ;
+      end if;
+    end if;
+  end process prs_wdata;
+
+  ------------------------------------------------------------------------------
+  -- read data mux
+  prs_rdata_mux: process(target,
+  {%- if n_reg_insts > 0 %}rdata_reg,{% endif %}
+  {%- if n_rgf_insts > 0 %}rdata_rgf,{% endif %}
+  {%- if n_mem_insts > 0 %}rdata_mem,{% endif %}
+  {%- if n_ext_insts > 0 %}rdata_ext,{% endif %}invalid_rdata)
+  begin
+    if invalid_rdata = '1' then
+      po_s_top.data <= (others => '0' ) ;
+    --# if n_reg_insts > 0:
+    elsif target = REG then
+      po_s_top.data <= rdata_reg ;
+    --# endif
+    --# if n_rgf_insts > 0:
+    elsif target = RGF then
+      po_s_top.data <= rdata_rgf ;
+    --# endif
+    --# if n_mem_insts > 0:
+    elsif target = MEM then
+      po_s_top.data <= rdata_mem ;
+    --# endif
+    --# if n_ext_insts > 0:
+    elsif target = EXT then
+      po_s_top.data <= rdata_ext ;
+    --# endif
+    else
+      po_s_top.data <= (others => '0' ) ;
+    end if;
+  end process prs_rdata_mux;
+
+  --# if n_reg_insts > 0:
+  --# endif
+  --# if n_rgf_insts > 0:
+  --# endif
+  --# if n_mem_insts > 0:
+  --# endif
+  --# if n_ext_insts > 0:
+  --# endif
+
+  ------------------------------------------------------------------------------
+  -- Address decoder
+  ------------------------------------------------------------------------------
+  addr_int <= to_integer(unsigned(pi_s_top.addr(G_ADDR_WIDTH-1 downto 0)));
+
+  prs_addr_decoder: process(pi_clock)
+  begin
+    if rising_edge(pi_clock) then
+      if state_rw = ST_IDLE then
+        --# if n_ext_insts > 0 or n_mem_insts > 0:
+        addr      <= pi_s_top.addr(G_ADDR_WIDTH-1 downto 0);
+        --# endif
+        --# if n_reg_insts > 0:
+        reg_rd_stb <= (others => '0');
+        reg_wr_stb <= (others => '0');
+        --# endif
+        --# if n_rgf_insts > 0:
+        -- regf_rd_stb <= (others => '0');
+        --# endif
+        case addr_int is
+         {%- for reg in regs %}
+          when {{reg.address_offset}} =>
+             target  <= REG;
+             reg_wr_stb({{reg.idx}}) <= pi_s_top.wena;
+             reg_rd_stb({{reg.idx}}) <= pi_s_top.rena;
+         {%- endfor %}
+
+         {%- for rf in regf %}
+          when {{rf.address_offset}} to {{rf.address_offset_high}} =>
+             target  <= RGF;
+             regf_addr_int <= addr_int - {{rf.address_offset}};
+             regf_stb({{rf.idx}}) <= '1';
+             -- regf_rd_req <= '1';
+         {%- endfor %}
+
+         {%- for mem in mems %}
+          when {{mem.address_offset}} to {{mem.address_offset_high}} =>
+             target  <= MEM;
+             mem_stb({{mem.idx}}) <= '1';
+             mem_req <= '1';
+         {%- endfor %}
+
+         {%- for ext in exts %}
+          when {{ext.address_offset}} to {{ext.address_offset_high}} =>
+             target  <= EXT;
+             ext_stb({{ext.idx}}) <= '1';
+         {%- endfor %}
+          when others =>
+             target    <= NONE;
+        end case;
+
+      elsif state_rw = ST_ACK then
+        {%- if n_reg_insts > 0 %}
+        reg_wr_stb <= (others => '0');
+        reg_rd_stb <= (others => '0');
+        {%- endif %}
+        {%- if n_rgf_insts > 0 %}
+        regf_stb <= (others => '0');
+        {%- endif %}
+        {%- if n_ext_insts > 0 %}
+        ext_stb <= (others => '0');
+        {%- endif %}
+        {%- if n_mem_insts > 0 %}
+        mem_stb <= (others => '0');
+        mem_req <= '0';
+        {%- endif %}
+
+      end if;
+    end if;
+  end process prs_addr_decoder;
+
+  ----------------------------------------------------------{% set rfns = namespace(reg_curr_idx = 0,reg_rf_idx = 0) %}
+  --{% for rf in regf %}
+  prs_rf_{{rf.idx}}_rd_decoder: process(pi_clock)
+  begin
+    if rising_edge(pi_clock) then
+      if regf_stb({{rf.idx}}) = '1' then
+        case regf_addr_int is --{%- for reg in rf.regs %}
+          when {{reg.address_offset}} =>
+            regf_reg_rd_stb({{rfns.reg_curr_idx}}) <= rena;
+            regf_reg_wr_stb({{rfns.reg_curr_idx}}) <= wena; --{%- set rfns.reg_curr_idx = rfns.reg_curr_idx + 1 %}{%- endfor %}
+          when others =>
+        end case;
+      else
+        regf_reg_rd_stb({{rfns.reg_curr_idx}}-1 downto {{rfns.reg_rf_idx}}) <= (others => '0');
+        regf_reg_wr_stb({{rfns.reg_curr_idx}}-1 downto {{rfns.reg_rf_idx}}) <= (others => '0'); --{%- set rfns.reg_rf_idx = rfns.reg_curr_idx %}
+      end if;
+    end if;
+  end process;--{% endfor %}
+
+  -- ===========================================================================
+  -- OUTPUT
+  -- ===================================================i========================
+{%- if n_reg_insts > 0 %}
+  -- registers
+  ------------------------------------------------------------------------------
+  po_reg_rd_stb <= reg_rd_stb;
+  po_reg_wr_stb <= reg_wr_stb;
+  po_reg_data   <= wdata;
+  rdata_reg     <= pi_reg_data ;
+{%- endif %}
+
+{%- if n_rgf_insts > 0 %}
+  -- ===========================================================================
+  -- reg files
+  ------------------------------------------------------------------------------
+  po_rgf_reg_rd_stb <= regf_reg_rd_stb;
+  po_rgf_reg_wr_stb <= regf_reg_wr_stb;
+  po_rgf_reg_data   <= wdata;
+  rdata_rgf         <= pi_reg_data ;
+{%- endif %}
+
+{%- if n_mem_insts > 0 %}
+  -- ===========================================================================
+  -- Dual-port memories
+  --
+  -- AXI address is addressing bytes
+  -- DPM address is addressing the memory data width (up to 4 bytes)
+  -- DPM data width is the same as the AXI data width
+  -- currently only DPM interface supported with read/write arbiter
+  -- write afer read
+  ------------------------------------------------------------------------------
+  blk_mem : block
+    signal l_rd_ack : std_logic := '0';
+    signal l_wr_ack : std_logic := '0';
+  begin
+
+    prs_addr: process(pi_clock)
+    begin
+      if rising_edge(pi_clock) then
+        -- write transaction indicate
+        po_mem_stb <= mem_stb;
+        po_mem_we  <= wena;
+
+        l_wr_ack <= wena;
+        l_rd_ack <= rena;
+
+        -- read has higher priority, but do not disturb pending write transaction
+        -- mem_rd_req goes to 0 for 1 clock cycle after each read transaction - write grant
+        {%- for mem in mems %}
+        if mem_stb({{mem.idx}}) = '1' then
+          po_mem_addr({{mem.addrwidth}}-3 downto 0) <= addr({{mem.addrwidth}}-1 downto 2);
+          po_mem_addr(G_ADDR_WIDTH-1 downto {{mem.addrwidth}}-2) <= (others => '0');
+        end if;
+        {%- endfor %}
+
+      end if;
+    end process prs_addr;
+
+    mem_wack <= l_wr_ack;
+    mem_rack <= l_rd_ack when rising_edge(pi_clock);
+    -- delay read ack due to synch process of po_mem_addr and po_mem_stb,
+    -- read requires one more clock cycle to get data back from memory
+    -- possible in future: change of interface to use pi_mem_ack
+    po_mem_data <= wdata ;
+    rdata_mem   <= pi_mem_data ;
+
+  end block;
+{%- endif %}
+
+{%- if n_ext_insts > 0 %}
+  -- ===========================================================================
+  -- external buses -- the same type as upstream bus: axi4l
+  ------------------------------------------------------------------------------
+  ---------------------------- {%- for ext in exts %}
+    po_ext({{ext.idx}}).addr({{ext.addrwidth}} - 1 downto 0)   <= addr({{ext.addrwidth}} - 1 downto 0);
+    po_ext({{ext.idx}}).addr(po_ext({{ext.idx}}).addr'left downto {{ext.addrwidth}}) <= (others => '0');
+    po_ext({{ext.idx}}).data(31 downto 0)                      <= wdata;
+    po_ext({{ext.idx}}).wena                                   <= ext_stb({{ext.idx}}) and wena;
+    po_ext({{ext.idx}}).rena                                   <= ext_stb({{ext.idx}}) and rena;
+  ----------------------------- {%- endfor %}
+
+  prs_ext_mux: process(ext_stb,pi_ext)
+  begin
+    ext_wack <= '0';
+    ext_rack <= '0';
+    rdata_ext   <= (others => '0');
+
+    {%- for ext in exts %}
+    if ext_stb({{ext.idx}}) = '1' then
+      ext_wack  <= pi_ext({{ext.idx}}).wack;
+      ext_rack  <= pi_ext({{ext.idx}}).rack;
+      rdata_ext <= pi_ext({{ext.idx}}).data;
+    end if;
+   {%- endfor %}
+  end process prs_ext_mux;
+
+{%- endif %}
+
+end architecture arch;
+
