@@ -156,7 +156,7 @@ package pkg_{{type_name_org}} is
     {{mem.inst_name}} : t_mem_{{mem.type_name}}_2d_in(0 to {{mem.dim_m}}-1); --{% endif %}{% endfor %}
     --{% for ext in ext_insts %}{% if ext.dim == 1 %}
     {{ext.inst_name}} : t_{{ext.interface|lower}}_s2m; --{% elif ext.dim == 2 %}
-    {{ext.inst_name}} : t_{{ext.interface|lower}}_s2m_array; --{% endif %}{% endfor %}
+    {{ext.inst_name}} : t_{{ext.interface|lower}}_s2m_vector(0 to {{ext.dim_m}}-1); --{% endif %}{% endfor %}
   end record;
 
   type t_addrmap_{{type_name_org}}_out is record
@@ -172,7 +172,7 @@ package pkg_{{type_name_org}} is
     {{mem.inst_name}} : t_mem_{{mem.type_name}}_2d_out(0 to {{mem.dim_m}}-1); --{% endif %}{% endfor %}
     --{% for ext in ext_insts %}{% if ext.dim == 1 %}
     {{ext.inst_name}} : t_{{ext.interface|lower}}_m2s; --{% elif ext.dim == 2 %}
-    {{ext.inst_name}} : t_{{ext.interface|lower}}_m2s_array; --{% endif %}{% endfor %}
+    {{ext.inst_name}} : t_{{ext.interface|lower}}_m2s_vector(0 to {{ext.dim_m}}-1); --{% endif %}{% endfor %}
   end record;
 
   -- ===========================================================================

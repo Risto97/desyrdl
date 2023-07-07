@@ -54,8 +54,8 @@ entity {{type_name_org}}_decoder_ibus is
     pi_mem_ack     : in  std_logic;
     --{%- endif %}
     --{%- if n_ext_insts > 0 %}
-    pi_ext    : in  t_ibus_s2m_array({{n_exts}}-1 downto 0);
-    po_ext    : out t_ibus_m2s_array({{n_exts}}-1 downto 0);
+    pi_ext    : in  t_ibus_s2m_vector({{n_exts}}-1 downto 0);
+    po_ext    : out t_ibus_m2s_vector({{n_exts}}-1 downto 0);
     --{%- endif %}
     pi_s_reset : in std_logic;
     pi_s_top   : in  t_ibus_m2s ;

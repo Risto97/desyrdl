@@ -65,8 +65,8 @@ architecture arch of {{type_name_org}} is
   signal mem_data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
   signal mem_ack      : std_logic;
   --{%- endif %}{%- if n_ext_insts > 0 %}
-  signal ext_if_i     : t_{{interface|lower}}_s2m_array({{n_exts}}-1 downto 0);
-  signal ext_if_o     : t_{{interface|lower}}_m2s_array({{n_exts}}-1 downto 0);
+  signal ext_if_i     : t_{{interface|lower}}_s2m_vector({{n_exts}}-1 downto 0);
+  signal ext_if_o     : t_{{interface|lower}}_m2s_vector({{n_exts}}-1 downto 0);
   --{%- endif %}
 
 begin
