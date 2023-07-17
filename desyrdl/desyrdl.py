@@ -68,6 +68,13 @@ def main():
         default='./',
         help='output directory, default the current dir ./',
     )
+    argParser.add_argument('-l', '--user-lib-dirs',
+        dest="user_lib_dirs",
+        metavar='libdir',
+        nargs='*',
+        default=(),
+        help='directory for user rdl libraries')
+
     argParser.add_argument(
         '-t', '--templates-dir', dest="tpl_dir", metavar='DIR', help='[optional] location of templates dir'
     )
@@ -99,11 +106,17 @@ def main():
     lib_dir = Path(__file__).parent.resolve() / "./libraries"
     msg_printer.print_message(msg_severity.INFO, "Taking common libraries from " + str(lib_dir), src_ref=None)
 
+    lib_input_files = list(Path(lib_dir / "rdl").glob("*.rdl"))
+    for user_lib_dir in args.user_lib_dirs:
+        lib_input_files.extend(Path(user_lib_dir).glob("*.rdl"))
+        print('INFO: Taking user libraries from ' + user_lib_dir)
+
     out_dir = Path(args.out_dir).resolve()
     out_dir.mkdir(exist_ok=True)
 
     rdlfiles = []
     rdlfiles.extend(sorted(Path(lib_dir / "rdl").glob("*.rdl")))
+    rdlfiles.extend(sorted(lib_input_files, key=lambda f:f.parts[-1])) # Sorted ignoring dir
     rdlfiles.extend(args.input_files)
 
     # -------------------------------------------------------------------------
