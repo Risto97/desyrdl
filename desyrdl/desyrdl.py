@@ -115,7 +115,6 @@ def main():
     out_dir.mkdir(exist_ok=True)
 
     rdlfiles = []
-    rdlfiles.extend(sorted(Path(lib_dir / "rdl").glob("*.rdl")))
     rdlfiles.extend(sorted(lib_input_files, key=lambda f:f.parts[-1])) # Sorted ignoring dir
     rdlfiles.extend(args.input_files)
 
