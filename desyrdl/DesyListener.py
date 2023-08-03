@@ -374,7 +374,8 @@ class DesyListener(RDLListener):
         context['desc'] = fldx.get_property("desc") or ""
         context['desc_html'] = fldx.get_html_desc(self.md) or ""
         # check if we flag is set
-        if fldx.is_hw_writable and fldx.is_sw_writable and not fldx.get_property('we') and fldx.is_virtual is False:
+        if fldx.is_hw_writable and fldx.is_sw_writable and not fldx.get_property('we') and fldx.is_virtual is False \
+           and fldx.parent.parent.get_property('desyrdl_generate_hdl') is not False:
             self.msg.warning(
                 f"missing 'we' flag. 'sw = {fldx.get_property('sw').name}' "
                 + f"and 'hw = {fldx.get_property('hw').name}' both can write to the register filed. "
@@ -454,8 +455,12 @@ class DesyListener(RDLListener):
             try:
                 ch = cur_node.get_property('desyrdl_access_channel')
                 # The line above can return 'None' without raising an exception
-                assert ch is not None
-            except (LookupError, AssertionError):
+                assert ch is not None, "No access channel"
+            except AssertionError:
+                cur_node = cur_node.parent
+                if isinstance(cur_node, RootNode):
+                    return 0
+            except (LookupError):
                 cur_node = cur_node.parent
                 # The RootNode is above the top node and can't have the property
                 # we are looking for.
