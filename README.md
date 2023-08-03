@@ -1,4 +1,4 @@
-## DesyRDL
+# DesyRDL
 
 This tool generates outputs for an address space that is defined by one or many
 SystemRDL&trade; 2.0 input files. The address space could be made up of all the
@@ -8,11 +8,11 @@ registers of a single IP block.
 SystemRDL&trade; 2.0 is a standard released by Accellera Systems Initiative Inc
 that is meant to describe such an address space, see [\[systemrdl\]](#systemrdl).
 
-Outputs are based on templates. Writing your own should be easy. Provided with
-this package are templates and common files for the following outputs:
+Outputs are based on templates. there is an option to use custom templates or the one provided by the tool.
+The templates provided with this package are the common files for the following outputs:
 
 * Synthesizable VHDL register logic
-* Mapfiles (format used internally at DESY MSK)
+* Mapfiles (compatible with ChimeraTK)
 * C header files
 * AsciiDoc documentation
 
@@ -21,10 +21,13 @@ replacement for its existing proprietary method of register and address map
 generation, the "Internal Interface", called "IBUS" in its latest version
 [ii](#ii).
 
-The idea to use the SystemRDL&trade; 2.0 standard came from
-[MicroTCA Tech Lab](https://techlab.desy.de/) at DESY when they wrote
-[HECTARE](https://github.com/MicroTCA-Tech-Lab/hectare), the predecessor of
-DesyRDL.
+The use of SystemRDL&trade; 2.0 standard was considered for a long time,
+but due to the lack of open source compilers or parsers, it was dropped.
+
+The decision to use the SystemRDL&trade; 2.0 standard came after
+the open source [SystemRDL compiler](https://github.com/SystemRDL/systemrdl-compiler) has been published.
+This has been proposed by [MicroTCA Tech Lab](https://techlab.desy.de/) at DESY when they wrote
+[HECTARE](https://github.com/MicroTCA-Tech-Lab/hectare), the predecessor of DesyRDL.
 
 ## Usage
 
@@ -37,7 +40,7 @@ See `desyrdl -h` for options.
 All RDL files must be passed in the correct order. Below is an example for the
 `test_hectare` module which also comes with a testbench (not in Git yet):
 
-    desyrdl -o out -i examples/spi_ad9510.rdl examples/test_hectare.rdl -f vhdl
+    desyrdl -o out -i examples/spi_ad9510.rdl examples/test_desyrdl.rdl examples/top.rdl -f vhdl tcl
 
 This will compile the `.rdl` file and create one `.vhd` in `./out/` for each
 `addrmap` instance in the model and for each VHDL template in
@@ -69,7 +72,7 @@ set of information from the compiled tree and passes it on to a template engine
 ### Templates
 
 Templates are written for the Jinja2 template engine. Users can provide their
-own templates.
+own templates using `-t` switch.
 
 ### Context
 
@@ -81,15 +84,27 @@ The context is a Python `dict` that contains further dictionaries to describe
 register types and instances, memory types and instances, further external
 components and some more. It is currently a bit of a mess.
 
+## Supported interfaces buses
+
+The DesyRDL allows to generate various top address map interfaces.
+They are defined in the addrmap component by the `desyrdl_interface` variable.
+
+Tool bus support and `desyrdl_interfaces` values:
+
+| Value    | Description                                       | Bus Size | Supported |
+|:---------|:--------------------------------------------------|:---------|:----------|
+| AXI4L    | AXI4 Lite interface                               | 32 bit   | YES       |
+| IBUS     | Internal Interface type bus, proprietary MSK DESY | 32 bit   | YES       |
+| WISHBONE | Open source hardware computer bus                 | 32 bit   | planned   |
+
+
 ## Known Issues and Limitations
 
 The bus decoder implementation is relatively basic:
 
-* Only AXI4-Lite with 32 bit data width is supported as the upstream interface
+* Only 32bit data busses
 * Likewise, only 32 bit registers are supported
 * The dual-port memory interface does not support AXI4 write strobes
-* Timing issues can arise when having a large number of registers per addrmap.
-  A review is needed here.
 * The logic operates on a single clock and the developer has to take care of any
   CDCs
 
