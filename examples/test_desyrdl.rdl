@@ -1,4 +1,4 @@
-`include "test_hectare.vh"
+`include "test_desyrdl.vh"
 
 // declare another addrmap type before instantiating it
 addrmap nextlevel {
@@ -26,7 +26,7 @@ addrmap something_downstream {
   nextlevel i_nextlevel;
 } ;
 
-addrmap test_hectare {
+addrmap test_desyrdl {
   addressing = regalign; // this is the default
 
   desyrdl_interface = "AXI4L";
@@ -61,8 +61,9 @@ addrmap test_hectare {
 
   external spi_ad9510 spi_ad9510_a @0x10000;
   spi_ad9510_a->desyrdl_interface = "AXI4L";
+  spi_ad9510_a->desyrdl_generate_hdl = false;
 
-  // test_hectare.sv holds size and address information for downstream IBUS
+  // test_desyrdl.sv holds size and address information for downstream IBUS
   // modules
   external generic_ibus #(.SIZE(`C_SIZE_LLRF_CTABLES)) llrf_ctables @`C_ADDR_LLRF_CTABLES;
 

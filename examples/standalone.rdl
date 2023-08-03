@@ -1,5 +1,5 @@
 addrmap standalone {
-  external regfile {
+  regfile {
     reg {
       field {} data[32] ;
     } my_reg_array[4] ;
