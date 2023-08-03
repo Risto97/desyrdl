@@ -113,7 +113,12 @@ class DesyListener(RDLListener):
             node.inst.original_def.type_name if node.inst.original_def is not None else node.type_name
         )
 
-        self.context['interface'] = node.get_property('desyrdl_interface')
+        if node.get_property('desyrdl_interface') is None:
+            self.msg.warning("No desyrdl_interface defined. Fallback to AXI4L.", \
+                             node.inst.property_src_ref.get('addrmap', node.inst.def_src_ref))
+            self.context['interface'] = "axi4l"
+        else:
+            self.context['interface'] = node.get_property('desyrdl_interface')
         self.context['access_channel'] = self.get_access_channel(node)
         self.context['addrwidth'] = ceil(log2(node.size))
 
