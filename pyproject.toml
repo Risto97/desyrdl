@@ -1,6 +1,132 @@
 [build-system]
-requires = [
-    "setuptools>=46.4",
-    "wheel"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "desyrdl"
+dynamic = ["version"]
+description = "DesyRDL - Tool for address space and register generation"
+readme =  {file = "README.md" , content-type = "text/markdown"}
+requires-python = ">=3.8"
+license = {text = "Apache-2.0"}
+keywords = ["FPGA", "SystemRDL", "EDA"]
+authors = [
+  { name="MSK DESY", email="msk-firmware@desy.de" },
+  { name="Michael Büchler", email="michael.buechler@desy.de" },
+  { name="Lukasz Butkowski", email="lukasz.butkowski@desy.de" },
 ]
-build-backend = "setuptools.build_meta"
+maintainers = [
+  { name="Michael Büchler", email="michael.buechler@desy.de" },
+  { name="Lukasz Butkowski", email="lukasz.butkowski@desy.de" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
+    "Development Status :: 5 - Production/Stable",
+]
+dependencies = [
+  "systemrdl-compiler>= 1.25",
+  "jinja2>=3.0",
+]
+
+[project.urls]
+Homepage = "https://gitlab.desy.de/fpgafw/tools/desyrdl"
+Issues = "https://gitlab.desy.de/fpgafw/tools/desyrdl/-/issues"
+Source = "https://gitlab.desy.de/fpgafw/tools/desyrdl"
+
+[project.scripts]
+desyrdl = "desyrdl.desyrdl:main"
+
+# hatch tool settings
+[tool.hatch.version]
+path = "desyrdl/__init__.py"
+
+[[tool.hatch.envs.all.matrix]]
+python = ["3.8", "3.9", "3.10", "3.11"]
+
+[tool.hatch.envs.lint]
+detached = true
+dependencies = [
+  "black>=23.1.0",
+  "ruff>=0.0.243",
+]
+
+[tool.hatch.envs.lint.scripts]
+#typing = "mypy --install-types --non-interactive {args:src/lb_pypi_ci_test tests}"
+style = [
+  "ruff {args:.}",
+  "black --check --diff {args:.}",
+]
+fmt = [
+  "black {args:.}",
+  "ruff --fix {args:.}",
+  "style",
+]
+all = [
+  "style",
+#  "typing",
+]
+
+[tool.black]
+target-version = ["py38"]
+line-length = 120
+skip-string-normalization = true
+
+[tool.ruff]
+target-version = "py38"
+line-length = 120
+select = [
+  "A",
+  "ARG",
+  "B",
+  "C",
+  "DTZ",
+  "E",
+  "EM",
+  "F",
+  "FBT",
+  "I",
+  "ICN",
+  "ISC",
+  "N",
+  "PLC",
+  "PLE",
+  "PLR",
+  "PLW",
+  "Q",
+  "RUF",
+  "S",
+  "T",
+  "TID",
+  "UP",
+  "W",
+  "YTT",
+]
+ignore = [
+  # Allow non-abstract empty methods in abstract base classes
+  "B027",
+  # Allow boolean positional values in function calls, like `dict.get(... True)`
+  "FBT003",
+  # Ignore checks for possible passwords
+  "S105", "S106", "S107",
+  # Ignore complexity
+  "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+  # do not touch quotes
+  "Q000",
+  # ignore camel case
+  "N802",
+  # ignore module name DesyListener -> desy_listener - follows compiler
+  "N999",
+  # allow print statements
+  "T201",
+]
+unfixable = [
+  # Don't touch unused imports
+  "F401",
+]
