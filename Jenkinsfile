@@ -48,7 +48,7 @@ pipeline {
         stage('Publish') {
             when { buildingTag() }
             steps {
-                sh '. ./venv/bin/activate && hatch publish -r test -u __token__ -a $PYPI_TOKEN'
+                sh '. ./venv/bin/activate && hatch publish -u __token__ -a $PYPI_TOKEN'
             }
         }
     }
