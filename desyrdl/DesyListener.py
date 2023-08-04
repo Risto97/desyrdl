@@ -20,17 +20,17 @@ Create context dictionaries for each address space node.
 Context dictionaries are used by the template engine.
 """
 
+
 import re
 from math import ceil, log2
 from pathlib import Path
+
+import jinja2
 from systemrdl import AddressableNode, RDLListener
 from systemrdl.messages import MessageHandler, MessagePrinter
 from systemrdl.node import AddrmapNode, FieldNode, MemNode, RegfileNode, RegNode, RootNode
 
-# import desyrdl
-import jinja2
-
-from desyrdl.rdlformatcode import desyrdlmarkup
+from desyrdl.rdlformatcode import DesyrdlMarkup
 
 
 class AttributeDict(dict):
@@ -65,7 +65,7 @@ class DesyListener(RDLListener):
         self.context = {}
 
         # parse description with markup lanugage, disable Mardown
-        self.md = desyrdlmarkup()
+        self.md = DesyrdlMarkup()
         message_printer = MessagePrinter()
         self.msg = MessageHandler(message_printer)
 
@@ -114,8 +114,10 @@ class DesyListener(RDLListener):
         )
 
         if node.get_property('desyrdl_interface') is None:
-            self.msg.warning("No desyrdl_interface defined. Fallback to AXI4L.", \
-                             node.inst.property_src_ref.get('addrmap', node.inst.def_src_ref))
+            self.msg.warning(
+                "No desyrdl_interface defined. Fallback to AXI4L.",
+                node.inst.property_src_ref.get('addrmap', node.inst.def_src_ref),
+            )
             self.context['interface'] = "axi4l"
         else:
             self.context['interface'] = node.get_property('desyrdl_interface')
@@ -279,7 +281,7 @@ class DesyListener(RDLListener):
         dim = 1
 
         if item.is_array:
-            if len(item.array_dimensions) == 2:
+            if len(item.array_dimensions) == 2:  # noqa: PLR2004
                 dim_n = item.array_dimensions[0]
                 dim_m = item.array_dimensions[1]
                 dim = 3
@@ -323,8 +325,8 @@ class DesyListener(RDLListener):
                 reset |= (field_reset << field.low) & mask
             field_context['node'] = field
             self.gen_fielditem(field, field_context)
-            field = AttributeDict(field_context)
-            fields.append(field)
+            fld = AttributeDict(field_context)
+            fields.append(fld)
 
         context["width"] = totalwidth
         context["dtype"] = regx.get_property('desyrdl_data_type') or 'uint'
@@ -374,12 +376,17 @@ class DesyListener(RDLListener):
         context['desc'] = fldx.get_property("desc") or ""
         context['desc_html'] = fldx.get_html_desc(self.md) or ""
         # check if we flag is set
-        if fldx.is_hw_writable and fldx.is_sw_writable and not fldx.get_property('we') and fldx.is_virtual is False \
-           and fldx.parent.parent.get_property('desyrdl_generate_hdl') is not False:
+        if (
+            fldx.is_hw_writable
+            and fldx.is_sw_writable
+            and not fldx.get_property('we')
+            and fldx.is_virtual is False
+            and fldx.parent.parent.get_property('desyrdl_generate_hdl') is not False
+        ):
             self.msg.warning(
                 f"missing 'we' flag. 'sw = {fldx.get_property('sw').name}' "
-                + f"and 'hw = {fldx.get_property('hw').name}' both can write to the register filed. "
-                + f"'sw' will be always overwritten.\nRegister: {fldx.parent.inst_name}",
+                f"and 'hw = {fldx.get_property('hw').name}' both can write to the register filed. "
+                f"'sw' will be always overwritten.\nRegister: {fldx.parent.inst_name}",
                 fldx.inst.property_src_ref.get('we', fldx.inst.def_src_ref),
             )
 
@@ -455,12 +462,14 @@ class DesyListener(RDLListener):
             try:
                 ch = cur_node.get_property('desyrdl_access_channel')
                 # The line above can return 'None' without raising an exception
-                assert ch is not None, "No access channel"
-            except AssertionError:
+                if ch is None:
+                    message = "No access channel"
+                    raise ValueError(message)
+            except ValueError:
                 cur_node = cur_node.parent
                 if isinstance(cur_node, RootNode):
                     return 0
-            except (LookupError):
+            except LookupError:
                 cur_node = cur_node.parent
                 # The RootNode is above the top node and can't have the property
                 # we are looking for.

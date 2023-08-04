@@ -13,17 +13,17 @@
 # @date 2022-01-14
 # @author Lukasz Butkowski <lukasz.butkowski@desy.de>
 # --------------------------------------------------------------------------- #
-"""DesyRdl markup class.
-
-class to overload default Markdown parsing to disable it
-"""
-
 
 from markdown import Markdown
 
 
-class desyrdlmarkup(Markdown):
-    def __init__(self, **kwargs):
+class DesyrdlMarkup(Markdown):
+    """DesyRdl markup class.
+
+    class to overload default Markdown parsing to disable it
+    """
+
+    def __init__(self):
         self.reset()
 
     def reset(self):

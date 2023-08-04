@@ -23,8 +23,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from systemrdl.messages import MessagePrinter, Severity
 from systemrdl import RDLCompiler, RDLWalker
+from systemrdl.messages import MessagePrinter, Severity
 from systemrdl.node import RootNode
 
 from desyrdl.DesyListener import DesyRdlProcessor
@@ -41,16 +41,17 @@ def main():
     desyrdl  <input file/s>
     desyrdl -f vhdl -i <input file/s> -t <template folder> -o <output_dir> -h <help>
     """
-    argParser = argparse.ArgumentParser('DesyRDL command line options')
-    argParser.add_argument(
+    arg_parser = argparse.ArgumentParser('DesyRDL command line options')
+    arg_parser.add_argument(
         '-i',
         '--input-files',
         dest="input_files",
         metavar='file1.rdl',
+        required=True,
         nargs='+',
         help='input rdl file/files, in bottom to root order',
     )
-    argParser.add_argument(
+    arg_parser.add_argument(
         '-f',
         '--format-out',
         dest="out_format",
@@ -60,7 +61,7 @@ def main():
         choices=['vhdl', 'map', 'h', 'adoc', 'tcl'],
         help='output format: vhdl, map, h',
     )
-    argParser.add_argument(
+    arg_parser.add_argument(
         '-o',
         '--output-dir',
         dest="out_dir",
@@ -68,18 +69,21 @@ def main():
         default='./',
         help='output directory, default the current dir ./',
     )
-    argParser.add_argument('-l', '--user-lib-dirs',
+    arg_parser.add_argument(
+        '-l',
+        '--user-lib-dirs',
         dest="user_lib_dirs",
         metavar='libdir',
         nargs='*',
         default=(),
-        help='directory for user rdl libraries')
+        help='[optional] directory for user rdl libraries',
+    )
 
-    argParser.add_argument(
+    arg_parser.add_argument(
         '-t', '--templates-dir', dest="tpl_dir", metavar='DIR', help='[optional] location of templates dir'
     )
 
-    args = argParser.parse_args()
+    args = arg_parser.parse_args()
 
     # compiler print log
     msg_severity = Severity(5)
@@ -88,15 +92,11 @@ def main():
     # -------------------------------------------------------------------------
     # setup variables
     # basedir = Path(__file__).parent.absolute()
-    msg_printer.print_message(
-        msg_severity.INFO, "Generating output for formats: " + str(args.out_format), src_ref=None
-    )
+    msg_printer.print_message(msg_severity.INFO, "Generating output for formats: " + str(args.out_format), src_ref=None)
 
     if args.tpl_dir is None:
         tpl_dir = Path(__file__).parent.resolve() / "./templates"
-        msg_printer.print_message(
-            msg_severity.INFO, "Using default templates directory: " + str(tpl_dir), src_ref=None
-        )
+        msg_printer.print_message(msg_severity.INFO, "Using default templates directory: " + str(tpl_dir), src_ref=None)
     else:
         tpl_dir = Path(args.tpl_dir).resolve()
         msg_printer.print_message(msg_severity.INFO, "Using custom templates directory: " + str(tpl_dir), src_ref=None)
@@ -115,7 +115,7 @@ def main():
     out_dir.mkdir(exist_ok=True)
 
     rdlfiles = []
-    rdlfiles.extend(sorted(lib_input_files, key=lambda f:f.parts[-1])) # Sorted ignoring dir
+    rdlfiles.extend(sorted(lib_input_files, key=lambda f: f.parts[-1]))  # Sorted ignoring dir
     rdlfiles.extend(args.input_files)
 
     # -------------------------------------------------------------------------
