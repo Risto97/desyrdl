@@ -148,6 +148,7 @@ architecture arch of {{type_name_org}}_decoder_axi4l is
   signal wstrb     : std_logic_vector(G_DATA_WIDTH/8-1 downto 0) := (others => '0');
   signal waddr     : std_logic_vector(G_ADDR_WIDTH-1 downto 0) := (others => '0');
   signal waddr_int : integer;
+  signal wvalid    : std_logic;
 
   -----------------------------------------------------------
   {%- if n_reg_insts > 0 %}
@@ -622,6 +623,7 @@ begin
   -- write Address decoder
   ------------------------------------------------------------------------------
   waddr_int <= to_integer(unsigned(pi_s_top.awaddr(G_ADDR_WIDTH-1 downto 0)));
+  wvalid <= pi_s_top.wvalid when rising_edge(pi_clock);
 
   prs_waddr_decoder: process(pi_clock)
   begin
@@ -719,9 +721,11 @@ begin
 {%- if n_reg_insts > 0 %}
   -- registers
   ------------------------------------------------------------------------------
-  po_reg_rd_stb <= reg_rd_stb;
-  po_reg_wr_stb <= reg_wr_stb;
+  gen_reg_wr_str: for ridx in 0 to {{n_regs}}-1 generate
+    po_reg_wr_stb(ridx) <= reg_wr_stb(ridx) and wvalid;
+  end generate;
   po_reg_data   <= wdata;
+  po_reg_rd_stb <= reg_rd_stb;
   rdata_reg     <= pi_reg_data ;
 {%- endif %}
 
@@ -729,9 +733,11 @@ begin
   -- ===========================================================================
   -- reg files
   ------------------------------------------------------------------------------
-  po_rgf_reg_rd_stb <= regf_reg_rd_stb;
-  po_rgf_reg_wr_stb <= regf_reg_wr_stb;
+  gen_rf_wr_str: for ridx in 0 to {{n_regf_regs}}-1 generate
+    po_rgf_reg_wr_stb(ridx) <= regf_reg_wr_stb(ridx) and wvalid;
+  end generate;
   po_rgf_reg_data   <= wdata;
+  po_rgf_reg_rd_stb <= regf_reg_rd_stb;
   rdata_rgf         <= pi_rgf_reg_data ;
 {%- endif %}
 
