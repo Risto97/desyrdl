@@ -623,7 +623,6 @@ begin
   -- write Address decoder
   ------------------------------------------------------------------------------
   waddr_int <= to_integer(unsigned(pi_s_top.awaddr(G_ADDR_WIDTH-1 downto 0)));
-  wvalid <= pi_s_top.wvalid when rising_edge(pi_clock);
 
   prs_waddr_decoder: process(pi_clock)
   begin
@@ -702,6 +701,17 @@ begin
       end if;
     end if;
   end process; --{% endfor %}
+
+  prs_wvalid_reg : process(pi_clock)
+  begin
+    if rising_edge(pi_clock) then
+      if state_write  = ST_WRITE_IDLE or state_write = ST_WRITE_WAIT_DATA then
+        wvalid <= pi_s_top.wvalid;
+      elsif state_write = ST_WRITE_RESP then
+        wvalid <= '0';
+      end if;
+    end if;
+  end process;
 
   prs_wdata_reg : process(pi_clock)
   begin
