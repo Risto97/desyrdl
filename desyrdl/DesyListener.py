@@ -524,6 +524,7 @@ class DesyRdlProcessor(DesyListener):
         self.generated_files = {}
         self.generated_files['vhdl'] = []
         self.generated_files['vhdl_dict'] = {}
+        self.generated_files['cocotb'] = []
         self.generated_files['map'] = []
         self.generated_files['h'] = []
         self.generated_files['adoc'] = []
@@ -589,6 +590,10 @@ class DesyRdlProcessor(DesyListener):
             if 'h' in self.out_formats:
                 files = self.render_templates(loader="h", outdir="h", context=self.top_context)
                 self.generated_files['h'] = self.generated_files['h'] + files
+
+            if 'cocotb' in self.out_formats:
+                files = self.render_templates(loader="cocotb", outdir="cocotb/desyrdl", context=self.top_context)
+                self.generated_files['h'] = self.generated_files['cocotb'] + files
 
             if 'tcl' in self.out_formats:
                 files = self.render_templates(loader="tcl", outdir="tcl", context=self.top_context)
