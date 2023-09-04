@@ -592,7 +592,7 @@ class DesyRdlProcessor(DesyListener):
                 self.generated_files['h'] = self.generated_files['h'] + files
 
             if 'cocotb' in self.out_formats:
-                files = self.render_templates(loader="cocotb", outdir="cocotb/desyrdl", context=self.top_context)
+                files = self.render_templates(loader="cocotb", outdir="cocotb", context=self.top_context)
                 self.generated_files['h'] = self.generated_files['cocotb'] + files
 
             if 'tcl' in self.out_formats:
