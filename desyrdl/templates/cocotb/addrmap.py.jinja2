@@ -1,0 +1,183 @@
+
+{#- ============================================================ #}
+{#- Generic item entry macro, defines fields in map file #}
+{%- macro item_macro(path, inst) %}
+{#- {{path}} {{inst.total_words}} {{inst.absolute_address}} {{inst.total_size}} {{inst.access_channel}} {{inst.width}} {{inst.fixedpoint}} {{inst.signed}} {{inst.rw}}  #}
+        self.addrmap['{{path}}'] = AddrmapItem("{{path}}", bus, {{inst.absolute_address}}, {{inst.total_size}}, {{inst.width}}, {{inst.fixedpoint}}, {{inst.signed}}, "{{inst.rw}}")
+{%- endmacro -%}
+
+{#- ============================================================ #}
+{#- register macro #}
+{%- macro reg_macro(parent_name, reg, addr_offset = 0) -%}
+    {%- set path = parent_name + separator + reg.inst_name -%}
+{#- {{item_macro(regpath, reg)}} #}
+        self.addrmap['{{path}}'] = AddrmapItem("{{path}}", bus, {{reg.absolute_address+addr_offset}}, {{reg.total_size}}, {{reg.width}}, {{reg.fixedpoint}}, {{reg.signed}}, "{{reg.rw}}")
+{%- endmacro -%}
+
+{#- ============================================================ #}
+{#- addrmap macro #}
+{%- macro addrmap_macro(parent_name, addrmap) -%}
+    {%- set path = parent_name + separator + addrmap.inst_name -%}
+{#- {{item_macro(addrpath, addrmap)}} #}
+        self.addrmap['{{path}}'] = AddrmapItem("{{path}}", bus, {{addrmap.absolute_address}}, {{addrmap.total_size}}, {{addrmap.width}}, {{addrmap.fixedpoint}}, {{addrmap.signed}}, "{{addrmap.rw}}") 
+{%- endmacro -%}
+
+{#- ============================================================ #}
+{#- Memory macro #}
+{%- macro mem_macro(parent_name, mem) %}
+  {%- set path = parent_name + separator + mem.inst_name  %}
+  {%- if mem.dim  == 1 -%}
+    {%- if mem.reg_insts|length == 1 and mem.reg_insts[0].inst_name == "DATATYPE" %}
+        self.addrmap['{{path}}'] = AddrmapItem("{{path}}", bus, {{mem.absolute_address}}, {{mem.total_size}}, {{mem.reg_insts[0].width}}, {{mem.reg_insts[0].fixedpoint}}, {{mem.reg_insts[0].signed}}, "{{mem.rw}}")
+    {%- else %}
+        self.addrmap['{{path}}'] = AddrmapItem("{{path}}", bus, {{mem.absolute_address}}, {{mem.total_size}}, {{mem.width}}, {{mem.fixedpoint}}, {{mem.signed}}, "{{mem.rw}}")
+      {%- for reg in mem.reg_insts -%}
+{{reg_macro(path, reg)}}
+      {%- endfor %}
+    {%- endif %}
+  {%- elif mem.dim == 2 %}
+    {%- for idx_m in range(mem.dim_m) -%}
+    {%- set path = parent_name + separator + mem.inst_name + separator + "{}".format(idx_m) %}
+    {%- set addr_offset = mem.array_stride*idx_m %}
+{#- {{item_macro(mempath, mem)}} #}
+      {%- if mem.reg_insts|length == 1 and mem.reg_insts[0].inst_name == "DATATYPE" %}
+        self.addrmap['{{path}}'] = AddrmapItem("{{path}}", bus, {{mem.absolute_address+addr_offset}}, {{mem.array_stride}}, {{mem.reg_insts[0].width}}, {{mem.reg_insts[0].fixedpoint}}, {{mem.reg_insts[0].signed}}, "{{mem.rw}}")
+      {%- else %}
+        self.addrmap['{{path}}'] = AddrmapItem("{{path}}", bus, {{mem.absolute_address+addr_offset}}, {{mem.array_stride}}, {{mem.width}}, {{mem.fixedpoint}}, {{mem.signed}}, "{{mem.rw}}")
+        {%- for reg in mem.reg_insts -%}
+{{reg_macro(path, reg, addr_offset)}}
+        {%- endfor %}
+      {%- endif %}
+    {%- endfor %}
+  {%- endif %}
+{%- endmacro -%}
+
+{#- ============================================================ #}
+{#- Regfile macro #}
+{%- macro rgf_macro(parent_name, rgf) %}
+  {%- if rgf.dim  == 1 -%}
+  {%- set path = parent_name + separator + rgf.inst_name  %}
+        self.addrmap['{{path}}'] = AddrmapItem("{{path}}", bus, {{rgf.absolute_address}}, {{rgf.total_size}}, {{rgf.width}}, {{rgf.fixedpoint}}, {{rgf.signed}}, "{{rgf.rw}}")
+    {%- for reg in rgf.reg_insts -%}
+{{reg_macro(path, reg)}}
+    {%- endfor %}
+  {%- elif rgf.dim == 2 %}
+    {%- for idx_m in range(rgf.dim_m) -%}
+    {%- set path = parent_name + separator + rgf.inst_name + separator + "{}".format(idx_m) %}
+    {%- set addr_offset = rgf.array_stride*idx_m %}
+        self.addrmap['{{path}}'] = AddrmapItem("{{path}}", bus, {{rgf.absolute_address+addr_offset}}, {{rgf.array_stride}}, {{rgf.width}}, {{rgf.fixedpoint}}, {{rgf.signed}}, "{{rgf.rw}}")
+      {%- for reg in rgf.reg_insts -%}
+{{reg_macro(path, reg, addr_offset)}}
+      {%- endfor %}
+    {%- endfor %}
+  {%- endif %}
+{%- endmacro -%}
+
+{#- ============================================================ #}
+{#- Iterate over items nad execute macro dedicated for node type #}
+{%- macro items(parent_path, insts) %}
+  {%- for inst in insts %}
+    {%- if inst.node_type == "REG" -%}
+{{reg_macro(parent_path, inst)}}
+    {%- elif inst.node_type == "MEM" -%}
+{{mem_macro(parent_path, inst)}}
+    {%- elif inst.node_type == "REGFILE" -%}
+{{rgf_macro(parent_path, inst)}}
+    {%- elif inst.node_type == "ADDRMAP" -%}
+{{addrmap_macro(parent_path, inst)}}
+    {%- endif %}
+  {%- endfor %}
+{%- endmacro -%}
+
+{#- ============================================================ #}
+import numpy as np
+import logging
+
+logging.basicConfig(level=logging.NOTSET)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+
+
+class AddrmapItem ():
+    def __init__(self, name, bus, address, size, bits, fixp, signed, access):
+        self.name = name
+        self.bus = bus
+        self.address = address
+        self.size = size
+        self.bits = bits
+        self.fixp = fixp
+        self.access = access
+        self.scaling = 1;
+        if fixp == "IEEE754":
+            self.dtype = np.float32
+        elif fixp == 0 and signed == 0:
+            self.dtype = np.uint32
+        elif fixp == 0 and signed == 1:
+            self.dtype = np.int32
+        else:
+            self.scaling = 1/pow(2, fixp)
+            self.dtype = np.float32
+
+    async def read(self, count, offset):
+        data = await self.bus.read_dwords(self.address+offset*4, count)
+        return np.array(data * self.scaling, dtype=self.dtype)
+
+    async def read_raw(self, count, offset):
+        data = await self.bus.read_dwords(self.address+offset*4, count)
+        return np.array(data, dtype=np.uint32)
+
+    async def write(self, value, offset):
+        val_np = np.array(value)
+        if val_np.size > 1:
+            data = np.uint32(np.round(val_np / self.scaling)).tolist()
+        else:
+            data = []
+            data.append(np.uint32(np.round(val_np / self.scaling)).tolist())
+        await self.bus.write_dwords(self.address+offset*4, data)
+
+    async def write_raw(self, value, offset):
+        val_np = np.array(value)
+        if val_np.size > 1:
+            data = np.uint32(np.round(val_np)).tolist()
+        else:
+            data = []
+            data.append(np.uint32(np.round(val_np)).tolist())
+        await self.bus.write_dwords(self.address+offset*4, data)
+
+class Addrmap:
+    def __init__(self, bus):
+        self.addrmap ={}
+    {#- ============================================================ #}
+{#- TOP : iterat over address map list #}
+{%- for addrmap in addrmaps | reverse %}
+  {%- if addrmap.dim  == 1 -%}
+    {{ items(addrmap.inst_name, addrmap.insts) }}
+  {%- elif addrmap.dim == 2 %}
+    {%- for idx_m in range(addrmap.dim_m) -%}
+      {{ items(addrmap.inst_name + separator + "{}".format(idx_m), addrmap.insts) }}
+    {%- endfor %}
+  {%- endif %}
+{%- endfor %}
+
+    def get_path(self, module, name):
+        path = module + "." + name
+        if path not in self.addrmap:
+            msg = f"Cannot find `{path}` in register dict"
+            logger.error(msg)
+            assert False
+        return path
+
+    async def read(self, module, name, count=1, offset=0):
+        path = self.get_path(module, name)
+        return await self.addrmap[path].read(count, offset)
+
+    async def write(self, module, name, value, offset=0):
+        path = self.get_path(module, name)
+        return await self.addrmap[path].write(value, offset)
+    async def read_raw(self, module, name, count=1, offset=0):
+        path = self.get_path(module, name)
+        return await self.addrmap[path].read_raw(count, offset)
+    async def write_raw(self, module, name, value, offset=0):
+        path = self.get_path(module, name)
+        return await self.addrmap[path].write_raw(value, offset)
