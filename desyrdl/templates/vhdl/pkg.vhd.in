@@ -236,7 +236,8 @@ begin
 
   ----------------------------------------------------------{% for field in regtype.fields %}{% if field.node.implements_storage%}--STORAGE
   {{field.type_name}}_storage: block
-    signal l_field_reg   : std_logic_vector({{field.width}}-1 downto 0);
+    signal l_field_reg   : std_logic_vector({{field.width}}-1 downto 0) :=
+                           std_logic_vector(to_signed({{field.reset}},{{field.width}}));
     --# if field.swmod or field.swacc:
     signal l_sw_wr_stb_q : std_logic;
     --# endif
