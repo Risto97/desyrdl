@@ -298,29 +298,29 @@ begin
   -- ---------------------------------------------------------------------------{% endfor %}
 
   -- ===========================================================================
-  -- Generated Meme Instances
+  -- Generated Mem Instances
   --{% if n_mem_insts > 0 %}
   mem_ack <= '1'; -- not used at the moment from external memories{% endif %}
   -- ---------------------------------------------------------------------------{% for mem in mem_insts %}
   -- mem name: {{mem.inst_name}}  mem type: {{mem.type_name}}
   -- ---------------------------------------------------------------------------
   blk_{{mem.inst_name}} : block
-  begin--{% if mem.dim == 1 %}{% if mem.node.is_sw_readable %}
+  begin --{% if mem.dim == 1 %}{% if mem.node.is_sw_readable %}
     mem_data_out_vect({{mem.idx}})({{mem.datawidth}}-1 downto 0) <= pi_addrmap.{{mem.inst_name}}.data; --{% if mem.datawidth < 32%}
     mem_data_out_vect({{mem.idx}})(C_DATA_WIDTH-1 downto {{mem.datawidth}}) <= (others => '0'); --{% endif %}{% else %}
     mem_data_out_vect({{mem.idx}}) <= (others => '0'); --{% endif %}
     po_addrmap.{{mem.inst_name}}.addr <= mem_addr({{mem.addrwidth}}-1 downto 0);
+    po_addrmap.{{mem.inst_name}}.en <= mem_stb({{mem.idx}}); --{% if mem.node.is_sw_writable %}
     po_addrmap.{{mem.inst_name}}.data <= mem_data_in({{mem.datawidth}}-1 downto 0);
-    po_addrmap.{{mem.inst_name}}.en <= mem_stb({{mem.idx}});
-    po_addrmap.{{mem.inst_name}}.we <= mem_we; --{% elif mem.dim == 2 %}
-    gen_m: for idx_m in 0 to {{mem.dim_m}}-1 generate--{% if mem.node.is_sw_readable %}
+    po_addrmap.{{mem.inst_name}}.we <= mem_we; --{% endif %}{% elif mem.dim == 2 %}
+    gen_m: for idx_m in 0 to {{mem.dim_m}}-1 generate --{% if mem.node.is_sw_readable %}
       mem_data_out_vect({{mem.idx}}+idx_m)({{mem.datawidth}}-1 downto 0) <= pi_addrmap.{{mem.inst_name}}(idx_m).data; --{% if mem.datawidth < 32%}
       mem_data_out_vect({{mem.idx}}+idx_m)(C_DATA_WIDTH-1 downto {{mem.datawidth}}) <= (others => '0'); --{% endif %}{% else %}
       mem_data_out_vect({{mem.idx}}+idx_m) <= (others => '0'); --{% endif %}
       po_addrmap.{{mem.inst_name}}(idx_m).addr <= mem_addr({{mem.addrwidth}}-1 downto 0);
+      po_addrmap.{{mem.inst_name}}(idx_m).en <= mem_stb({{mem.idx}}+idx_m); --{% if mem.node.is_sw_writable %}
       po_addrmap.{{mem.inst_name}}(idx_m).data <= mem_data_in({{mem.datawidth}}-1 downto 0);
-      po_addrmap.{{mem.inst_name}}(idx_m).en <= mem_stb({{mem.idx}}+idx_m);
-      po_addrmap.{{mem.inst_name}}(idx_m).we <= mem_we;
+      po_addrmap.{{mem.inst_name}}(idx_m).we <= mem_we; --{% endif %}
     end generate;
     --{% endif %}
   end block;
