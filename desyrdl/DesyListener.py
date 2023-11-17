@@ -312,7 +312,7 @@ class DesyListener(RDLListener):
         reset = 0
         fields = []
         for field in regx.fields():
-            totalwidth += field.get_property('fieldwidth')
+            totalwidth = max(totalwidth, field.high)
             n_fields += 1
             field_reset = 0
             field_context = {}
@@ -328,7 +328,7 @@ class DesyListener(RDLListener):
             fld = AttributeDict(field_context)
             fields.append(fld)
 
-        context["width"] = totalwidth
+        context["width"] = totalwidth+1
         context["dtype"] = regx.get_property('desyrdl_data_type') or 'uint'
         context["intr"] = regx.is_interrupt_reg
         context["intrch"] = regx.get_property('desyrdl_intr_channel') or 0
