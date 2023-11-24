@@ -366,6 +366,8 @@ class DesyListener(RDLListener):
         context['reset_hex'] = hex(context['reset'])
         context['low'] = fldx.low
         context['high'] = fldx.high
+        context['onwrite'] = fldx.get_property('onwrite')
+        context['singlepulse'] = fldx.get_property('singlepulse')
         context['decrwidth'] = fldx.get_property('decrwidth') if fldx.get_property('decrwidth') is not None else 0
         context['incrwidth'] = fldx.get_property('incrwidth') if fldx.get_property('incrwidth') is not None else 0
         context['decrvalue'] = fldx.get_property('decrvalue') if fldx.get_property('decrvalue') is not None else 0

@@ -296,10 +296,30 @@ begin
             l_field_reg <= std_logic_vector(unsigned(l_field_reg) - to_unsigned(l_decrvalue, {{field.width}}));
           end if;
           --# endif
-          -- SW -- TODO: handle software access side effects (rcl/rset, woclr/woset, swacc/swmod)
+          -- SW -- TODO: handle software access side effects (rcl/rset)
         --# if field.node.is_sw_writable:
+          --# if field.singlepulse:
+          -- This is a "singlepulse" register - clear on each clock,
+          -- unless it is written to with a 1 (see below)
+          l_field_reg <= (others => '0');
+          --# endif
           if pi_decoder_wr_stb = '1' then
+            --# if field.onwrite:
+            --# if field.onwrite|string == "OnWriteType.woclr":
+            -- this field is write-one-to-clear (woclr)
+            l_field_reg <= l_field_reg and (not pi_decoder_data({{field.high}} downto {{field.low}}));
+            --# elif field.onwrite|string == "OnWriteType.woset":
+            -- this field is write-one-to-set (woset)
+            l_field_reg <= l_field_reg or pi_decoder_data({{field.high}} downto {{field.low}});
+            --# elif field.onwrite|string == "OnWriteType.wot":
+            -- this field is write-one-to-toggle (wot)
+            l_field_reg <= l_field_reg xor pi_decoder_data({{field.high}} downto {{field.low}});
+            --# else
+            -- unimplemented onwrite property
+            --# endif
+            --# else
             l_field_reg <= pi_decoder_data({{field.high}} downto {{field.low}});
+            --# endif
           end if;
           --# if field.swmod or field.swacc:
           l_sw_wr_stb_q <= pi_decoder_wr_stb;
