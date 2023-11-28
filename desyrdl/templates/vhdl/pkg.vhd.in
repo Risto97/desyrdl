@@ -256,7 +256,7 @@ begin
       if rising_edge(pi_clock) then
         if pi_reset = '1' then
           l_field_reg <= std_logic_vector(to_signed({{field.reset}},{{field.width}}));
-          --# if field.swmod or field.swacc:
+          --# if field.swmod or field.swacc or field.onwrite:
           l_sw_wr_stb_q <= '0';
           --# endif
           --# if field.swacc or field.onread:
