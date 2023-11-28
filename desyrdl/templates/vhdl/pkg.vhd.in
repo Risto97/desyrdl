@@ -238,7 +238,7 @@ begin
   {{field.type_name}}_storage: block
     signal l_field_reg   : std_logic_vector({{field.width}}-1 downto 0) :=
                            std_logic_vector(to_signed({{field.reset}},{{field.width}}));
-    --# if field.swmod or field.swacc:
+    --# if field.swmod or field.swacc or field.onwrite:
     signal l_sw_wr_stb_q : std_logic;
     --# endif
     --# if field.swacc or field.onread:
