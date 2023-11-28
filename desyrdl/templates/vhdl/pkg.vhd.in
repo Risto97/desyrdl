@@ -241,7 +241,7 @@ begin
     --# if field.swmod or field.swacc:
     signal l_sw_wr_stb_q : std_logic;
     --# endif
-    --# if field.swacc:
+    --# if field.swacc or field.onread:
     signal l_sw_rd_stb_q : std_logic;
     --# endif
     --# if field.node.is_up_counter:
@@ -259,7 +259,7 @@ begin
           --# if field.swmod or field.swacc:
           l_sw_wr_stb_q <= '0';
           --# endif
-          --# if field.swacc:
+          --# if field.swacc or field.onread:
           l_sw_rd_stb_q <= '0';
           --# endif
         --# if field.hwclr:
@@ -296,36 +296,63 @@ begin
             l_field_reg <= std_logic_vector(unsigned(l_field_reg) - to_unsigned(l_decrvalue, {{field.width}}));
           end if;
           --# endif
-          -- SW -- TODO: handle software access side effects (rcl/rset)
         --# if field.node.is_sw_writable:
           --# if field.singlepulse:
           -- This is a "singlepulse" register - clear on each clock,
           -- unless it is written to with a 1 (see below)
           l_field_reg <= (others => '0');
           --# endif
-          if pi_decoder_wr_stb = '1' then
-            --# if field.onwrite:
+          -- SW --
+          --# if field.onwrite:
+          if l_sw_wr_stb_q = '0' and pi_decoder_wr_stb = '1' then
             --# if field.onwrite|string == "OnWriteType.woclr":
-            -- this field is write-one-to-clear (woclr)
+              -- this field is write-one-to-clear (woclr)
             l_field_reg <= l_field_reg and (not pi_decoder_data({{field.high}} downto {{field.low}}));
             --# elif field.onwrite|string == "OnWriteType.woset":
-            -- this field is write-one-to-set (woset)
+              -- this field is write-one-to-set (woset)
             l_field_reg <= l_field_reg or pi_decoder_data({{field.high}} downto {{field.low}});
             --# elif field.onwrite|string == "OnWriteType.wot":
-            -- this field is write-one-to-toggle (wot)
+              -- this field is write-one-to-toggle (wot)
             l_field_reg <= l_field_reg xor pi_decoder_data({{field.high}} downto {{field.low}});
+            --# elif field.onwrite|string == "OnWriteType.wzs":
+              -- this field is write-zero-to-clear (wzs)
+            l_field_reg <= l_field_reg or (not pi_decoder_data({{field.high}} downto {{field.low}}));
+            --# elif field.onwrite|string == "OnWriteType.wzc":
+              -- this field is write-zero-to-set (wzc)
+            l_field_reg <= l_field_reg and pi_decoder_data({{field.high}} downto {{field.low}});
+            --# elif field.onwrite|string == "OnWriteType.wzt":
+              -- this field is write-one-to-toggle (wzt)
+            l_field_reg <= l_field_reg xnor pi_decoder_data({{field.high}} downto {{field.low}});
+            --# elif field.onwrite|string == "OnWriteType.wclr":
+              -- this field is cleared to 0 on write (wclr)
+            l_field_reg <= (others => '0');
+            --# elif field.onwrite|string == "OnWriteType.wset":
+              -- this field is set to 1 on weite (wset)
+            l_field_reg <= (others => '1');
             --# else
-            -- unimplemented onwrite property
+              -- unimplemented onwrite property
             --# endif
-            --# else
+          --# else
+          if pi_decoder_wr_stb = '1' then
             l_field_reg <= pi_decoder_data({{field.high}} downto {{field.low}});
-            --# endif
+          --# endif
           end if;
           --# if field.swmod or field.swacc:
           l_sw_wr_stb_q <= pi_decoder_wr_stb;
           --# endif
         --# endif
-          --# if field.swacc:
+          --# if field.onread:
+          if l_sw_rd_stb_q = '1' and pi_decoder_rd_stb = '0' then -- onread when read transaction is done
+            --# if field.onread|string == "OnReadType.rclr":
+            l_field_reg <= (others => '0');
+            --# elif field.onread|string == "OnReadType.rset":
+            l_field_reg <= (others => '1');
+            --# else
+              -- unimplemented onread property
+            --# endif
+          end if;
+          --# endif
+          --# if field.swacc or field.onread:
           l_sw_rd_stb_q <= pi_decoder_rd_stb;
           --# endif
         end if;
@@ -340,7 +367,11 @@ begin
     po_reg.{{field.type_name}}.swacc <= (not l_sw_rd_stb_q and pi_decoder_rd_stb ) when rising_edge(pi_clock);
     --# endif
     --# if field.swmod:
+    --# if field.onread:
+    po_reg.{{field.type_name}}.swmod <= (not l_sw_wr_stb_q and pi_decoder_wr_stb) or (l_sw_rd_stb_q and not pi_decoder_rd_stb) when rising_edge(pi_clock);
+    --# else
     po_reg.{{field.type_name}}.swmod <= (not l_sw_wr_stb_q and pi_decoder_wr_stb) when rising_edge(pi_clock);
+    --# endif
     --# endif
 
     data_out({{field.high}} downto {{field.low}}) <= l_field_reg;
