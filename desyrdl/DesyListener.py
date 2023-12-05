@@ -330,6 +330,8 @@ class DesyListener(RDLListener):
 
         context["width"] = totalwidth
         context["dtype"] = regx.get_property('desyrdl_data_type') or 'uint'
+        context["intr"] = regx.is_interrupt_reg
+        context["intrch"] = regx.get_property('desyrdl_intr_channel') or 0
         context["signed"] = self.get_data_type_sign(regx)
         context["fixedpoint"] = self.get_data_type_fixed(regx)
         if not regx.has_sw_writable and regx.has_sw_readable:
@@ -366,6 +368,7 @@ class DesyListener(RDLListener):
         context['reset_hex'] = hex(context['reset'])
         context['low'] = fldx.low
         context['high'] = fldx.high
+        context['intrtype'] = fldx.get_property('intr type').name if fldx.get_property('intr type') is not None else None
         context['onread'] = fldx.get_property('onread')
         context['onwrite'] = fldx.get_property('onwrite')
         context['singlepulse'] = fldx.get_property('singlepulse')
@@ -380,11 +383,12 @@ class DesyListener(RDLListener):
         context['desc_html'] = fldx.get_html_desc(self.md) or ""
         # check if we flag is set
         if (
-            fldx.is_hw_writable
+            not fldx.is_virtual
+            and fldx.is_hw_writable
             and fldx.is_sw_writable
             and not fldx.get_property('we')
-            and fldx.is_virtual is False
-            and fldx.parent.parent.get_property('desyrdl_generate_hdl') is not False
+            and fldx.parent.parent.get_property('desyrdl_generate_hdl') is True
+            and not fldx.parent.is_interrupt_reg
         ):
             self.msg.warning(
                 f"missing 'we' flag. 'sw = {fldx.get_property('sw').name}' "

@@ -43,7 +43,9 @@ package pkg_{{type_name_org}} is
   -- register type: {{regtype.type_name}}
   -----------------------------------------------{% for field in regtype.fields %}
   type t_field_signals_{{regtype_type_name}}_{{field.type_name}}_in is record
-    {%- if field.node.is_hw_writable %}
+    {%- if field.node.is_hw_writable and field.intr %}
+    intr : std_logic_vector({{field.width}}-1 downto 0);
+    enable : std_logic_vector({{field.width}}-1 downto 0); --{% elif field.node.is_hw_writable %}
     data : std_logic_vector({{field.width}}-1 downto 0); --{% else %}
     -- no data if field cannot be written from hw
     data : std_logic_vector(-1 downto 0); --{% endif %}
@@ -68,7 +70,7 @@ package pkg_{{type_name_org}} is
   type t_field_signals_{{regtype_type_name}}_{{field.type_name}}_out is record
     {%- if field.node.is_hw_readable %}
     data : std_logic_vector({{field.width}}-1 downto 0); --{% else %}
-    -- no data if field cannot be written from hw
+    -- no data if field cannot be read by hw
     data : std_logic_vector(-1 downto 0); --{% endif %}
     {%- if field.swacc %}
     swacc : std_logic; --{% endif %}
@@ -82,6 +84,8 @@ package pkg_{{type_name_org}} is
   end record;
   type t_reg_{{regtype_type_name}}_out is record--{% for field in regtype.fields %}
     {{field.type_name}} : t_field_signals_{{regtype_type_name}}_{{field.type_name}}_out; --{% endfor %}
+    {%- if regtype.node.is_interrupt_reg %}
+    intr : std_logic; --{% endif %}
   end record;
   type t_reg_{{regtype_type_name}}_2d_in is array (integer range <>) of t_reg_{{regtype_type_name}}_in;
   type t_reg_{{regtype_type_name}}_2d_out is array (integer range <>) of t_reg_{{regtype_type_name}}_out;
@@ -206,6 +210,9 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library desyrdl;
+use desyrdl.common.all;
+
 use work.pkg_{{type_name_org}}.all;
 
 entity {{type_name_org}}_{{regtype_type_name}} is
@@ -225,6 +232,9 @@ end entity {{type_name_org}}_{{regtype_type_name}};
 
 architecture rtl of {{type_name_org}}_{{regtype_type_name}} is
   signal data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+  --# if regtype.node.is_interrupt_reg
+  signal intr_out_vect : std_logic_vector({{regtype.width}}-1 downto 0) := (others => '0');
+  --# endif
 begin
   --{% if regtype.width < 32 %}
   data_out(C_DATA_WIDTH-1 downto {{regtype.width}}) <= (others => '0'); --{% endif %}
@@ -233,6 +243,9 @@ begin
   -- do only if 1 field and signed--{% if regtype.signed == 1 and regtype.fields_count == 1%}
   po_decoder_data <= std_logic_vector(resize(signed(data_out({{regtype.fields[0].high}} downto {{regtype.fields[0].low}})),C_DATA_WIDTH)); --{% else %}
   po_decoder_data <= data_out; --{% endif %}
+  --# if regtype.node.is_interrupt_reg
+  po_reg.intr <= intr_or_reduce(intr_out_vect);
+  --# endif
 
   ----------------------------------------------------------{% for field in regtype.fields %}{% if field.node.implements_storage%}--STORAGE
   {{field.type_name}}_storage: block
@@ -249,6 +262,9 @@ begin
     --# endif
     --# if field.node.is_down_counter:
     signal l_decrvalue   : natural;
+    --# endif
+    --# if field.intr:
+    signal l_intr_q  : std_logic_vector({{field.width}}-1 downto 0) := (others => '0');
     --# endif
   begin
     prs_write : process(pi_clock)
@@ -272,19 +288,56 @@ begin
         --# endif
         else
           -- HW --
-      --# if field.node.is_hw_writable:
-        --# if field.we:
+          --# if field.node.is_hw_writable and not field.intr:
+            --# if field.we:
           if pi_reg.{{field.type_name}}.we = '1' then
             l_field_reg <= pi_reg.{{field.type_name}}.data;
           end if;
-        --# elif field.wel:
+            --# elif field.wel:
           if pi_reg.{{field.type_name}}.wel = '0' then
             l_field_reg <= pi_reg.{{field.type_name}}.data;
           end if;
-        --# else
+            --# else
           l_field_reg <= pi_reg.{{field.type_name}}.data;
-        --# endif
-      --# endif
+            --# endif
+          --# elif field.node.is_hw_writable and field.intr:
+          --INTERRUPT
+          l_intr_q <= pi_reg.{{field.type_name}}.intr;
+            --# if field.stickybit:
+          -- sticky
+          for idx in 0 to {{field.width}}-1 loop
+              --# if field.intrtype == "level":
+            if pi_reg.{{field.type_name}}.intr(idx) = '1' then
+              l_field_reg(idx) <= '1';
+              --# elif field.intrtype == "posedge":
+            if l_intr_q(idx) = '0' and  pi_reg.{{field.type_name}}.intr(idx) = '1' then
+              l_field_reg(idx) <= '1';
+              --# elif field.intrtype == "negedge":
+            if l_intr_q(idx) = '1' and  pi_reg.{{field.type_name}}.intr(idx) = '0' then
+              l_field_reg(idx) <= '1';
+              --# elif field.intrtype == "bothedge":
+            if ( l_intr_q(idx) = '0' and  pi_reg.{{field.type_name}}.intr(idx) = '1' )
+            or ( l_intr_q(idx) = '1' and  pi_reg.{{field.type_name}}.intr(idx) = '0' ) then
+              l_field_reg(idx) <= pi_reg.{{field.type_name}}.intr(idx);
+              --# endif
+            end if;
+          end loop;
+            --# else
+          -- nosticky {{field.intrtype}}
+              --# if field.intrtype == "level":
+          l_field_reg <= pi_reg.{{field.type_name}}.intr;
+              --# endif
+              --# if field.intrtype == "posedge":
+          l_field_reg <= not l_intr_q and pi_reg.{{field.type_name}}.intr;
+              --# endif
+              --# if field.intrtype == "negedge":
+          l_field_reg <= l_intr_q and not pi_reg.{{field.type_name}}.intr;
+              --# endif
+               --# if field.intrtype == "bothedge":
+          l_field_reg <= l_intr_q xor pi_reg.{{field.type_name}}.intr;
+              --# endif
+            --# endif
+          --# endif
           --# if field.node.is_up_counter:
           -- counter
           if  pi_reg.{{field.type_name}}.incr = '1' then
@@ -391,6 +444,9 @@ begin
     --# endif
     --# endif
 
+    --# if field.intr
+    intr_out_vect({{field.high}} downto {{field.low}}) <= l_field_reg and pi_reg.{{field.type_name}}.enable;
+    --# endif
   end block {{field.type_name}}_storage;
   ----------------------------------------------------------{% else %}--WIRE
   {{field.type_name}}_wire : block--{%if field.swacc: %}
