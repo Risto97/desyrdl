@@ -337,7 +337,7 @@ begin
             l_field_reg <= pi_decoder_data({{field.high}} downto {{field.low}});
           --# endif
           end if;
-          --# if field.swmod or field.swacc:
+          --# if field.swmod or field.swacc or field.onwrite:
           l_sw_wr_stb_q <= pi_decoder_wr_stb;
           --# endif
         --# endif
