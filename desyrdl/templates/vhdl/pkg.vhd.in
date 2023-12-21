@@ -70,8 +70,8 @@ package pkg_{{type_name_org}} is
   type t_field_signals_{{regtype_type_name}}_{{field.type_name}}_out is record
     {%- if field.node.is_hw_readable %}
     data : std_logic_vector({{field.width}}-1 downto 0); --{% else %}
-    -- no data if field cannot be read by hw
-    data : std_logic_vector(-1 downto 0); --{% endif %}
+    -- no data if field cannot be written from hw
+    dummy : std_logic; --{% endif %}
     {%- if field.swacc %}
     swacc : std_logic; --{% endif %}
     {%- if field.swmod %}
@@ -231,13 +231,31 @@ entity {{type_name_org}}_{{regtype_type_name}} is
 end entity {{type_name_org}}_{{regtype_type_name}};
 
 architecture rtl of {{type_name_org}}_{{regtype_type_name}} is
+
+  -- assign slices of data_out for each field, but force the rest to constant zeros
+  function fun_set_data_out ( --{% for field in regtype.fields %}
+    field_reg_{{field.type_name}} : std_logic_vector({{field.width}}-1 downto 0){{ ";" if not loop.last else ")" }} -- {%- endfor %}
+    return std_logic_vector is
+    variable v_data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+  begin
+    v_data_out := (others => '0');
+    --{% for field in regtype.fields %}
+    v_data_out({{field.high}} downto {{field.low}}) := field_reg_{{field.type_name}}; --{%- endfor %}
+    return v_data_out;
+  end function fun_set_data_out;
+
   signal data_out : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+   --{% for field in regtype.fields %}
+  signal field_reg_{{field.type_name}} : std_logic_vector({{field.width}}-1 downto 0)
+    := std_logic_vector(to_signed({{field.reset}},{{field.width}})); --{%- endfor %}
   --# if regtype.node.is_interrupt_reg
   signal intr_out_vect : std_logic_vector({{regtype.width}}-1 downto 0) := (others => '0');
   --# endif
 begin
-  --{% if regtype.width < 32 %}
-  data_out(C_DATA_WIDTH-1 downto {{regtype.width}}) <= (others => '0'); --{% endif %}
+
+  data_out <= fun_set_data_out( --{% for field in regtype.fields %}
+    field_reg_{{field.type_name}}{{ "," if not loop.last else "" }} -- {%- endfor %}
+  );
 
   -- resize field data out to the register bus width
   -- do only if 1 field and signed--{% if regtype.signed == 1 and regtype.fields_count == 1%}
@@ -249,8 +267,6 @@ begin
 
   ----------------------------------------------------------{% for field in regtype.fields %}{% if field.node.implements_storage%}--STORAGE
   {{field.type_name}}_storage: block
-    signal l_field_reg   : std_logic_vector({{field.width}}-1 downto 0) :=
-                           std_logic_vector(to_signed({{field.reset}},{{field.width}}));
     --# if field.swmod or field.swacc or field.onwrite:
     signal l_sw_wr_stb_q : std_logic;
     --# endif
@@ -271,8 +287,8 @@ begin
     begin
       if rising_edge(pi_clock) then
         if pi_reset = '1' then
-          l_field_reg <= std_logic_vector(to_signed({{field.reset}},{{field.width}}));
-          --# if field.swmod or field.swacc:
+          field_reg_{{field.type_name}} <= std_logic_vector(to_signed({{field.reset}},{{field.width}}));
+          --# if field.swmod or field.swacc or field.onwrite:
           l_sw_wr_stb_q <= '0';
           --# endif
           --# if field.swacc or field.onread:
@@ -280,25 +296,25 @@ begin
           --# endif
         --# if field.hwclr:
         elsif pi_reg.{{field.type_name}}.hwclr = '1' then
-          l_field_reg <= (others => '0');
+          field_reg_{{field.type_name}} <= (others => '0');
         --# endif
         --# if field.hwset:
         elsif pi_reg.{{field.type_name}}.hwset = '1' then
-          l_field_reg <= (others => '1');
+          field_reg_{{field.type_name}} <= (others => '1');
         --# endif
         else
           -- HW --
           --# if field.node.is_hw_writable and not field.intr:
             --# if field.we:
           if pi_reg.{{field.type_name}}.we = '1' then
-            l_field_reg <= pi_reg.{{field.type_name}}.data;
+            field_reg_{{field.type_name}} <= pi_reg.{{field.type_name}}.data;
           end if;
             --# elif field.wel:
           if pi_reg.{{field.type_name}}.wel = '0' then
-            l_field_reg <= pi_reg.{{field.type_name}}.data;
+            field_reg_{{field.type_name}} <= pi_reg.{{field.type_name}}.data;
           end if;
             --# else
-          l_field_reg <= pi_reg.{{field.type_name}}.data;
+          field_reg_{{field.type_name}} <= pi_reg.{{field.type_name}}.data;
             --# endif
           --# elif field.node.is_hw_writable and field.intr:
           --INTERRUPT
@@ -308,86 +324,86 @@ begin
           for idx in 0 to {{field.width}}-1 loop
               --# if field.intrtype == "level":
             if pi_reg.{{field.type_name}}.intr(idx) = '1' then
-              l_field_reg(idx) <= '1';
+              field_reg_{{field.type_name}}(idx) <= '1';
               --# elif field.intrtype == "posedge":
             if l_intr_q(idx) = '0' and  pi_reg.{{field.type_name}}.intr(idx) = '1' then
-              l_field_reg(idx) <= '1';
+              field_reg_{{field.type_name}}(idx) <= '1';
               --# elif field.intrtype == "negedge":
             if l_intr_q(idx) = '1' and  pi_reg.{{field.type_name}}.intr(idx) = '0' then
-              l_field_reg(idx) <= '1';
+              field_reg_{{field.type_name}}(idx) <= '1';
               --# elif field.intrtype == "bothedge":
             if ( l_intr_q(idx) = '0' and  pi_reg.{{field.type_name}}.intr(idx) = '1' )
             or ( l_intr_q(idx) = '1' and  pi_reg.{{field.type_name}}.intr(idx) = '0' ) then
-              l_field_reg(idx) <= pi_reg.{{field.type_name}}.intr(idx);
+              field_reg_{{field.type_name}}(idx) <= pi_reg.{{field.type_name}}.intr(idx);
               --# endif
             end if;
           end loop;
             --# else
           -- nosticky {{field.intrtype}}
               --# if field.intrtype == "level":
-          l_field_reg <= pi_reg.{{field.type_name}}.intr;
+          field_reg_{{field.type_name}} <= pi_reg.{{field.type_name}}.intr;
               --# endif
               --# if field.intrtype == "posedge":
-          l_field_reg <= not l_intr_q and pi_reg.{{field.type_name}}.intr;
+          field_reg_{{field.type_name}} <= not l_intr_q and pi_reg.{{field.type_name}}.intr;
               --# endif
               --# if field.intrtype == "negedge":
-          l_field_reg <= l_intr_q and not pi_reg.{{field.type_name}}.intr;
+          field_reg_{{field.type_name}} <= l_intr_q and not pi_reg.{{field.type_name}}.intr;
               --# endif
                --# if field.intrtype == "bothedge":
-          l_field_reg <= l_intr_q xor pi_reg.{{field.type_name}}.intr;
+          field_reg_{{field.type_name}} <= l_intr_q xor pi_reg.{{field.type_name}}.intr;
               --# endif
             --# endif
           --# endif
           --# if field.node.is_up_counter:
           -- counter
           if  pi_reg.{{field.type_name}}.incr = '1' then
-            l_field_reg <= std_logic_vector(unsigned(l_field_reg) + to_unsigned(l_incrvalue, {{field.width}}));
+            field_reg_{{field.type_name}} <= std_logic_vector(unsigned(field_reg_{{field.type_name}}) + to_unsigned(l_incrvalue, {{field.width}}));
           end if;
           --# endif
           --# if field.node.is_down_counter:
           if  pi_reg.{{field.type_name}}.decr = '1' then
-            l_field_reg <= std_logic_vector(unsigned(l_field_reg) - to_unsigned(l_decrvalue, {{field.width}}));
+            field_reg_{{field.type_name}} <= std_logic_vector(unsigned(field_reg_{{field.type_name}}) - to_unsigned(l_decrvalue, {{field.width}}));
           end if;
           --# endif
         --# if field.node.is_sw_writable:
           --# if field.singlepulse:
           -- This is a "singlepulse" register - clear on each clock,
           -- unless it is written to with a 1 (see below)
-          l_field_reg <= (others => '0');
+          field_reg_{{field.type_name}} <= (others => '0');
           --# endif
           -- SW --
           --# if field.onwrite:
           if l_sw_wr_stb_q = '0' and pi_decoder_wr_stb = '1' then
             --# if field.onwrite|string == "OnWriteType.woclr":
               -- this field is write-one-to-clear (woclr)
-            l_field_reg <= l_field_reg and (not pi_decoder_data({{field.high}} downto {{field.low}}));
+            field_reg_{{field.type_name}} <= field_reg_{{field.type_name}} and (not pi_decoder_data({{field.high}} downto {{field.low}}));
             --# elif field.onwrite|string == "OnWriteType.woset":
               -- this field is write-one-to-set (woset)
-            l_field_reg <= l_field_reg or pi_decoder_data({{field.high}} downto {{field.low}});
+            field_reg_{{field.type_name}} <= field_reg_{{field.type_name}} or pi_decoder_data({{field.high}} downto {{field.low}});
             --# elif field.onwrite|string == "OnWriteType.wot":
               -- this field is write-one-to-toggle (wot)
-            l_field_reg <= l_field_reg xor pi_decoder_data({{field.high}} downto {{field.low}});
+            field_reg_{{field.type_name}} <= field_reg_{{field.type_name}} xor pi_decoder_data({{field.high}} downto {{field.low}});
             --# elif field.onwrite|string == "OnWriteType.wzs":
               -- this field is write-zero-to-clear (wzs)
-            l_field_reg <= l_field_reg or (not pi_decoder_data({{field.high}} downto {{field.low}}));
+            field_reg_{{field.type_name}} <= field_reg_{{field.type_name}} or (not pi_decoder_data({{field.high}} downto {{field.low}}));
             --# elif field.onwrite|string == "OnWriteType.wzc":
               -- this field is write-zero-to-set (wzc)
-            l_field_reg <= l_field_reg and pi_decoder_data({{field.high}} downto {{field.low}});
+            field_reg_{{field.type_name}} <= field_reg_{{field.type_name}} and pi_decoder_data({{field.high}} downto {{field.low}});
             --# elif field.onwrite|string == "OnWriteType.wzt":
               -- this field is write-one-to-toggle (wzt)
-            l_field_reg <= l_field_reg xnor pi_decoder_data({{field.high}} downto {{field.low}});
+            field_reg_{{field.type_name}} <= field_reg_{{field.type_name}} xnor pi_decoder_data({{field.high}} downto {{field.low}});
             --# elif field.onwrite|string == "OnWriteType.wclr":
               -- this field is cleared to 0 on write (wclr)
-            l_field_reg <= (others => '0');
+            field_reg_{{field.type_name}} <= (others => '0');
             --# elif field.onwrite|string == "OnWriteType.wset":
               -- this field is set to 1 on weite (wset)
-            l_field_reg <= (others => '1');
+            field_reg_{{field.type_name}} <= (others => '1');
             --# else
               -- unimplemented onwrite property
             --# endif
           --# else
           if pi_decoder_wr_stb = '1' then
-            l_field_reg <= pi_decoder_data({{field.high}} downto {{field.low}});
+            field_reg_{{field.type_name}} <= pi_decoder_data({{field.high}} downto {{field.low}});
           --# endif
           end if;
           --# if field.swmod or field.swacc or field.onwrite:
@@ -397,9 +413,9 @@ begin
           --# if field.onread:
           if l_sw_rd_stb_q = '1' and pi_decoder_rd_stb = '0' then -- onread when read transaction is done
             --# if field.onread|string == "OnReadType.rclr":
-            l_field_reg <= (others => '0');
+            field_reg_{{field.type_name}} <= (others => '0');
             --# elif field.onread|string == "OnReadType.rset":
-            l_field_reg <= (others => '1');
+            field_reg_{{field.type_name}} <= (others => '1');
             --# else
               -- unimplemented onread property
             --# endif
@@ -412,8 +428,8 @@ begin
       end if;
     end process;
     --{% if field.node.is_hw_readable %}
-    po_reg.{{field.type_name}}.data <= l_field_reg; --{% else %}no signal to read by HW
-    po_reg.{{field.type_name}}.data <= (others => '0'); --{% endif %}
+    po_reg.{{field.type_name}}.data <= field_reg_{{field.type_name}}; --{% else %}no signal to read by HW
+    po_reg.{{field.type_name}}.dummy <= '0'; --{% endif %}
     --# if field.node.is_sw_writable and field.swacc:
     po_reg.{{field.type_name}}.swacc <= (not l_sw_wr_stb_q and pi_decoder_wr_stb) or (not l_sw_rd_stb_q and pi_decoder_rd_stb ) when rising_edge(pi_clock);
     --# elif field.swacc:
@@ -426,8 +442,6 @@ begin
     po_reg.{{field.type_name}}.swmod <= (not l_sw_wr_stb_q and pi_decoder_wr_stb) when rising_edge(pi_clock);
     --# endif
     --# endif
-
-    data_out({{field.high}} downto {{field.low}}) <= l_field_reg;
 
     --# if field.node.is_up_counter:
     --# if field.incrwidth > 0:
@@ -445,19 +459,19 @@ begin
     --# endif
 
     --# if field.intr
-    intr_out_vect({{field.high}} downto {{field.low}}) <= l_field_reg and pi_reg.{{field.type_name}}.enable;
+    intr_out_vect({{field.high}} downto {{field.low}}) <= field_reg_{{field.type_name}} and pi_reg.{{field.type_name}}.enable;
     --# endif
   end block {{field.type_name}}_storage;
   ----------------------------------------------------------{% else %}--WIRE
-  {{field.type_name}}_wire : block--{%if field.swacc: %}
+  {{field.type_name}}_wire : block --{%if field.swacc: %}
     signal decoder_rd_stb_q : std_logic; --{% endif %}
   begin
     --{% if field.const == 1%}
-    data_out({{field.high}} downto {{field.low}}) <= std_logic_vector(to_signed({{field.reset}},{{field.width}})); --{% else %}
-    data_out({{field.high}} downto {{field.low}}) <= pi_reg.{{field.type_name}}.data({{field.width}}-1 downto 0); --{% endif %}
+    field_reg_{{field.type_name}} <= std_logic_vector(to_signed({{field.reset}},{{field.width}})); --{% else %}
+    field_reg_{{field.type_name}} <= pi_reg.{{field.type_name}}.data({{field.width}}-1 downto 0); --{% endif %}
     --{% if field.node.is_hw_readable %}
     po_reg.{{field.type_name}}.data <= data_out({{field.high}} downto {{field.low}}); --{% else %}no signal to read by HW
-    po_reg.{{field.type_name}}.data <= (others => '0'); --{% endif %}{%if field.swacc: %}
+    po_reg.{{field.type_name}}.dummy <= '0'; --{% endif %}{%if field.swacc: %}
     po_reg.{{field.type_name}}.swacc <= '1' when pi_decoder_rd_stb = '1' and decoder_rd_stb_q = '0' else '0';
     decoder_rd_stb_q <= pi_decoder_rd_stb when rising_edge(pi_clock); --{% endif %}
   end block; --{%- endif %}{%- endfor %}

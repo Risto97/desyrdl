@@ -249,9 +249,9 @@ class DesyListener(RDLListener):
                 context['ext_insts'].append(item_context)
                 print(f"{item.inst_name }: {item_context['interface'] } - {context['interface']}")
                 if (
-                    item_context['interface'] != context['interface']
-                    and context['interface'] is not None
+                    context['interface'] is not None
                     and item_context['interface'] is not None
+                    and item_context['interface'].lower() != context['interface'].lower()
                 ):
                     adapter_name = context['interface'].lower() + "_to_" + item_context['interface'].lower()
                     if adapter_name not in context['interface_adapters']:
