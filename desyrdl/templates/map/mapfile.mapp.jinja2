@@ -10,7 +10,8 @@
 {%- macro reg_macro(parent_name, reg, addr_offset = 0) -%}
     {%- set path = parent_name + separator + reg.inst_name -%}
 {#- {{item_macro(regpath, reg)}} #}
-{{"{:<50}".format(path)}} {{"{:>10}".format(reg.elements)}} {{" 0x{:>08X}".format(reg.absolute_address+addr_offset)}} {{"{:>12}".format(reg.total_size)}} {{"{:>4}".format(reg.access_channel)}} {{"{:>4}".format(reg.width)}} {{"{:>4}".format(reg.fixedpoint)}} {{"{:>4}".format(reg.signed)}}  {%- if reg.intr %}   INTERRUPT{{reg.intrch}} {% else %} {{"{:>4}".format(reg.rw)}}{% endif %}
+{{"{:<50}".format(path)}} {{"{:>10}".format(reg.elements)}} {{" 0x{:>08X}".format(reg.absolute_address+addr_offset)}} {{"{:>12}".format(reg.total_size)}} {{"{:>4}".format(reg.access_channel)}} {{"{:>4}".format(reg.width)}} {{"{:>4}".format(reg.fixedpoint)}} {{"{:>4}".format(reg.signed)}} {{"{:>4}".format(reg.rw)}}
+{% if reg.intr %}{{"{:<50}".format(path+separator+"INTR")}} {{"{:>10}".format(reg.elements)}} {{" 0x{:>08X}".format(reg.absolute_address+addr_offset)}} {{"{:>12}".format(reg.total_size)}} {{"{:>4}".format(reg.access_channel)}} {{"{:>4}".format(reg.width)}} {{"{:>4}".format(reg.fixedpoint)}} {{"{:>4}".format(reg.signed)}}   INTERRUPT{{reg.intrch}} {%- endif %}
 {%- endmacro -%}
 
 {#- ============================================================ #}
