@@ -11,7 +11,22 @@
     {%- set path = parent_name + separator + reg.inst_name -%}
 {#- {{item_macro(regpath, reg)}} #}
 {{"{:<50}".format(path)}} {{"{:>10}".format(reg.elements)}} {{" 0x{:>08X}".format(reg.absolute_address+addr_offset)}} {{"{:>12}".format(reg.total_size)}} {{"{:>4}".format(reg.access_channel)}} {{"{:>4}".format(reg.width)}} {{"{:>4}".format(reg.fixedpoint)}} {{"{:>4}".format(reg.signed)}} {{"{:>4}".format(reg.rw)}}
-{% if reg.intr %}{{"{:<50}".format(path+separator+"INTR")}} {{"{:>10}".format(reg.elements)}} {{" 0x{:>08X}".format(reg.absolute_address+addr_offset)}} {{"{:>12}".format(reg.total_size)}} {{"{:>4}".format(reg.access_channel)}} {{"{:>4}".format(reg.width)}} {{"{:>4}".format(reg.fixedpoint)}} {{"{:>4}".format(reg.signed)}}   INTERRUPT{{reg.intrch}} {%- endif %}
+{%- endmacro -%}
+{#- interrupt register macro #}
+{%- macro intr_reg_macro(parent_name, reg, addr_offset = 0) -%}
+  {%- set path = parent_name + separator + reg.inst_name -%}
+  {% if reg.intr %}
+@![{{reg.intr_line|join(",")}}] {"INTC" : {"path": "{{parent_name}}", "options": { {{reg.intr_opts|join(", ")}} } ,"version":1} }
+    {%- for field in reg.fields %}
+      {%- if field.width == 1 %}
+{{"{:<50}".format(path+separator+field.inst_name)|upper()}} {{"{:>10}".format(0)}} {{" 0x{:>08X}".format(0)}} {{"{:>12}".format(0)}} {{"{:>4}".format(0)}} {{"{:>4}".format(0)}} {{"{:>4}".format(0)}} {{"{:>4}".format(0)}}   INTERRUPT{{reg.intr_line|join(":")}}:{{field.low}}
+      {%- else %}
+        {%- for idx in range(field.width) %}
+{{"{:<50}".format(path+separator+field.inst_name+"_{}".format(idx))|upper()}} {{"{:>10}".format(0)}} {{" 0x{:>08X}".format(0)}} {{"{:>12}".format(0)}} {{"{:>4}".format(0)}} {{"{:>4}".format(0)}} {{"{:>4}".format(0)}} {{"{:>4}".format(0)}}   INTERRUPT{{reg.intr_line|join(":")}}:{{field.low+idx}}
+        {%- endfor %}
+      {%- endif %}
+    {%- endfor %}
+  {% endif -%}
 {%- endmacro -%}
 
 {#- ============================================================ #}
@@ -72,7 +87,22 @@
     {%- endfor %}
   {%- endif %}
 {%- endmacro -%}
-
+{%- macro intr_rgf_macro(parent_name, rgf) %}
+  {%- if rgf.dim  == 1 -%}
+  {%- set path = parent_name + separator + rgf.inst_name  %}
+    {%- for reg in rgf.reg_insts -%}
+{{intr_reg_macro(path, reg)}}
+    {%- endfor %}
+  {%- elif rgf.dim == 2 %}
+    {%- for idx_m in range(rgf.dim_m) -%}
+    {%- set path = parent_name + separator + rgf.inst_name + separator + "{}".format(idx_m) %}
+    {%- set addr_offset = rgf.array_stride*idx_m %}
+      {%- for reg in rgf.reg_insts -%}
+{{intr_reg_macro(path, reg, addr_offset)}}
+      {%- endfor %}
+    {%- endfor %}
+  {%- endif %}
+{%- endmacro -%}
 {#- ============================================================ #}
 {#- Iterate over items nad execute macro dedicated for node type #}
 {%- macro items(parent_path, insts) %}
@@ -88,6 +118,32 @@
     {%- endif %}
   {%- endfor %}
 {%- endmacro -%}
+{%- macro intr_items(parent_path, insts) %}
+  {%- for inst in insts %}
+    {%- if inst.node_type == "REG" -%}
+{{intr_reg_macro(parent_path, inst)}}
+    {%- elif inst.node_type == "REGFILE" -%}
+{{intr_rgf_macro(parent_path, inst)}}
+    {%- endif %}
+  {%- endfor %}
+{%- endmacro -%}
+{#- ============================================================ #}
+{# interrupts  #}
+
+{# {%- for intr in interrupts %}  #}
+{#   {{intr.node.get_rel_path(intr.node.parent)}} #}
+{# {%- endfor -%} #}
+{#- ============================================================ #}
+{#- TOP : iterat over address map list #}
+{%- for addrmap in addrmaps %}
+  {%- if addrmap.dim  == 1 -%}
+{{ intr_items(addrmap.inst_name, addrmap.insts) }}
+  {%- elif addrmap.dim == 2 %}
+    {%- for idx_m in range(addrmap.dim_m) -%}
+{{ intr_items(addrmap.inst_name + separator + "{}".format(idx_m), addrmap.insts) }}
+    {%- endfor %}
+  {%- endif %}
+{%- endfor -%}
 
 {#- ============================================================ #}
 {#- TOP : iterat over address map list #}
