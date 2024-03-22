@@ -58,7 +58,7 @@ def main():
         metavar='FORMAT',
         required=True,
         nargs='+',  # allow multiple values
-        choices=['vhdl', 'map', 'h', 'adoc', 'cocotb', 'tcl'],
+        choices=['vhdl', 'map', 'h', 'adoc', 'cocotb', 'tcl', 'cheby'],
         help='output format: vhdl, map, h',
     )
     arg_parser.add_argument(

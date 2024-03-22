@@ -32,7 +32,6 @@ from systemrdl.node import AddrmapNode, FieldNode, MemNode, RegfileNode, RegNode
 
 from desyrdl.rdlformatcode import DesyrdlMarkup
 
-
 class AttributeDict(dict):
     "class to convert dict to attributes of object"
 
@@ -269,7 +268,7 @@ class DesyListener(RDLListener):
                     context['rgf_types'].append(item_context)
 
             # append item contect to items list
-            context['insts'].append(AttributeDict(item_context))
+            context['insts'].append(item_context)
 
     # =========================================================================
     def set_item_dimmentions(self, item: AddressableNode, item_context: dict):
@@ -536,6 +535,7 @@ class DesyRdlProcessor(DesyListener):
         self.generated_files['h'] = []
         self.generated_files['adoc'] = []
         self.generated_files['tcl'] = []
+        self.generated_files['cheby'] = []
         self.generated_files['vhdl_dict']['desyrdl'] = []  # inset desyrdl key so it is first on the list
 
         self.top_context['generated_files'] = self.generated_files
@@ -570,6 +570,15 @@ class DesyRdlProcessor(DesyListener):
         super().exit_Addrmap(node)
 
         # formats to generate per address mapp
+        if 'cheby' in self.out_formats:
+            from desyrdl.ChebyContext  import ChebyContext
+            print(f"Cheby for: {node.inst_name} ({node.type_name})")
+            out_file_path = Path(self.out_dir / "cheby" / f"{node.inst_name}.cheby")
+            out_file_path.parents[0].mkdir(parents=True, exist_ok=True)
+            cheby = ChebyContext()
+            cheby.export(out_file_path, self.context)
+            self.generated_files["cheby"].append(out_file_path)
+
         if 'vhdl' in self.out_formats:
             if node.get_property('desyrdl_generate_hdl') is None or node.get_property('desyrdl_generate_hdl') is True:
                 print(f"VHDL for: {node.inst_name} ({node.type_name})")
@@ -600,7 +609,7 @@ class DesyRdlProcessor(DesyListener):
 
             if 'cocotb' in self.out_formats:
                 files = self.render_templates(loader="cocotb", outdir="cocotb", context=self.top_context)
-                self.generated_files['h'] = self.generated_files['cocotb'] + files
+                self.generated_files['cocotb'] = self.generated_files['cocotb'] + files
 
             if 'tcl' in self.out_formats:
                 files = self.render_templates(loader="tcl", outdir="tcl", context=self.top_context)
@@ -627,3 +636,4 @@ class DesyRdlProcessor(DesyListener):
             generated_files.append(out_file_path)
             # self.generated_files[outdir].append(outFilePath)
         return generated_files
+
