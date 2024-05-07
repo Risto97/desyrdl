@@ -624,6 +624,8 @@ class DesyRdlProcessor(DesyListener):
             out_file_path.parents[0].mkdir(parents=True, exist_ok=True)
             # render template and stream it directly to out file
             template.stream(context).dump(str(out_file_path.resolve()))
-            generated_files.append(out_file_path)
+            # as_posix() ensures forward slashes, also supported by Tcl on Windows,
+            # see https://www.tcl.tk/man/tcl8.3/TclCmd/filename.htm#M22
+            generated_files.append(out_file_path.as_posix())
             # self.generated_files[outdir].append(outFilePath)
         return generated_files
