@@ -192,7 +192,7 @@ class DesyListener(RDLListener):
     def set_intr_options(self, inst):
         """Find interrupt registers and set interrupt controller options."""
         options = []
-        intc_regs = ["ICR", "IAR", "IPR", "MIE", "GIE", "SIE", "CIE"]
+        intc_regs = ["ICR", "IAR", "IPR", "MER", "GIE", "SIE", "CIE"]
         for reg in inst.node.parent.children(unroll=False):
             if reg.inst_name.lower() in (name.lower() for name in intc_regs):
                 options.append(reg.inst_name)

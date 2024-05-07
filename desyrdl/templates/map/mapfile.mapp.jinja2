@@ -16,7 +16,11 @@
 {%- macro intr_reg_macro(parent_name, reg, addr_offset = 0) -%}
   {%- set path = parent_name + separator + reg.inst_name -%}
   {% if reg.intr %}
-@![{{reg.intr_line|join(",")}}] {"INTC" : {"path": "{{parent_name}}", "options": { {{reg.intr_opts|join(", ")}} } ,"version":1} }
+    {% if reg.intr_opts %}
+@![{{reg.intr_line|join(",")}}] {"INTC" : {"path": "{{parent_name}}", "options": ["{{reg.intr_opts|join("\", \"")}}"] ,"version":1} }
+      {%- else %}
+@![{{reg.intr_line|join(",")}}] {"INTC" : {"path": "{{parent_name}}", "version":1} }
+      {%- endif %}
     {%- for field in reg.fields %}
       {%- if field.width == 1 %}
 {{"{:<50}".format(path+separator+field.inst_name)|upper()}} {{"{:>10}".format(0)}} {{" 0x{:>08X}".format(0)}} {{"{:>12}".format(0)}} {{"{:>4}".format(0)}} {{"{:>4}".format(0)}} {{"{:>4}".format(0)}} {{"{:>4}".format(0)}}   INTERRUPT{{reg.intr_line|join(":")}}:{{field.low}}
