@@ -7,10 +7,11 @@
 
 {#- ============================================================ #}
 {#- register macro #}
-{%- macro reg_macro(parent_name, reg) -%}
+{%- macro reg_macro(parent_name, reg, addr_offset = 0) -%}
     {%- set path = parent_name + separator + reg.inst_name -%}
 {#- {{item_macro(regpath, reg)}} #}
-{{"{:<50}".format(path)}} {{"{:>10}".format(reg.elements)}} {{" 0x{:>08X}".format(reg.absolute_address)}} {{"{:>12}".format(reg.total_size)}} {{"{:>4}".format(reg.access_channel)}} {{"{:>4}".format(reg.width)}} {{"{:>4}".format(reg.fixedpoint)}} {{"{:>4}".format(reg.signed)}} {{"{:>4}".format(reg.rw)}}
+{{"{:<50}".format(path)}} {{"{:>10}".format(reg.elements)}} {{" 0x{:>08X}".format(reg.absolute_address+addr_offset)}} {{"{:>12}".format(reg.total_size)}} {{"{:>4}".format(reg.access_channel)}} {{"{:>4}".format(reg.width)}} {{"{:>4}".format(reg.fixedpoint)}} {{"{:>4}".format(reg.signed)}} {{"{:>4}".format(reg.rw)}}
+{% if reg.intr %}{{"{:<50}".format(path+separator+"INTR")}} {{"{:>10}".format(reg.elements)}} {{" 0x{:>08X}".format(reg.absolute_address+addr_offset)}} {{"{:>12}".format(reg.total_size)}} {{"{:>4}".format(reg.access_channel)}} {{"{:>4}".format(reg.width)}} {{"{:>4}".format(reg.fixedpoint)}} {{"{:>4}".format(reg.signed)}}   INTERRUPT{{reg.intrch}} {%- endif %}
 {%- endmacro -%}
 
 {#- ============================================================ #}
@@ -23,40 +24,50 @@
 
 {#- ============================================================ #}
 {#- Memory macro #}
-{%- macro mem_macro(parent_name, mem) %}
-  {%- if mem.dim  == 1 -%}
+{%- macro mem_macro(parent_name, mem, addr_offset = 0) %}
   {%- set path = parent_name + separator + mem.inst_name  %}
-{{"M_{:<50}".format(path)}} {{"{:>10}".format(mem.mementries)}} {{" 0x{:>08X}".format(mem.absolute_address)}} {{"{:>12}".format(mem.total_size)}} {{"{:>4}".format(mem.access_channel)}} {{"{:>4}".format(mem.width)}} {{"{:>4}".format(mem.fixedpoint)}} {{"{:>4}".format(mem.signed)}} {{"{:>4}".format(mem.rw)}}
-    {%- for reg in mem.reg_insts -%}
-{{reg_macro(path, reg)}}
-    {%- endfor %}
-  {%- elif mem.dim == 2 %}
-    {%- for idx_m in range(mem.dim_m) -%}
-    {%- set path = parent_name + separator + mem.inst_name + separator + "{}".format(idx_m) %}
-{#- {{item_macro(mempath, mem)}} #}
-{{"M_{:<50}".format(path)}} {{"{:>10}".format(mem.mementries)}} {{" 0x{:>08X}".format(mem.absolute_address)}} {{"{:>12}".format(mem.array_stride)}} {{"{:>4}".format(mem.access_channel)}} {{"{:>4}".format(mem.width)}} {{"{:>4}".format(mem.fixedpoint)}} {{"{:>4}".format(mem.signed)}} {{"{:>4}".format(mem.rw)}}
+  {%- if mem.dim  == 1 -%}
+    {%- if mem.reg_insts|length == 1 and mem.reg_insts[0].inst_name == "DATATYPE" %}
+{{"{:<50}".format(path)}} {{"{:>10}".format(mem.total_words)}} {{" 0x{:>08X}".format(mem.absolute_address+addr_offset)}} {{"{:>12}".format(mem.total_size)}} {{"{:>4}".format(mem.access_channel)}} {{"{:>4}".format(mem.reg_insts[0].width)}} {{"{:>4}".format(mem.reg_insts[0].fixedpoint)}} {{"{:>4}".format(mem.reg_insts[0].signed)}} {{"{:>4}".format(mem.rw)}}
+    {%- else %}
+{{"{:<50}".format(path)}} {{"{:>10}".format(mem.total_words)}} {{" 0x{:>08X}".format(mem.absolute_address+addr_offset)}} {{"{:>12}".format(mem.total_size)}} {{"{:>4}".format(mem.access_channel)}} {{"{:>4}".format(mem.width)}} {{"{:>4}".format(mem.fixedpoint)}} {{"{:>4}".format(mem.signed)}} {{"{:>4}".format(mem.rw)}}
       {%- for reg in mem.reg_insts -%}
 {{reg_macro(path, reg)}}
       {%- endfor %}
+    {%- endif %}
+  {%- elif mem.dim == 2 %}
+    {%- for idx_m in range(mem.dim_m) -%}
+    {%- set path = parent_name + separator + mem.inst_name + separator + "{}".format(idx_m) %}
+    {%- set addr_offset = mem.array_stride*idx_m + addr_offset%}
+{#- {{item_macro(mempath, mem)}} #}
+      {%- if mem.reg_insts|length == 1 and mem.reg_insts[0].inst_name == "DATATYPE" %}
+{{"{:<50}".format(path)}} {{"{:>10}".format(mem.mementries)}} {{" 0x{:>08X}".format(mem.absolute_address+addr_offset)}} {{"{:>12}".format(mem.array_stride)}} {{"{:>4}".format(mem.access_channel)}} {{"{:>4}".format(mem.reg_insts[0].width)}} {{"{:>4}".format(mem.reg_insts[0].fixedpoint)}} {{"{:>4}".format(mem.reg_insts[0].signed)}} {{"{:>4}".format(mem.rw)}}
+      {%- else %}
+{{"{:<50}".format(path)}} {{"{:>10}".format(mem.mementries)}} {{" 0x{:>08X}".format(mem.absolute_address+addr_offset)}} {{"{:>12}".format(mem.array_stride)}} {{"{:>4}".format(mem.access_channel)}} {{"{:>4}".format(mem.width)}} {{"{:>4}".format(mem.fixedpoint)}} {{"{:>4}".format(mem.signed)}} {{"{:>4}".format(mem.rw)}}
+        {%- for reg in mem.reg_insts -%}
+{{reg_macro(path, reg, addr_offset)}}
+        {%- endfor %}
+      {%- endif %}
     {%- endfor %}
   {%- endif %}
 {%- endmacro -%}
 
 {#- ============================================================ #}
 {#- Regfile macro #}
-{%- macro rgf_macro(parent_name, rgf) %}
+{%- macro rgf_macro(parent_name, rgf, addr_offset = 0) %}
   {%- if rgf.dim  == 1 -%}
   {%- set path = parent_name + separator + rgf.inst_name  %}
-{{"R_{:<50}".format(path)}} {{"{:>10}".format(rgf.total_words)}} {{" 0x{:>08X}".format(rgf.absolute_address)}} {{"{:>12}".format(rgf.total_size)}} {{"{:>4}".format(rgf.access_channel)}} {{"{:>4}".format(rgf.width)}} {{"{:>4}".format(rgf.fixedpoint)}} {{"{:>4}".format(rgf.signed)}} {{"{:>4}".format(rgf.rw)}}
+{{"{:<50}".format(path)}} {{"{:>10}".format(rgf.total_words)}} {{" 0x{:>08X}".format(rgf.absolute_address+addr_offset)}} {{"{:>12}".format(rgf.total_size)}} {{"{:>4}".format(rgf.access_channel)}} {{"{:>4}".format(rgf.width)}} {{"{:>4}".format(rgf.fixedpoint)}} {{"{:>4}".format(rgf.signed)}} {{"{:>4}".format(rgf.rw)}}
     {%- for reg in rgf.reg_insts -%}
 {{reg_macro(path, reg)}}
     {%- endfor %}
   {%- elif rgf.dim == 2 %}
     {%- for idx_m in range(rgf.dim_m) -%}
     {%- set path = parent_name + separator + rgf.inst_name + separator + "{}".format(idx_m) %}
-{{"R_{:<50}".format(path)}} {{"{:>10.0f}".format(rgf.total_words/rgf.dim_m)}} {{" 0x{:>08X}".format(rgf.absolute_address)}} {{"{:>12}".format(rgf.array_stride)}} {{"{:>4}".format(rgf.access_channel)}} {{"{:>4}".format(rgf.width)}} {{"{:>4}".format(rgf.fixedpoint)}} {{"{:>4}".format(rgf.signed)}} {{"{:>4}".format(rgf.rw)}}
+    {%- set addr_offset = rgf.array_stride*idx_m + addr_offset %}
+{{"{:<50}".format(path)}} {{"{:>10.0f}".format(rgf.total_words/rgf.dim_m)}} {{" 0x{:>08X}".format(rgf.absolute_address + addr_offset)}} {{"{:>12}".format(rgf.array_stride)}} {{"{:>4}".format(rgf.access_channel)}} {{"{:>4}".format(rgf.width)}} {{"{:>4}".format(rgf.fixedpoint)}} {{"{:>4}".format(rgf.signed)}} {{"{:>4}".format(rgf.rw)}}
       {%- for reg in rgf.reg_insts -%}
-{{reg_macro(path, reg)}}
+{{reg_macro(path, reg, addr_offset)}}
       {%- endfor %}
     {%- endfor %}
   {%- endif %}
@@ -64,14 +75,14 @@
 
 {#- ============================================================ #}
 {#- Iterate over items nad execute macro dedicated for node type #}
-{%- macro items(parent_path, insts) %}
+{%- macro items(parent_path, insts, addr_offset = 0) %}
   {%- for inst in insts %}
     {%- if inst.node_type == "REG" -%}
-{{reg_macro(parent_path, inst)}}
+{{reg_macro(parent_path, inst, addr_offset)}}
     {%- elif inst.node_type == "MEM" -%}
-{{mem_macro(parent_path, inst)}}
+{{mem_macro(parent_path, inst, addr_offset)}}
     {%- elif inst.node_type == "REGFILE" -%}
-{{rgf_macro(parent_path, inst)}}
+{{rgf_macro(parent_path, inst, addr_offset)}}
     {%- elif inst.node_type == "ADDRMAP" -%}
 {{addrmap_macro(parent_path, inst)}}
     {%- endif %}
@@ -85,7 +96,7 @@
 {{ items(addrmap.path_notop, addrmap.insts) }}
   {%- elif addrmap.dim == 2 %}
     {%- for idx_m in range(addrmap.dim_m) -%}
-{{ items(addrmap.path_notop + separator + "{}".format(idx_m), addrmap.insts) }}
+{{ items(addrmap.path_notop + separator + "{}".format(idx_m), addrmap.insts, addrmap.array_stride*idx_m) }}
     {%- endfor %}
   {%- endif %}
 {%- endfor -%}
