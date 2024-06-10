@@ -26,7 +26,7 @@
 {%- macro mem_macro(parent_name, mem) %}
   {%- if mem.dim  == 1 -%}
   {%- set path = parent_name + separator + mem.inst_name  %}
-{{"{:<50}".format(path)}} {{"{:>10}".format(mem.mementries)}} {{" 0x{:>08X}".format(mem.absolute_address)}} {{"{:>12}".format(mem.total_size)}} {{"{:>4}".format(mem.access_channel)}} {{"{:>4}".format(mem.width)}} {{"{:>4}".format(mem.fixedpoint)}} {{"{:>4}".format(mem.signed)}} {{"{:>4}".format(mem.rw)}}
+{{"M_{:<50}".format(path)}} {{"{:>10}".format(mem.mementries)}} {{" 0x{:>08X}".format(mem.absolute_address)}} {{"{:>12}".format(mem.total_size)}} {{"{:>4}".format(mem.access_channel)}} {{"{:>4}".format(mem.width)}} {{"{:>4}".format(mem.fixedpoint)}} {{"{:>4}".format(mem.signed)}} {{"{:>4}".format(mem.rw)}}
     {%- for reg in mem.reg_insts -%}
 {{reg_macro(path, reg)}}
     {%- endfor %}
@@ -34,7 +34,7 @@
     {%- for idx_m in range(mem.dim_m) -%}
     {%- set path = parent_name + separator + mem.inst_name + separator + "{}".format(idx_m) %}
 {#- {{item_macro(mempath, mem)}} #}
-{{"{:<50}".format(path)}} {{"{:>10}".format(mem.mementries)}} {{" 0x{:>08X}".format(mem.absolute_address)}} {{"{:>12}".format(mem.array_stride)}} {{"{:>4}".format(mem.access_channel)}} {{"{:>4}".format(mem.width)}} {{"{:>4}".format(mem.fixedpoint)}} {{"{:>4}".format(mem.signed)}} {{"{:>4}".format(mem.rw)}}
+{{"M_{:<50}".format(path)}} {{"{:>10}".format(mem.mementries)}} {{" 0x{:>08X}".format(mem.absolute_address)}} {{"{:>12}".format(mem.array_stride)}} {{"{:>4}".format(mem.access_channel)}} {{"{:>4}".format(mem.width)}} {{"{:>4}".format(mem.fixedpoint)}} {{"{:>4}".format(mem.signed)}} {{"{:>4}".format(mem.rw)}}
       {%- for reg in mem.reg_insts -%}
 {{reg_macro(path, reg)}}
       {%- endfor %}
@@ -47,14 +47,14 @@
 {%- macro rgf_macro(parent_name, rgf) %}
   {%- if rgf.dim  == 1 -%}
   {%- set path = parent_name + separator + rgf.inst_name  %}
-{{"{:<50}".format(path)}} {{"{:>10}".format(rgf.total_words)}} {{" 0x{:>08X}".format(rgf.absolute_address)}} {{"{:>12}".format(rgf.total_size)}} {{"{:>4}".format(rgf.access_channel)}} {{"{:>4}".format(rgf.width)}} {{"{:>4}".format(rgf.fixedpoint)}} {{"{:>4}".format(rgf.signed)}} {{"{:>4}".format(rgf.rw)}}
+{{"R_{:<50}".format(path)}} {{"{:>10}".format(rgf.total_words)}} {{" 0x{:>08X}".format(rgf.absolute_address)}} {{"{:>12}".format(rgf.total_size)}} {{"{:>4}".format(rgf.access_channel)}} {{"{:>4}".format(rgf.width)}} {{"{:>4}".format(rgf.fixedpoint)}} {{"{:>4}".format(rgf.signed)}} {{"{:>4}".format(rgf.rw)}}
     {%- for reg in rgf.reg_insts -%}
 {{reg_macro(path, reg)}}
     {%- endfor %}
   {%- elif rgf.dim == 2 %}
     {%- for idx_m in range(rgf.dim_m) -%}
     {%- set path = parent_name + separator + rgf.inst_name + separator + "{}".format(idx_m) %}
-{{"{:<50}".format(path)}} {{"{:>10.0f}".format(rgf.total_words/rgf.dim_m)}} {{" 0x{:>08X}".format(rgf.absolute_address)}} {{"{:>12}".format(rgf.array_stride)}} {{"{:>4}".format(rgf.access_channel)}} {{"{:>4}".format(rgf.width)}} {{"{:>4}".format(rgf.fixedpoint)}} {{"{:>4}".format(rgf.signed)}} {{"{:>4}".format(rgf.rw)}}
+{{"R_{:<50}".format(path)}} {{"{:>10.0f}".format(rgf.total_words/rgf.dim_m)}} {{" 0x{:>08X}".format(rgf.absolute_address)}} {{"{:>12}".format(rgf.array_stride)}} {{"{:>4}".format(rgf.access_channel)}} {{"{:>4}".format(rgf.width)}} {{"{:>4}".format(rgf.fixedpoint)}} {{"{:>4}".format(rgf.signed)}} {{"{:>4}".format(rgf.rw)}}
       {%- for reg in rgf.reg_insts -%}
 {{reg_macro(path, reg)}}
       {%- endfor %}

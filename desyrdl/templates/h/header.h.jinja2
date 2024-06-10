@@ -52,14 +52,14 @@
 
 {#- ============================================================ #}
 {#- Memory macro #}
-{%- macro mem_macro(parent_name, mem) %}
+{%- macro mem_macro(parent_name, mem, addr_offset = 0) %}
 /*
  * Memory: {{mem.inst_name}}
  * {{mem.desc}}
  */
 #define {{parent_name}}_{{mem.inst_name|upper}}_LEN         {{"{:>11}".format(mem.total_words)}}U
-#define {{parent_name}}_{{mem.inst_name|upper}}_BASEADDR    {{"  0x{:>08X}".format(mem.absolute_address)}}
-#define {{parent_name}}_{{mem.inst_name|upper}}_HIGHADDR    {{"  0x{:>08X}".format(mem.absolute_address_high)}}
+#define {{parent_name}}_{{mem.inst_name|upper}}_BASEADDR    {{"  0x{:>08X}".format(mem.absolute_address+addr_offset)}}
+#define {{parent_name}}_{{mem.inst_name|upper}}_HIGHADDR    {{"  0x{:>08X}".format(mem.absolute_address_high+addr_offset)}}
 #define {{parent_name}}_{{mem.inst_name|upper}}_DATA_WIDTH  {{"{:>12}".format(mem.width)}}
 #define {{parent_name}}_{{mem.inst_name|upper}}_FRACBITS    {{"{:>12}".format(mem.fixedpoint)}}
 #define {{parent_name}}_{{mem.inst_name|upper}}_IS_SIGNED   {{"{:>12}".format(mem.signed)}}
@@ -71,7 +71,7 @@
     {%- endfor %}
   {%- elif mem.dim == 2 %}
     {%- for idx_m in range(mem.dim_m) -%}
-    {%- set addr_offset = mem.array_stride*idx_m %}
+    {%- set addr_offset = mem.array_stride*idx_m + addr_offset %}
     {%- set path = parent_name + "_" + mem.inst_name + "__" + "{}".format(idx_m) %}
 /*
  * Memory: {{mem.inst_name}}  [{{idx_m}}]
@@ -79,7 +79,7 @@
  */
 #define {{parent_name}}_{{mem.inst_name|upper}}__{{"{}".format(idx_m)}}_LEN         {{"{:>11}".format(mem.mementries)}}U
 #define {{parent_name}}_{{mem.inst_name|upper}}__{{"{}".format(idx_m)}}_BASEADDR    {{"  0x{:>08X}".format(mem.absolute_address+addr_offset)}}
-#define {{parent_name}}_{{mem.inst_name|upper}}__{{"{}".format(idx_m)}}_HIGHADDR    {{"  0x{:>08X}".format(mem.array_stride)}}
+#define {{parent_name}}_{{mem.inst_name|upper}}__{{"{}".format(idx_m)}}_HIGHADDR    {{"  0x{:>08X}".format(mem.absolute_address+addr_offset+mem.array_stride-1)}}
 #define {{parent_name}}_{{mem.inst_name|upper}}__{{"{}".format(idx_m)}}_DATA_WIDTH  {{"{:>12}".format(mem.width)}}
 #define {{parent_name}}_{{mem.inst_name|upper}}__{{"{}".format(idx_m)}}_FRACBITS    {{"{:>12}".format(mem.fixedpoint)}}
 #define {{parent_name}}_{{mem.inst_name|upper}}__{{"{}".format(idx_m)}}_IS_SIGNED   {{"{:>12}".format(mem.signed)}}
@@ -93,7 +93,7 @@
 
 {#- ============================================================ #}
 {#- Regfile macro #}
-{%- macro rgf_macro(parent_name, rgf) %}
+{%- macro rgf_macro(parent_name, rgf, addr_offset = 0) %}
   {%- if rgf.dim  == 1 -%}
   {%- set path = parent_name + "_" + rgf.inst_name  %}
 /*
@@ -101,8 +101,8 @@
  * {{rgf.desc}}
  */
 #define {{parent_name}}_{{rgf.inst_name|upper}}_LEN         {{"{:>11}".format(rgf.total_words)}}U
-#define {{parent_name}}_{{rgf.inst_name|upper}}_BASEADDR    {{"  0x{:>08X}".format(rgf.absolute_address)}}
-#define {{parent_name}}_{{rgf.inst_name|upper}}_HIGHADDR    {{"  0x{:>08X}".format(rgf.absolute_address_high)}}
+#define {{parent_name}}_{{rgf.inst_name|upper}}_BASEADDR    {{"  0x{:>08X}".format(rgf.absolute_address+addr_offset)}}
+#define {{parent_name}}_{{rgf.inst_name|upper}}_HIGHADDR    {{"  0x{:>08X}".format(rgf.absolute_address_high+addr_offset)}}
 #define {{parent_name}}_{{rgf.inst_name|upper}}_DATA_WIDTH  {{"{:>12}".format(rgf.width)}}
 #define {{parent_name}}_{{rgf.inst_name|upper}}_FRACBITS    {{"{:>12}".format(rgf.fixedpoint)}}
 #define {{parent_name}}_{{rgf.inst_name|upper}}_IS_SIGNED   {{"{:>12}".format(rgf.signed)}}
@@ -112,7 +112,7 @@
     {%- endfor %}
   {%- elif rgf.dim == 2 %}
     {%- for idx_m in range(rgf.dim_m) -%}
-    {%- set addr_offset = rgf.array_stride*idx_m %}
+    {%- set addr_offset = rgf.array_stride*idx_m + addr_offset %}
     {%- set path = parent_name + "_" + rgf.inst_name + "__" + "{}".format(idx_m) %}
 /*
  * RegFile: {{rgf.inst_name}} [{{idx_m}}]
@@ -120,7 +120,7 @@
  */
 #define {{parent_name}}_{{rgf.inst_name|upper}}__{{"{}".format(idx_m)}}_LEN         {{"{:>11.0f}".format(rgf.total_words/rgf.dim_m)}}U
 #define {{parent_name}}_{{rgf.inst_name|upper}}__{{"{}".format(idx_m)}}_BASEADDR    {{"  0x{:>08X}".format(rgf.absolute_address+addr_offset)}}
-#define {{parent_name}}_{{rgf.inst_name|upper}}__{{"{}".format(idx_m)}}_HIGHADDR    {{"  0x{:>08X}".format(rgf.array_stride)}}
+#define {{parent_name}}_{{rgf.inst_name|upper}}__{{"{}".format(idx_m)}}_HIGHADDR    {{"  0x{:>08X}".format(rgf.absolute_address+addr_offset+rgf.array_stride-1)}}
 #define {{parent_name}}_{{rgf.inst_name|upper}}__{{"{}".format(idx_m)}}_DATA_WIDTH  {{"{:>12}".format(rgf.width)}}
 #define {{parent_name}}_{{rgf.inst_name|upper}}__{{"{}".format(idx_m)}}_FRACBITS    {{"{:>12}".format(rgf.fixedpoint)}}
 #define {{parent_name}}_{{rgf.inst_name|upper}}__{{"{}".format(idx_m)}}_IS_SIGNED   {{"{:>12}".format(rgf.signed)}}
@@ -134,14 +134,14 @@
 
 {#- ============================================================ #}
 {#- Iterate over items nad execute macro dedicated for node type #}
-{%- macro items(parent_path, insts) %}
+{%- macro items(parent_path, insts, addr_offset = 0) %}
   {%- for inst in insts %}
     {%- if inst.node_type == "REG" -%}
-{{reg_macro(parent_path|upper, inst)}}
+{{reg_macro(parent_path|upper, inst, addr_offset)}}
     {%- elif inst.node_type == "MEM" -%}
-{{mem_macro(parent_path|upper, inst)}}
+{{mem_macro(parent_path|upper, inst, addr_offset)}}
     {%- elif inst.node_type == "REGFILE" -%}
-{{rgf_macro(parent_path|upper, inst)}}
+{{rgf_macro(parent_path|upper, inst, addr_offset)}}
     {%- elif inst.node_type == "ADDRMAP" -%}
 {{addrmap_macro(parent_path|upper, inst)}}
     {%- endif %}
@@ -152,10 +152,10 @@
 {#- TOP : iterat over address map list #}
 {%- for addrmap in addrmaps | reverse %}
   {%- if addrmap.dim  == 1 -%}
-{{ items(addrmap.inst_name|upper, addrmap.insts) }}
+{{ items(addrmap.inst_name|upper, addrmap.insts) }} 
   {%- elif addrmap.dim == 2 %}
     {%- for idx_m in range(addrmap.dim_m) -%}
-{{ items(addrmap.inst_name|upper + "__" + "{}".format(idx_m), addrmap.insts) }}
+{{ items(addrmap.inst_name|upper + "__" + "{}".format(idx_m), addrmap.insts, addrmap.array_stride*idx_m) }} 
     {%- endfor %}
   {%- endif %}
 {%- endfor %}

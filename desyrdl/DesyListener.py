@@ -290,10 +290,20 @@ class DesyListener(RDLListener):
                 dim_m = item.array_dimensions[0]
                 dim = 2
 
+        item_context['array_stride'] = item.array_stride if item.array_stride is not None else 0
         item_context["elements"] = dim_n * dim_m
         item_context["dim_n"] = dim_n
         item_context["dim_m"] = dim_m
         item_context["dim"] = dim
+        # chekck if addrmap stride is set in case of addrmap arrays
+        if isinstance(item, AddrmapNode) and dim > 1:
+            addr_size = pow(2, ceil(log2(item.size))) - 1
+            if addr_size & item.array_stride:
+                self.msg.error(
+                    f"\nOnly full address alignment is supported in addrmap array instance, current stide 0x{item.array_stride:>X}.\nSet stride minimum or n(0...N) times of += 0x{addr_size+1:>X} in parent addrmap.",
+                    item.inst.property_src_ref.get('addrmap', item.inst.inst_src_ref),
+                )
+                exit(-1)
 
     # =========================================================================
     def gen_extitem(self, extx: AddrmapNode, context):
