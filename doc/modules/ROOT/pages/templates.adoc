@@ -1,0 +1,34 @@
+= Templates
+
+Templates are the key component of the DesyRDL tool based on which the output is generated.
+
+Templates are written for the Jinja2 template engine. Users can provide their
+own templates using `-t` switch. The build in templates are placed in `desyrdl/templates/" folder.
+
+Templates for each output type are places in a separate folder with the output format type name. Based on the type, templates are processed for each address map or for top address map only.
+
+Currently, supported outputs and templates:
+
+* vhdl (each address map)
+* adoc (each address map)
+* cocotb (each address map)
+* h (top only)
+* map (top only)
+* tcl (top only)
+
+== include.txt
+
+Templates for each of the type are processed based in the `include.txt` file, which is placed in the same folder as template. This file is a Jinja2 type. It gives information about the template input and its output.
+
+Example include.txt file for VHDL output type:
+
+[source,django]
+----
+{#- list of input template files and it output name #}
+{#- format: <template file> <output file string template> -#}
+{# pkg.vhd.in {{inst_name}}/pkg_{{type_name_org}}.vhd #}
+pkg.vhd.in                    {{inst_name}}/pkg_{{type_name_org}}.vhd
+top.vhd.in                    {{inst_name}}/{{type_name_org}}.vhd
+decoder_{{interface}}.vhd.in  {{inst_name}}/{{type_name_org}}_decoder_{{interface}}.vhd
+----
+

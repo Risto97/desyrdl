@@ -1,0 +1,31 @@
+= Custom Properties
+
+DesyRDL defines custom properties for SystemRDL files.
+They are used extend SysrtemRDL features.
+
+Properties are defined in `desyrdl/libraries/rdl/00_desyrdl_properties.rdl` which is included to the processed input files.
+
+== List of the custom properties:
+
+desyrdl_generate_hdl::
+Type `boolean`. +
+Set to 'true' if for addrmap there should be HDL component generated. `true` is the default if not set. Usually set to `false` when describing external register space such as SPI chip, when describing IP what has already address decoder implemented or when using separate bus interconnect (e.g. Xilinx AXI4 interconnect).
+desyrdl_interface::
+Type `string`. +
+Spefifies the addrmap bus used and the decoder type. Check xref:features.adoc#_address_space_buses[Supported Buses]
+desyrdl_access_channel::
+Type `int`. +
+Specifies access channel for the top address map. The access channel can be used in case when top addrmap is accessed by many Managers. In short access channel is the Manager ID.
+
+desyrdl_data_type::
+Type `string`. +
+Used to inform software about the data type placed in field of the register. +
+Types: +
+* `int`  - signed integers
+* `uint` - unsigned integers
+* `fixed<n>` - signed fixpoint with n fractional bits, e.g. `fixed16` on 18bit field means 1 bit for sign 1 bit for integer and 16 bits for fractional part.
+* `ufixed<n>` - signed fixpoint with n fractional bits, e.g. `fixed16` on 18bit field means 0 bit for sign 2 bit for integer and 16 bits for fractional part.
+* `float` - floating point number, required 32bi field
+
+desyrdl_intr_line::
+Type `int`. Used with interrupts. Defines to which interrupt line addrmap has been connected.

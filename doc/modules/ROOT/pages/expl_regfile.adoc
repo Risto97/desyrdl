@@ -1,0 +1,45 @@
+= Register files
+
+Register file allow to group registers.
+
+All registers and fields in register files are accessible in VHDL over `t_addrmap_<addrmap_name>_in/out` record type.
+
+----
+addrmap_i/o.<REGFILE_INSTANCE>.<REGISTER_INSTANCE>.<field_name>.<property>
+----
+
+== Example
+
+.SystemRDL
+[source,verilog]
+----
+regfile subcore {
+    alignment = 4;
+
+    reg {
+        desc  = "Core control register.";
+        default sw = rw ;
+        default hw = r ;
+        field {} data[32] ;
+    } CONTROL;
+
+    reg {
+        desc  = "Core status register"  ;
+        default sw = r ;
+        default hw = rw ;
+        field {} data[32];
+    }   STATUS[2];
+};
+/* type_name instnace_name */
+subcore CORE_A;
+subcore CORE_B;
+----
+
+.VHDL
+[source,vhdl]
+----
+addrmap_i.CORE_A.CORE_STATUS(0).data.data <= core_a_status_signal;
+addrmap_i.CORE_B.CORE_STATUS(0).data.data <= core_b_status_signal;
+
+control_signal <= addrmap_o.CORE_A.CONTROL.data.data;
+----

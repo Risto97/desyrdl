@@ -1,0 +1,24 @@
+= Features
+
+== Supported SystemRDL features
+
+== Address Space buses
+
+Tool bus support and `desyrdl_interfaces` values:
+|=====================================================================================
+| Value    | Description                                       | Bus Size | Supported
+
+| AXI4L    | AXI4 Lite interface                               | 32 bit   | YES
+| IBUS     | Internal Interface type bus, proprietary MSK DESY | 32 bit   | YES
+| WISHBONE | Open source hardware computer bus                 | 32 bit   | planned
+|=====================================================================================
+
+== Limitations
+
+* Supports only 32bit data buses
+* Likewise, only 32 bit registers are supported
+* The logic operates on a single clock and the developer has to take care of any
+CDCs
+* Memory interface is limited to dual-port memory interface and does not support AXI4 write strobes
+* No SystemRDL signals implemented
+* No SystemRDL reference assignments possible - all connections has to be done in HDL

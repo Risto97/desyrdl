@@ -1,0 +1,51 @@
+= Address maps
+
+Address maps can be included inside other `addrmap` in hierarchy.
+
+Each `addrmap` is treated as an external module for which a dedicated address bus is created.The hierarchy connection has to be done in VHDL. In VHDL bus is a record type of the defined interface.
+
+.SystemRDL
+[source,verilog]
+----
+/* submodule */
+addrmap sub_module {
+ reg {...} ID;
+}
+
+/* TOP module */
+addrmap module {
+    reg {} STATUS;
+    external sub_module SUBMOD_A ;
+    external sub_module SUBMOD_B ;
+}
+----
+
+.VHDL
+[source,vhdl]
+----
+  addrmap_i.STATUS.data.data <= status_signal;
+
+  ins_sub_module_a: entity desyrdl.sub_module_top
+    port map (
+      pi_clock => pi_clock,
+      pi_reset => pi_reset,
+
+      pi_s_reset => pi_reg_bus_reset,
+      pi_s_top   => addrmap_o.SUBMODB_A,
+      po_s_top   => addrmap_i.SUBMODB_A
+      );
+
+  ins_sub_module_b: entity desyrdl.sub_module_top
+    port map (
+      pi_clock => pi_clock,
+      pi_reset => pi_reset,
+
+      pi_s_reset => pi_reg_bus_reset,
+      pi_s_top   => addrmap_o.SUBMODB_B,
+      po_s_top   => addrmap_i.SUBMODB_B
+      );
+
+----
+
+
+

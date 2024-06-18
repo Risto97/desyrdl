@@ -1,0 +1,25 @@
+= DesyRDL
+
+== Introduction
+
+This tool generates outputs for an address space that is defined by one or many
+SystemRDL&trade; 2.0 input files. The address space could be made up of all the
+software-accessible registers and memory regions in an FPGA design, or just the
+registers of a single IP block.
+
+SystemRDL&trade; 2.0 is a standard released by Accellera Systems Initiative Inc
+that is meant to describe such an address space, check xref:remarks.adoc#_systemrdl[References]
+
+Outputs are based on templates. there is an option to use custom templates or the one provided by the tool.
+The templates provided with this package are the common files for the following outputs:
+
+* Synthesizable VHDL register logic
+* Mapfiles (compatible with ChimeraTK)
+* C header files
+* AsciiDoc documentation
+
+
+This tool can be used standalone with xref:use_command_line.adoc[command line]
+but it was intended to be used as part of a firmware build environment like DESY MSK's
+https://fpgafw.pages.desy.de/docs-pub/fwk/index.html[FPGA Firmware Framework], short `fwk`.
+Check xref:usage_fwk.adoc[]

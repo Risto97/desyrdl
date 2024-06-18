@@ -1,0 +1,80 @@
+= Top addrmap
+
+`addrmap` is the top instance which consist of all the supported items.
+
+
+.example_module.rdl
+[source,verilog]
+----
+addrmap example_module {
+  desc = "Example module.";
+  desyrdl_generate_hdl = true;
+  desyrdl_interface = "AXI4L";
+
+  reg {
+  ...
+  }
+  external mem {
+  ...
+  }
+  ...
+}
+----
+
+== VHDL
+
+For each `addrmap` VHDL code is generated (un less `desyrdl_generagte_hdl = false;` is set).
+
+.example_module.vhd
+[source,vhdl]
+----
+entity example_module is
+  port (
+    pi_clock : in std_logic;
+    pi_reset : in std_logic;
+    -- TOP subordinate memory mapped interface
+    pi_s_reset : in std_logic := '0';
+    pi_s_top   : in  t_example_module_m2s;
+    po_s_top   : out t_example_module_s2m;
+    -- to logic interface
+    pi_addrmap : in  t_addrmap_example_module_in;
+    po_addrmap : out t_addrmap_example_module_out
+  );
+end entity example_module;
+----
+
+== Instantiating VHDL module in to module entity.
+
+.example_module_top.vhd
+[source,vhdl]
+----
+entity example_module_top is
+  port(
+    pi_clock : in std_logic ;
+    pi_reset : in std_logic ;
+
+    pi_s_reset : in  std_logic;
+    pi_s_top   : in  t_example_module_m2s;
+    po_s_top   : out t_example_module_s2m
+  );
+end entity example_module_top;
+
+architecture rtl of example_module_top is
+  signal addrmap_i : t_addrmap_example_module_in;
+  signal addrmap_o : t_addrmap_example_module_out;
+begin
+
+  inst_rdl: entity desyrdl.example_module
+    port map (
+      pi_clock => pi_clock,
+      pi_reset => pi_reset,
+      -- TOP subordinate memory mapped interface
+      pi_s_reset => pi_s_reset,
+      pi_s_top   => pi_s_top,
+      po_s_top   => po_s_top,
+      -- to logic interface
+      pi_addrmap => addrmap_i,
+      po_addrmap => addrmap_o
+    );
+end architecture;
+----

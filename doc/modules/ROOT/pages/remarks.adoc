@@ -1,0 +1,40 @@
+= Remarks
+
+== License
+
+== Contributors
+
+== Acknowledgement
+
+DesyRDL was developed at https://desy.de[DESY] in the MSK firmware group as a
+replacement for its existing proprietary method of register and address map
+generation, the "Internal Interface", called "IBUS" in its latest version, check xref:remarks.adoc#_internal_interface_ii[References].
+
+The use of SystemRDL&trade; 2.0 standard was considered for a long time,
+but due to the lack of open source compilers or parsers, it was dropped.
+
+The decision to use the SystemRDL&trade; 2.0 standard came after
+the open source https://github.com/SystemRDL/systemrdl-compiler[SystemRDL compiler] has been published.
+This has been proposed by https://techlab.desy.de/[MicroTCA Tech Lab] at DESY when they wrote
+https://github.com/MicroTCA-Tech-Lab/hectare[HECTARE], the predecessor of DesyRDL.
+
+This tool relies heavily on https://github.com/SystemRDL/systemrdl-compiler[systemrdl-compiler] by Alex Mykyta and was only
+developed because it exists.
+
+Accellera&trade; and SystemRDL&trade; are trademarks of Accellera Systems
+Initiative Inc.
+
+== References
+
+=== SystemRDL
+
+"SystemRDL 2.0 Register Description Language", Accellera
+Systems Initiative Inc, 2018,
+available from https://accellera.org/downloads/standards/systemrdl
+
+=== Internal Interface (ii)
+
+"INTERNAL INTERFACE, I/O Communication with FPGA Circuits and Hardware
+Description Standard for Applications in HEP and FEL Electronics ver. 1.0",
+2005, available from
+https://flash.desy.de/reports_publications/tesla_reports/tesla_reports_2005/

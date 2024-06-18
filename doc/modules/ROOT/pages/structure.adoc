@@ -1,0 +1,19 @@
+= Structure
+
+The compilation of the SystemRDL&trade; files is handled by
+[SystemRDL Compiler](https://systemrdl-compiler.readthedocs.io/en/latest/).
+The creation of useful information (or "context") for the template processing, its
+Walker/Listener method of traversing the compiled tree is used.
+
+`DesyListener` extends its `systemrdl.RDLListener` class. It extracts a fixed
+set of information from the compiled tree and passes it on to a template engine - Jinja2 (<<desyrdl_flow>>).
+
+.DesyRDL processing diagram
+image::desyrdl_flow.svg[id=desyrdl_flow]
+
+
+== Context
+
+DesyRDL creates context for each address map separately and from the top view perspective.
+
+The context is a Python `dict` that contains further dictionaries to describe all the items in the address map.

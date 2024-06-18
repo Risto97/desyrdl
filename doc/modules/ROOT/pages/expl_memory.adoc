@@ -1,0 +1,70 @@
+= Memories
+
+.SystemRDL
+[source,verilog]
+----
+external mem { // memory, always external for HW implementation
+    memwidth = 32;
+    mementries = 64;
+} TEST_MEM;
+----
+
+At the moment in VHDL memories have Dual Port Memory (DPM) compatible interface.
+
+.VHDL
+[source,vhdl]
+----
+mem_enable      <= addrmap_o.TEST_MEM.en;
+mem_write_ena   <= addrmap_o.TEST_MEM.en;
+mem_addr        <= addrmap_o.TEST_MEM.addr;
+mem_write_data  <= addrmap_o.TEST_MEM.data;
+addrmap_i.TEST_MEM.data <= mem_read_data;
+----
+
+== Virtual registers
+
+Memories can have virtual registers which can describe data structure keepd inside memory.
+
+Example for data acquisition:
+
+.SystemRDL
+[source,verilog]
+----
+mem daq {
+    mementries = 1024;
+    memwidth   = 32 ;
+    sw = r;
+    default sw = r;
+    default regwidth   = 32;
+    default fieldwidth = 32;
+    default desyrdl_data_type = "int" ;
+
+    reg  { field {} data ; } ADC_0 ;
+    reg  { field {} data ; } ADC_1 ;
+    reg  { field {} data ; } ADC_2 ;
+    reg  { field {} data ; } STATUS ;
+};
+external daq DAQMEM;
+----
+
+== DATATYPE virtual register
+
+If each memory element is the same, we can define data type for software by defining virtual register with the name DATATYPE. This register is filtered out and its properties are assign for memory. Useful also when HW memory have width lower than 32 bits.
+
+TODO: need more/better explanation.
+
+.SystemRDL
+[source,verilog]
+----
+  external mem {
+      desc = "Memory with coeffitients. signed 25bit with 23 fractional bits";
+      mementries = 32 ;
+      memwidth = 32 ;
+      sw = rw ;
+      reg  {
+          desyrdl_data_type = "fixed23";
+          default sw = rw;
+          field {} data[25] ;
+      } DATATYPE ;
+  } COEF ;
+----

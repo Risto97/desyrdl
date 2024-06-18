@@ -1,0 +1,27 @@
+= DesyRDL
+
+:doctype: manpage
+:manmanual: desyrdl
+:mansource: desyrdl
+:man-linkstyle: pass:[blue R < >]
+
+== Name
+
+DesyRDL - SystemRDL compiler and artifacts processor, generates VHDL map file
+
+== Synopsis
+
+*desyrdl* [_OPTIONS_] -f [_OUT_FORMAT_] -i [_RDL_FILES_]
+
+== Options
+-h, --help::            show this help message and exit
+-i file1.rdl [file1.rdl ...], --input-files file1.rdl  [file1.rdl ...]::
+                        input rdl file/files, oder is important, in bottom to root order
+-f FORMAT [FORMAT ...], --format-out FORMAT [FORMAT ...]::
+                        output format: vhdl, map, h; multiple formats possible, space separated
+-o DIR, --output-dir DIR::
+                        [optional] output directory, default the current dir ./
+-l [libdir ...], --user-lib-dirs [libdir ...]::
+                        [optional] directory for user rdl libraries
+-t DIR, --templates-dir DIR::
+                        [optional] location of templates dir

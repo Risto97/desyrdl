@@ -1,0 +1,16 @@
+= Concept
+
+The register space description in circuit designs comes from a single source. Based on the source, compiler generates various artifacts (<<general_concept>>). Description kept in a single place allows consistent and accurate description of the registers in the design lifecycle and thought different components of the system.
+
+.General register generation concept
+image::concept_register_compiler.svg[id=general_concept]
+
+
+Main components:
+
+Description::
+In case of DesyRDL description is kept in one or many SysteRDL files.
+Compiler::
+DesyRDL is a register compiler which is extended version of systemrdl-compiler.
+Artifacts::
+Compilers produces various artifacts which will be used inside and outside of the FPGA project.

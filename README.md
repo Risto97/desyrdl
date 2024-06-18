@@ -54,7 +54,7 @@ and external interfaces are available on combined ports of a custom record type
 records, each node in this `addrmap` can be accessed by its SystemRDL instance
 name. Check the generated VHDL package for details.
 
-![top integration diagram](./doc/images/top_integration.svg "Top-level integration")
+![top integration diagram](./doc/modules/ROOT/images/top_integration.svg "Top-level integration")
 
 ## Concept
 
@@ -67,7 +67,7 @@ Walker/Listener method of traversing the compiled tree is used.
 set of information from the compiled tree and passes it on to a template engine
 (Jinja2).
 
-![DesyRDL flow diagram](./doc/images/DesyRDL.svg "DesyRDL flow overview")
+![DesyRDL flow diagram](./doc/modules/ROOT/images/desyrdl_flow.svg "DesyRDL flow overview")
 
 ### Templates
 
