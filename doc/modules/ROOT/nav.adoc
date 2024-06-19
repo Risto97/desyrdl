@@ -1,4 +1,4 @@
-::image:logo_desyrdl.svg[]
+* image:desyrdl:ROOT:logo_desyrdl.svg[width=60%,xref=desyrdl:ROOT:index.adoc]
 
 * xref:index.adoc[Introduction]
 * xref:concept.adoc[]
@@ -6,17 +6,18 @@
 ** xref:templates.adoc[]
 ** xref:custom_properties.adoc[]
 * Usage
+** xref:install.adoc[Installation]
 ** xref:use_cmd.adoc[Command line]
 ** xref:use_fwk_connection.adoc[Connection with FWK]
 * xref:features.adoc[]
 ** xref:features.adoc#_address_space_buses[Interface Buses]
 ** xref:features.adoc#_limitations[Limitations]
-* With Examples
+* Features with examples
 ** xref:expl_top_addrmap.adoc[Top address map]
 ** xref:expl_regs.adoc[]
 ** xref:expl_regfile.adoc[]
 ** xref:expl_memory.adoc[]
-** xref:expl_addrmap.adoc[External Bus (Addrmap instance)]
+** xref:expl_addrmap.adoc[Addrmap (External Bus)]
 ** xref:expl_arrays.adoc[]
 ** xref:expl_interrupts.adoc[]
 ** xref:expl_conf_vars.adoc[]

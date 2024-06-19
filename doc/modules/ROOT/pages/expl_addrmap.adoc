@@ -5,7 +5,7 @@ Address maps can be included inside other `addrmap` in hierarchy.
 Each `addrmap` is treated as an external module for which a dedicated address bus is created.The hierarchy connection has to be done in VHDL. In VHDL bus is a record type of the defined interface.
 
 .SystemRDL
-[source,verilog]
+[source,qml]
 ----
 /* submodule */
 addrmap sub_module {

@@ -10,7 +10,7 @@ There are two types of field that are defined in SystemRDL which are set base on
 Storage::
 Implements flip-flops in VHDL DesyRDL entity. +
 There are also two special purpose storage fields:
-Counter:::: field which can be incremented or decremented, more in <<_counter_properties>> section
+Counter:::: field which can be incremented or decremented, more in <<counter-properties>> section
 Interrupt:::: affects also register which becomes an interrupt register, more in xref:expl_interrupts.adoc[] chapter.
 Wire::
 Implements wire/bus in VHDL DesyRDL entity.
@@ -28,7 +28,7 @@ addrmap_i/o.<REGISTER_NAME>.<field_name>.<property>
 Example of wire type fields.
 
 .SystemRDL
-[source,verilog]
+[source,qml]
 ----
 // Automatic type and instance, auto address
 reg {
@@ -51,7 +51,7 @@ addrmap_i.TEST.data.data <= test_signal;
 Example of storage type register
 
 .SystemRDL
-[source,verilog]
+[source,qml]
 ----
 // Automatic type and instance
 reg {
@@ -76,7 +76,7 @@ test_signal <= addrmap_o.TEST.field_b.data;
 Fields can have additional software properties which can be accessed in VHDL.
 Supported properties from *Table 14* from SystemRDL 2.0 spec.
 
-[cols="1,5,1,1"]
+[cols="1s,5,1,1"]
 |=================================================
 | Property | Behavior/Application | Type | Dynamic
 
@@ -95,7 +95,7 @@ Supported properties from *Table 14* from SystemRDL 2.0 spec.
 IMPORTANT: To be able to use them they have to be added for the field in the RDL file. By default they are `false`.
 
 .SystemRDL
-[source,verilog]
+[source,qml]
 ----
 // added swmod and swacc propertied
 reg {
@@ -122,7 +122,7 @@ test_swacc <= addrmap_o.TEST.data.swacc;
 Fields can have additional hardware properties which can be accessed in VHDL.
 Supported properties from *Table 18* from SystemRDL 2.0 spec.
 
-[cols="1,5,1,1"]
+[cols="1s,5,1,1"]
 |=================================================
 | Property | Behavior/Application | Type | Dynamic
 
@@ -152,7 +152,7 @@ Supported properties from *Table 18* from SystemRDL 2.0 spec.
 Example with SW and HW write access. Register from HW is set when `we` flag is set to '1';
 
 .SystemRDL
-[source,verilog]
+[source,qml]
 ----
 reg {
     name = "Test register";
@@ -172,9 +172,10 @@ addrmap_i.TEST.field_a.data <= test_signal;
 addrmap_i.TEST.field_a.we   <= test_signal_we;
 ----
 
+[#counter-properties]
 == Counter properties
 
-[cols="1,5,1,1"]
+[cols="1s,5,1,1"]
 |=================================================
 | Property | Behavior/Application | Type | Dynamic
 
@@ -211,7 +212,7 @@ component or signal (active high).
 |=================================================
 
 .SystemRDL
-[source,verilog]
+[source,qml]
 ----
 reg { // counter register, sw and hw can read
     default sw = r;
@@ -248,7 +249,7 @@ There are all side effects supported except `wuser` and `ruser`. From Table 15 a
 They are set over `onread` and `onwrite` property.
 
 .Software read side-effect `onread` value
-[cols="2,7"]
+[cols="2s,7"]
 |========================================
 | onread property value | Behavior/Application
 
@@ -257,7 +258,7 @@ They are set over `onread` and `onwrite` property.
 |========================================
 
 .Software write function `onwrite` values
-[cols="2,7"]
+[cols="2s,7"]
 |========================================
 | onwrite property value | Behavior/Application
 
@@ -275,7 +276,7 @@ NOTE: Values `rclr`, `rset`, `woset`, `woclr` can be used as properties which wi
 e.g. setting `default woclr;` is equalivant to `default onwrite=woclr;`
 
 .SystemRDL
-[source,verilog]
+[source,qml]
 ----
 reg {
     default sw = rw;
@@ -285,3 +286,4 @@ reg {
     default swmod=true;
     field {} data[32] = 0x0000000B;
 } WOCLR ;
+----

@@ -1,7 +1,7 @@
 = Memories
 
 .SystemRDL
-[source,verilog]
+[source,qml]
 ----
 external mem { // memory, always external for HW implementation
     memwidth = 32;
@@ -28,7 +28,7 @@ Memories can have virtual registers which can describe data structure keepd insi
 Example for data acquisition:
 
 .SystemRDL
-[source,verilog]
+[source,qml]
 ----
 mem daq {
     mementries = 1024;
@@ -54,7 +54,7 @@ If each memory element is the same, we can define data type for software by defi
 TODO: need more/better explanation.
 
 .SystemRDL
-[source,verilog]
+[source,qml]
 ----
   external mem {
       desc = "Memory with coeffitients. signed 25bit with 23 fractional bits";

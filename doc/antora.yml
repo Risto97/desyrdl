@@ -1,6 +1,6 @@
 name: desyrdl
 title: DesyRDL
-version: main
+version: ~
 start_page: index.adoc
 nav:
 - modules/ROOT/nav.adoc

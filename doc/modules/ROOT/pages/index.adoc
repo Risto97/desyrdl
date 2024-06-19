@@ -19,7 +19,7 @@ The templates provided with this package are the common files for the following 
 * AsciiDoc documentation
 
 
-This tool can be used standalone with xref:use_command_line.adoc[command line]
+This tool can be used standalone with xref:use_cmd.adoc[command line]
 but it was intended to be used as part of a firmware build environment like DESY MSK's
 https://fpgafw.pages.desy.de/docs-pub/fwk/index.html[FPGA Firmware Framework], short `fwk`.
-Check xref:usage_fwk.adoc[]
+Check xref:use_fwk_connection.adoc[]

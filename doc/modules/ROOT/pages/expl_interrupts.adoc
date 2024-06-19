@@ -1,1 +1,563 @@
 = Interrupts
+
+SystemRDL specifies special-purpose fields and registers used for interrupt handling. A field that is an interrupt field must have the `intr` property specified. A register containing an interrupt field becomes an interrupt register.
+
+DesyRDL implements interrupt fields and registers. The implementation allows connection to ChimeraTK device access and enables the use of interrupts in the user space.
+
+[IMPORTANT]
+====
+.DeviceAccess Rules
+To be able to use interrupts with DeviceAccess, the following rules must be followed:
+
+. Only one interrupt register (ISR) is allowed per hierarchy level; i.e., one `addrmap` or `regfile` can have only one ISR. If more interrupts are needed in an `addrmap`, they can be connected via a tree and distributed across regfile. See <<_interrupt_tree_example>> for details.
+. Register names must follow the defined naming convention as specified in <<_registers_description>>.
+====
+
+== Registers Description
+
+There are two main registers that are mandatory for each interrupt controller/IP. All others are optional and are mainly used to increase performance.
+
+=== Mandatory Registers
+
+.Mandatory Registers
+[cols="1s,9"]
+|===================
+| Name | Description
+
+| ISR
+| Interrupt Status Register. This is the main register defined as an intr register in SystemRDL. Each bit reports an interrupt on a line: +
+0 - no interrupt on the line +
+1 - interrupt on the line +
+Interrupts can be cleared via the Interrupt Clear Register (ICR) or through an atomic write to this register (default).
+
+| IER
+| Interrupt Enable Register, with one bit for each interrupt line: +
+0 - disable interrupt line +
+1 - enable interrupt on the line +
+(Sometimes there is an interrupt mask register (IMR) instead, but it is just an inverted IER. In DesyRDL, only the IER is supported.)
+|===================
+
+.Interrupt Condition
+[source,c]
+interrupt = (ISR & IER) ? 1 : 0;
+
+=== Optional Registers
+
+.Optional Registers
+[cols="1s,9"]
+|===================
+| Name | Description
+
+| ICR or IAR
+| Interrupt Clear Register (or Acknowledge Register, IAR). If present, the ISR can be cleared through this register, usually by an atomic operation (writing one to clear the interrupt bit). If this register is not present, the interrupt can be cleared only through an atomic write to the ISR.
+
+| IPR
+| Interrupt Pending Register. This provides the value of (ISR & IER). It allows software to get this value without needing to access two registers and perform the & operation.
+
+| MIE or GIE
+| Main/Global Interrupt Enable. Set all bits to 1 to enable hardware interrupts globally.
+
+| SIE
+| Set Interrupt Enable Register. Atomic write 1 to set an IER bit.
+
+| CIE
+| Clear Interrupt Enable Register. Atomic write 1 to clear an IER bit.
+|===================
+
+== Interrupt field properties
+
+Supported interrupt filed properties from *Table 21*.
+
+.Interrupt field properties
+[cols="1s,9"]
+|================================
+| Property | Behavior/Application
+
+|intr
+|Interrupt, part of interrupt logic for a register.
+
+| enable
+| Defines an interrupt enable (the inverse of mask); i.e.,
+which bits in an interrupt field are used to assert an interrupt.
+
+| sticky
+| Defines the entire field as sticky; i.e.,
+the value of the associated interrupt field shall be locked until cleared by software (write or clear on
+read).
+
+| stickybit
+| Defines each bit in a field as sticky (the default); i.e., the value of each
+bit in the associated interrupt field shall be locked until the individual
+bits are cleared by software (write or clear on read).
+|================================
+
+CAUTION: `enable` property is only reference property. As DesyRDL does not support references, this property is accessible only over VHDL and connection has to be done there.
+
+=== Interrupt types
+
+The syntax for a interrupt property modifiers appears as follows.
+
+ [posedge | negedge | bothedge | level | nonsticky] intr;
+
+.Interrupt types
+[cols="1s,9"]
+|=========================
+| Interrupt |  Description
+
+|posedge
+|Interrupt when next goes from low to high.
+|negedge
+|Interrupt when next goes from high to low.
+|bothedge
+|Interrupt when next changes value.
+|level
+|Interrupt while the next value is asserted and maintained (the default).
+|nonsticky
+|Defines a non-sticky (hierarchical) interrupt; the associ-
+ated interrupt field shall not be locked. This modifier can
+be specified in conjunction with the other interrupt
+types. +
+Use when connecting interrupt tree.
+|=========================
+
+== Interrupt register properties
+
+Registers with an interrupt field become interrupt registers, retaining the same properties as normal registers with the addition of special interrupt-related properties:
+
+intr:: Represents the inclusive OR of all the interrupt bits in a register after any field enable and/or field mask logic has been applied. Accessible in VHDL.
+
+IMPORTANT: DesyRDL adds one property for the interrupt register that is not defined in the SystemRDL specification: desyrdl_intr_line.
+
+desyrdl_intr_line:: Defines the interrupt line to which the current interrupt register is connected. In XDMA, it defines the event file. SystemRDL assumes only one interrupt line at the top level. This value must follow the VHDL connection and propagates into the device access (map file). If not set, the default value is 0.
+
+== Simple interrupt example
+
+This is a simple example with minimum requirements to add interrupts in `addrmap` so VHDL module. This example is uesfull for most modules/IP that need interrupt support.
+
+- ISR in application with 3 interrupt signals
+- Only ISR and IER registers.
+- Interrupt cleared over atomic write to ISR.
+
+.Signle interrupt register (ISR) with one interrupt line INT_0
+[ditaa,format=svg]
+....
+                     APP.ISR
+                   +--------+
+                   |   bit0 +-- trigger
+        INT_0  <---+   bit1 +-- interlock_n
+                   |   bit2 +-- error
+   xdma_irq_req(0) +--------+
+....
+
+.SystemRDL
+[source,qml]
+----
+reg {
+    desc = "Interrup Status Register.";
+    default sw = rw;
+    default hw = w;
+    default woclr; // Clear is via writing a 1
+    field { desc = "Report trigger."; posedge intr; } trigger;
+    field { desc = "Report interlock."; negedge intr; } intlk;
+    field { desc = "Report error."; bothedge intr; } error;
+} ISR ;
+
+reg {
+    desc = "Interrup Enable Register.";
+    default sw = rw;
+    default hw = r;
+    field { desc = "Enable trigger interrupt."; } trigger = 0x0;
+    field { desc = "Enable interlock interrupt."; } intlk = 0x0;
+    field { desc = "Enable error interrupt."; } error = 0x0;
+} IER ;
+----
+
+
+.VHDL
+[source,vhdl]
+----
+-- connect enables - DesyRDL no referce support, needed in VHDL
+addrmap_i.ISR.trigger.enable  <= addrmap_o.IER.trigger.data;
+addrmap_i.ISR.intlk.enable    <= addrmap_o.IER.intlk.data;
+
+-- signals to intr field connections - intr is a vector
+addrmap_i.ISR.trigger.intr(0)   <= trg_main;
+addrmap_i.ISR.intlk.intr(0)     <= interlock_n;
+
+-- assign out interrupt line, TOP interrupt e.g. in PCIe
+-- desyrdl_intr_channel = 0
+po_xdma_irq_req(0) <= addrmap_o.ISR.intr;
+
+-- in most cases - IP/module have only one interrupt line
+-- po_irq_req <= addrmap_o.ISR.intr;
+----
+
+
+== Interrupt tree example
+
+In this section we have more advanced interrupt scheme with multiple ISR and interrupt tree.
+
+.Interrupt tree with multiple ISRs and multi interrupt lines INT_X
+[ditaa,format=svg]
+....
+                          MOD_A.ISR
+       APP.ISR           +--------+
+      +--------+         |   bit0 +-- done
+ INT_0|   bit0 +-- trg   |   bit1 +-- error
+<-----+   bit1 +---------+   bit2 +-- i2c done
+      |        |         +--------+            MOD_B.ISR
+      |        |                              +--------+
+      |   bit2 +------------------------------+   bit0 +-- done
+      +--------+                              |   bit1 +-- error
+                                              |   bit2 +-- i2c done
+       APP.MOT_A.ISR                          +--------+
+      +--------+
+ INT_1|   bit0 +-- motor1 done
+<-----+   bit1 +-- motor2 done
+      |   bit2 +-- motor3 done
+      +--------+
+
+       APP.MOT_B.ISR
+      +--------+
+ INT_2|   bit0 +-- motor1 done
+<-----+   bit1 +-- motor2 done
+      |   bit2 +-- motor3 done
+      +--------+
+
+....
+
+
+.SystemRDL
+[source,qml]
+----
+/* module/IP with single ISR as in above example */
+addrmap sub_module {
+  reg {...} ISR;
+  reg {...} IER;
+};
+
+/* application with interrupt tree */
+addrmap application {
+  reg {
+      desc = "Interrup Status Register.";
+      default sw = rw;
+      default hw = w;
+      default woclr; // Clear is via writing a 1
+      desyrdl_intr_line = 0;
+      field { desc = "Report triggers."; posedge intr; } trg ;
+      field { desc = "Report MOD A intr"; nonsticky intr;} mod_a ;
+      field { desc = "Report MOD B intr"; nonsticky intr; } mod_b;
+  } ISR ;
+
+  reg {
+      desc = "Interrup Enable Register.";
+      default sw = rw;
+      default hw = r;
+      field { desc = "Enable triggers intr."; } trg= 0x0;
+      field { desc = "Enable MOD A intr."; } mod_a = 0x0;
+      field { desc = "Enable MOD B intr."; } mod_b = 0x0;
+  } IER ;
+
+  /* regfile with its own interrupt registers */
+  regfile motor {
+      reg {
+          desc = "Interrup Status Register.";
+          default sw = rw;
+          default hw = w;
+          default woclr; // Clear is via writing a 1
+          field { desc = "..."; posedge intr; } motor[3] = 0x00;
+      } ISR ;
+
+      reg {
+          desc = "Interrup Enable Register.";
+          default sw = rw;
+          default hw = r;
+          field { desc = "..."; } motor[3] = 0x00;
+      } IER ;
+  } ;
+
+  motor MOT_A;
+  motor MOT_B;
+
+  sub_module MOD_A;
+  sub_module MOD_B;
+
+  /* Set Interrupt lines*/
+  MOR_A.ISR->desyrdl_intr_line = 1;
+  MOR_B.ISR->desyrdl_intr_line = 2;
+
+  /* Interrupt tree connections in RDL */
+    /* use of next and intr properties of interrupt registers*/
+  ISR.mod_a->next = MOD_A.ISR->intr;
+  ISR.mod_b->next = MOD_B.ISR->intr;
+
+};
+----
+
+IMPORTANT: Interrupt type to which other ISR register is connected should be nonsticky type.
+
+.VHDL
+[source,vhdl]
+----
+-- connect enables - DesyRDL no referce support, needed in VHDL
+addrmap_i.ISR.trg.enable    <= addrmap_o.IER.trg.data;
+addrmap_i.ISR.mod_a.enable  <= addrmap_o.IER.mod_a.data;
+addrmap_i.ISR.mod_b.enable  <= addrmap_o.IER.mod_b.data;
+
+addrmap_i.MOT_A.ISR.motor.enable  <= addrmap_o.MOT_A.IER.motor.data;
+addrmap_i.MOT_B.ISR.motor.enable  <= addrmap_o.MOT_B.IER.motor.data;
+
+-- tree connections
+addrmap_i.ISR.mod_a.intr(0)    <= module_a_irq_req_out;
+addrmap_i.ISR.mod_b.intr(0)    <= module_b_irq_req_out;
+
+-- interrupt connections
+addrmap_i.ISR.trg.intr(0)   <= trg_main;
+addrmap_i.MOT_A.ISR.motor.intr(0)   <= motor_a_1_done;
+addrmap_i.MOT_A.ISR.motor.intr(1)   <= motor_a_2_done;
+
+-- TOP INT req connections, follow desyrdl_intr_line
+po_irq_req(0) <= addrmap_o.ISR.intr;
+po_irq_req(1) <= addrmap_o.MOT_A.ISR.intr;
+po_irq_req(2) <= addrmap_o.MOT_B.ISR.intr;
+----
+
+== DeviceAccess example
+
+Here you can fine an example with the use of deviceacces python bindings for the above HDL examples.
+
+[source,python]
+----
+import deviceaccess as da
+
+da.setDMapFilePath("devices.dmap")
+dev = da.Device("DUMMY")
+
+# open device and activate asynchronous read for interrupts
+dev.open()
+dev.activateAsyncRead()
+
+# create void access for interupt line
+intrAcc = dev.getVoidRegisterAccessor("APP/ISR/TRIGGER", [da.AccessMode.wait_for_new_data])
+# intrAcc = dev.getVoidRegisterAccessor("APP/MOT_A/ISR/MOTOR_0", [da.AccessMode.wait_for_new_data])
+# intrAcc = dev.getVoidRegisterAccessor("MOD_A/ISR/DONE", [da.AccessMode.wait_for_new_data])
+
+# first read is non blocking
+intrAcc.read()
+
+# wait for interupts and process them
+while True:
+    # wait for interrupt
+    interruptAcc.read()
+
+    print(f"Interrupt received")
+    # ... interrupt work ...
+----
+
+NOTE: When using single ISR or interrupt tree, only the interrupt path is changing.
+
+NOTE: Interrupt vector is unrroled with `_N` postrfix. `ISR.motor[3]` generates entries APP/MOT_A/ISR/MOTOR_0 .. APP/MOT_A/ISR/MOTOR_2
+
+IMPORTANT: To be able to support multiple interrupts in one application, threading has to be used.
+
+== Xilinx INTC
+
+In the above examples the simple case with just ISR and IER has been presented. This works in most of the cases. However, when more prefomance is needed, especially when connecting many interrupt lines into the processing system (PS) such as ARM CPU, there is a need to add additional optional registers. This is not covered in this documentation. Instead of writing the code we can use ready interrupt controllers such as Xilinx INTC IP.
+
+To be able to use INTC with DesyRDL it is enought to add SystemRDL file which describes this controller.
+Below is the example of instaniating it in VHDL code with the example SystemRDL file, which should be used as a reference.
+
+
+.VHDL
+[source,vhdl]
+----
+-- INTC instance
+ins_axi_intc_0 : axi_intc_0
+port map (
+  s_axi_aclk    => clock,
+  s_axi_aresetn => reset_n,
+  s_axi_awaddr  => addrmap_o.INTC_0.awaddr(8 downto 0),
+  s_axi_awvalid => addrmap_o.INTC_0.awvalid,
+  s_axi_awready => addrmap_i.INTC_0.awready,
+  s_axi_wdata   => addrmap_o.INTC_0.wdata,
+  s_axi_wstrb   => addrmap_o.INTC_0.wstrb,
+  s_axi_wvalid  => addrmap_o.INTC_0.wvalid,
+  s_axi_wready  => addrmap_i.INTC_0.wready,
+  s_axi_bresp   => addrmap_i.INTC_0.bresp,
+  s_axi_bvalid  => addrmap_i.INTC_0.bvalid,
+  s_axi_bready  => addrmap_o.INTC_0.bready,
+  s_axi_araddr  => addrmap_o.INTC_0.araddr(8 downto 0),
+  s_axi_arvalid => addrmap_o.INTC_0.arvalid,
+  s_axi_arready => addrmap_i.INTC_0.arready,
+  s_axi_rdata   => addrmap_i.INTC_0.rdata,
+  s_axi_rresp   => addrmap_i.INTC_0.rresp,
+  s_axi_rvalid  => addrmap_i.INTC_0.rvalid,
+  s_axi_rready  => addrmap_o.INTC_0.rready,
+  intr          => intc_0_intr,
+  irq           => intc_0_irq
+);
+-- interrupt signal connections
+intc_0_intr(0) <= trigger;
+intc_0_intr(1) <= interlock;
+intc_0_intr(2) <= error;
+-- intc_0_intr(3) <= regfile_ise_irq_req;
+
+-- TOP interrupt req connection INT_1
+po_irq_req(1) <= intcxa_irq;
+----
+
+.application.rdl
+[source,qml]
+----
+/* application with INTC */
+addrmap application {
+  /* ... */
+  // Xilinx interrupt controller
+  axi_intc_0 INTC_0;
+  INTC_0.ISR->desyrdl_intr_line = 1;
+
+  /* optional tree, ISR to INTC connection */
+  INTC_0.ISR.ext0->next = REGFILE.ISR->intr;
+----
+
+Use below <<axi_intc_0>> fie and modify based on the needs.
+
+NOTE: axi_intc_0 file contains default registers set from IP geenrator. If some features are disabled in IP like disabled `SIE`, remove this register or set `SIE_PRESENT = false;` property.
+
+Modify `axi_intc_0.rdl`:
+
+. Set INTS_NR to match Number of Peripherial Interrupts
+. ISR - change fields to match your signals connections and INTS_NR number
+. Set `ispresent` property in the bootom of the file matching IP config.
+. If connecting other ISR set LEVEL type interrupt in IP config, here ext_mod
+
+.axi_intc_0.rdl
+[source,qml,id=axi_intc_0]
+----
+/* Xilinx INTC registers */
+addrmap axi_intc_0 #(
+    longint unsigned INTS_NR = 4,
+    boolean SIE_PRESENT = true,
+    boolean CIE_PRESENT = true,
+    boolean IVAR_PRESENT = true,
+    boolean IPR_PRESENT = true,
+    boolean ILR_PRESENT = false)
+{
+
+  reg {
+    name = "Interrupt Status Register" ;
+    desc = "Interrupt Status Register" ;
+    default sw = rw ;
+    default hw = w ;
+    field {posedge intr;} trigger;
+    field {posedge intr;} intlk;
+    field {posedge intr;} error;
+    field {level intr;} ext_mod ;
+  } ISR @0x0 ;
+
+  reg {
+    name = "Interrupt Pending Register" ;
+    desc = "Interrupt Pending Register" ;
+    default sw = r ;
+    default hw = r ;
+    field {
+    } data[INTS_NR] ;
+  } IPR @0x4 ;
+
+  reg {
+    name = "Interrupt Enable Register" ;
+    desc = "Interrupt Enable Register" ;
+    default sw = rw ;
+    default hw = r ;
+    field {
+    } data[INTS_NR] ;
+  } IER @0x8 ;
+
+  reg {
+    name = "Interrupt Acknowledge Register" ;
+    desc = "Interrupt Acknowledge Register" ;
+    default sw = w ;
+    default hw = r ;
+    field {
+    } data[INTS_NR] ;
+  } IAR @0xC ;
+
+  reg {
+    name = "Set Interrupt Enables" ;
+    desc = "Set Interrupt Enables" ;
+    default sw = rw ;
+    default hw = r ;
+    field {
+    } data[INTS_NR] ;
+  } SIE @0x10 ;
+
+  reg {
+    name = "Clear Interrupt Enables" ;
+    desc = "Clear Interrupt Enables" ;
+    default sw = rw ;
+    default hw = r ;
+    field {
+    } data[INTS_NR] ;
+  } CIE @0x14 ;
+
+  reg {
+    name = "Interrupt Vector Register" ;
+    desc = "Interrupt Vector Register" ;
+    default sw = r ;
+    default hw = r ;
+    field {
+    } data[INTS_NR] ;
+  } IVR @0x18 ;
+
+  reg {
+    name = "Master Enable Register" ;
+    desc = "Master Enable Register" ;
+    default sw = rw ;
+    default hw = r ;
+    field {
+    } data[2] ;
+  } MER @0x1C ;
+
+  reg {
+    name = "Interrupt Mode Register" ;
+    desc = "Interrupt Mode Register" ;
+    default sw = rw ;
+    default hw = r ;
+    field {
+    } data[INTS_NR] ;
+  } IMR @0x20 ;
+
+  reg {
+    name = "Interrupt Level Register" ;
+    desc = "Interrupt Level Register" ;
+    default sw = rw ;
+    default hw = r ;
+    field {
+    } data[INTS_NR] ;
+  } ILR @0x24 ;
+
+  reg {
+    name = "Interrupt Vector Address Register" ;
+    desc = "Interrupt Vector Address Register" ;
+    default sw = rw ;
+    default hw = r ;
+    field {
+    } data[32] ;
+  } IVAR[32] @0x100 ;
+
+  reg {
+    name = "Interrupt Vector Address Register" ;
+    desc = "Interrupt Vector Address Register" ;
+    default sw = rw ;
+    default hw = r ;
+    field {
+    } data[32] ;
+  } IVEAR[32] @0x200 ;
+
+  SIE->ispresent = SIE_PRESENT ;
+  CIE->ispresent = CIE_PRESENT;
+  IVAR->ispresent = IVAR_PRESENT;
+  IPR->ispresent = IPR_PRESENT;
+  ILR->ispresent = ILR_PRESENT;
+};
+----

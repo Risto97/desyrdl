@@ -2,7 +2,23 @@
 
 == License
 
+Use of DesyRDL tool is granted under link:https://www.apache.org/licenses/LICENSE-2.0[Apache 2.0 License]
+
+Generated files are also under link:https://www.apache.org/licenses/LICENSE-2.0[Apache 2.0 License].
+
+
 == Contributors
+
+*Main developers:* +
+Michal Büchler +
+Lukasz Butkowski +
+
+*Contributors:* +
+Jan Marjanovič +
+Andrea Bellandi +
+Romain Bronès +
+Leandro Lanzieri +
+Pascal Grafe
 
 == Acknowledgement
 
@@ -29,12 +45,12 @@ Initiative Inc.
 === SystemRDL
 
 "SystemRDL 2.0 Register Description Language", Accellera
-Systems Initiative Inc, 2018,
-available from https://accellera.org/downloads/standards/systemrdl
+Systems Initiative Inc, 2018, available from
+https://accellera.org/downloads/standards/systemrdl[https://accellera.org/downloads/standards/systemrdl]
 
 === Internal Interface (ii)
 
 "INTERNAL INTERFACE, I/O Communication with FPGA Circuits and Hardware
 Description Standard for Applications in HEP and FEL Electronics ver. 1.0",
 2005, available from
-https://flash.desy.de/reports_publications/tesla_reports/tesla_reports_2005/
+https://flash.desy.de/sites2009/site_vuvfel/content/e403/e1644/e1173/e1174/infoboxContent1359/tesla2005-22.pdf[https://flash.desy.de/sites2009/site_vuvfel/content/e403/e1644/e1173/e1174/infoboxContent1359/tesla2005-22.pdf]
