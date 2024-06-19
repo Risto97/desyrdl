@@ -9,8 +9,8 @@ DesyRDL implements interrupt fields and registers. The implementation allows con
 .DeviceAccess Rules
 To be able to use interrupts with DeviceAccess, the following rules must be followed:
 
-. Only one interrupt register (ISR) is allowed per hierarchy level; i.e., one `addrmap` or `regfile` can have only one ISR. If more interrupts are needed in an `addrmap`, they can be connected via a tree and distributed across regfile. See <<_interrupt_tree_example>> for details.
-. Register names must follow the defined naming convention as specified in <<_registers_description>>.
+. Only one interrupt register (ISR) is allowed per hierarchy level; i.e., one `addrmap` or `regfile` can have only one ISR. If more interrupts are needed in an `addrmap`, they can be connected via a tree and distributed across regfile. See <<interrupt-tree-example>> for details.
+. Register names must follow the defined naming convention as specified in <<registers-description>>.
 ====
 
 == Registers Description

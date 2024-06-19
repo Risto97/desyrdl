@@ -1,4 +1,4 @@
-* image:desyrdl:ROOT:logo_desyrdl.svg[width=60%,xref=desyrdl:ROOT:index.adoc]
+* image:desyrdl:ROOT:logo_desyrdl.svg[width=70%,xref=desyrdl:ROOT:index.adoc]
 
 * xref:index.adoc[Introduction]
 * xref:concept.adoc[]
