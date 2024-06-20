@@ -24,7 +24,7 @@ Pascal Grafe
 
 DesyRDL was developed at https://desy.de[DESY] in the MSK firmware group as a
 replacement for its existing proprietary method of register and address map
-generation, the "Internal Interface", called "IBUS" in its latest version, check xref:remarks.adoc#_internal_interface_ii[References].
+generation, the "Internal Interface", called "IBUS" in its latest version, check xref:remarks.adoc#internal-interface-ii[References].
 
 The use of SystemRDL&trade; 2.0 standard was considered for a long time,
 but due to the lack of open source compilers or parsers, it was dropped.

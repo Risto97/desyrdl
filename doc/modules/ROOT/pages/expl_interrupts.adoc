@@ -113,10 +113,8 @@ The syntax for a interrupt property modifiers appears as follows.
 |level
 |Interrupt while the next value is asserted and maintained (the default).
 |nonsticky
-|Defines a non-sticky (hierarchical) interrupt; the associ-
-ated interrupt field shall not be locked. This modifier can
-be specified in conjunction with the other interrupt
-types. +
+|Defines a non-sticky (hierarchical) interrupt; the associated interrupt field shall not be locked.
+This modifier can be specified in conjunction with the other interrupt types. +
 Use when connecting interrupt tree.
 |=========================
 
@@ -348,7 +346,7 @@ intrAcc.read()
 # wait for interupts and process them
 while True:
     # wait for interrupt
-    interruptAcc.read()
+    intrAcc.read()
 
     print(f"Interrupt received")
     # ... interrupt work ...

@@ -8,7 +8,7 @@ software-accessible registers and memory regions in an FPGA design, or just the
 registers of a single IP block.
 
 SystemRDL&trade; 2.0 is a standard released by Accellera Systems Initiative Inc
-that is meant to describe such an address space, check xref:remarks.adoc#_systemrdl[References]
+that is meant to describe such an address space, check xref:remarks.adoc#systemrdl[References]
 
 Outputs are based on templates. there is an option to use custom templates or the one provided by the tool.
 The templates provided with this package are the common files for the following outputs:
