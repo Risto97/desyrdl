@@ -71,7 +71,7 @@ package pkg_{{type_name_org}} is
     {%- if field.node.is_hw_readable %}
     data : std_logic_vector({{field.width}}-1 downto 0); --{% else %}
     -- no data if field cannot be written from hw
-    dummy : std_logic; --{% endif %}
+    data : std_logic_vector(-1 downto 0); --{% endif %}
     {%- if field.swacc %}
     swacc : std_logic; --{% endif %}
     {%- if field.swmod %}
@@ -413,7 +413,7 @@ begin
     end process;
     --{% if field.node.is_hw_readable %}
     po_reg.{{field.inst_name}}.data <= l_field_reg; --{% else %}no signal to read by HW
-    po_reg.{{field.inst_name}}.dummy <= '0'; --{% endif %}
+    po_reg.{{field.inst_name}}.data <= (others => '0'); --{% endif %}
     --# if field.node.is_sw_writable and field.swacc:
     po_reg.{{field.inst_name}}.swacc <= (not l_sw_wr_stb_q and pi_decoder_wr_stb) or (not l_sw_rd_stb_q and pi_decoder_rd_stb ) when rising_edge(pi_clock);
     --# elif field.swacc:
@@ -457,7 +457,7 @@ begin
     data_out({{field.high}} downto {{field.low}}) <= pi_reg.{{field.inst_name}}.data({{field.width}}-1 downto 0); --{% endif %}
     --{% if field.node.is_hw_readable %}
     po_reg.{{field.inst_name}}.data <= data_out({{field.high}} downto {{field.low}}); --{% else %}no signal to read by HW
-    po_reg.{{field.inst_name}}.dummy <= '0'; --{% endif %}{%if field.swacc: %}
+    po_reg.{{field.inst_name}}.data <= (others => '0'); --{% endif %}{%if field.swacc: %}
     po_reg.{{field.inst_name}}.swacc <= '1' when pi_decoder_rd_stb = '1' and decoder_rd_stb_q = '0' else '0';
     decoder_rd_stb_q <= pi_decoder_rd_stb when rising_edge(pi_clock); --{% endif %}
   end block; --{%- endif %}{%- endfor %}
