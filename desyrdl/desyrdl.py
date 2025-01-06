@@ -58,8 +58,8 @@ def main():
         metavar='FORMAT',
         required=True,
         nargs='+',  # allow multiple values
-        choices=['vhdl', 'map', 'h', 'adoc', 'cocotb', 'tcl'],
-        help='output format: vhdl, map, h',
+        choices=['vhdl', 'map', 'h', 'adoc', 'cocotb', 'tcl', 'pyuvm'],
+        help='output format(s) to generate',
     )
     arg_parser.add_argument(
         '-o',

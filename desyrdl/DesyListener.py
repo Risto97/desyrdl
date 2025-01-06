@@ -424,6 +424,7 @@ class DesyListener(RDLListener):
             context['rw'] = "WO"
         else:
             context['rw'] = "RW"
+        context['volatile'] = True if fldx.is_hw_writable else False
         context['const'] = 1 if fldx.get_property('hw').name in ('na', 'r') else 0
         context['reset'] = 0 if fldx.get_property('reset') is None else self.to_int32(fldx.get_property('reset'))
         context['reset_hex'] = hex(context['reset'])
@@ -605,6 +606,7 @@ class DesyRdlProcessor(DesyListener):
         self.generated_files['vhdl_dict'] = {}
         self.generated_files['cocotb'] = []
         self.generated_files['map'] = []
+        self.generated_files['pyuvm'] = []
         self.generated_files['h'] = []
         self.generated_files['adoc'] = []
         self.generated_files['tcl'] = []
@@ -664,6 +666,10 @@ class DesyRdlProcessor(DesyListener):
             if 'map' in self.out_formats:
                 files = self.render_templates(loader="map", outdir="map", context=self.top_context)
                 self.generated_files['map'] = self.generated_files['map'] + files
+
+            if 'pyuvm' in self.out_formats:
+                files = self.render_templates(loader="pyuvm", outdir="pyuvm", context=self.top_context)
+                self.generated_files['pyuvm'] = self.generated_files['pyuvm'] + files
 
             if 'h' in self.out_formats:
                 files = self.render_templates(loader="h", outdir="h", context=self.top_context)
