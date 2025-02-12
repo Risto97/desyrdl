@@ -1,0 +1,15 @@
+== pyUVM RAL templates
+
+=== Implementation notes
+
+In pyUVM, a uvm_reg object has a `configure` function where its own address within the uvm_reg_block is specified. This does not seem to be part of the UVM standard?! https://verificationacademy.com/verification-methodology-reference/uvm/docs_1.1a/html/files/reg/uvm_reg-svh.html#uvm_reg.configure
+
+A uvm_reg object is instantiated as part of a uvm_reg_block. Each uvm_reg_block also has a uvm_reg_map instance. Registers are added to it with the `add_reg()` function. Here the standard wants us to specify the address of the register (as the offset from the start of the map). https://verificationacademy.com/verification-methodology-reference/uvm/docs_1.2/html/files/reg/uvm_reg_map-svh.html#uvm_reg_map.add_reg
+
+The pyUVM implementation of `add_reg()` takes the sum of the `offset` argument and the address that the uvm_reg object was configured with. This becomes the address of the register within the uvm_reg_map.
+
+In conformity with the statements above, the TinyALU_reg example adds registers to the uvm_reg_map with offset 0. The address is configured by the `configure` function of the uvm_reg. https://github.com/pyuvm/pyuvm/blob/b69c0c7ec627edc49278a27cfb6ca51af6ac9f1f/examples/TinyALU_reg/testbench.py#L130
+
+=== TODO
+
+- handle hierarchy - instantiate a reg_block in an upper-level reg_block
