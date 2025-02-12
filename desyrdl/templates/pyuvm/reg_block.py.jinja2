@@ -42,9 +42,9 @@ class REG_BLOCK_{{addrmap.inst_name | upper}}(uvm_reg_block):
         self.{{inst.inst_name | upper}} = REG_{{inst.inst_name | upper}}("{{inst.inst_name | upper}}")
         {# TODO check if this works in a hierarchy. Currently the absolute address is used (good?) and the current REG_BLOCK is the parent (good?). #}
         {# See documentation for the pyuvm.s20_uvm_reg module #}
-        self.{{inst.inst_name | upper}}.configure(self, "0x{{inst.absolute_address | int(base=16)}}", "", False, False)
+        self.{{inst.inst_name | upper}}.configure(self, "{{"0x%x" | format(inst.absolute_address)}}", "", False, False)
         {# see documentation on pyuvm.s21_uvm_reg_map module #}
-        self.def_map.add_reg(self.{{inst.inst_name | upper}}, "0x{{inst.absolute_address | int(base=16)}}", "{{inst.rw}}")
+        self.def_map.add_reg(self.{{inst.inst_name | upper}}, "0x0", "{{inst.rw}}")
     {%- endif %}
   {%- endfor %}
 {%- endfor %}
