@@ -5,47 +5,47 @@ from pyuvm import predict_t
 # DesyRDL registers are always 32 bits wide
 REG_WIDTH=32
 
-# TODO improve newlines
 {% for addrmap in addrmaps | reverse %}
 # this is addrmap {{addrmap.inst_name}}
-  {% if addrmap.dim  == 1 -%}
-  {% for inst in addrmap.insts %}
-    {% if inst.node_type == "REG" %}
+{% if addrmap.dim  == 1 -%}
+{% for inst in addrmap.insts %}
+{% if inst.node_type == "REG" %}
 class REG_{{inst.inst_name | upper}}(uvm_reg):
+
     def __init__(self, name="{{inst.inst_name | upper}}", reg_width=REG_WIDTH):
         super().__init__(name, reg_width)
-      {% for field in inst.fields %}
+        {% for field in inst.fields -%}
         self.{{field.inst_name}} = uvm_reg_field("{{field.type_name}}")
-      {%- endfor %}
+        {% endfor %}
 
     def build(self):
-      {# See documentation for the pyuvm.s19_uvm_reg_field module #}
-      {%- for field in inst.fields -%}
-        {# for the access policy, see documentation on uvm_reg_field.set_access #}
+        {#- See documentation for the pyuvm.s19_uvm_reg_field module -#}
+        {% for field in inst.fields -%}
+        {#- for the access policy, see documentation on uvm_reg_field.set_access #}
         self.{{field.inst_name}}.configure(self, {{field.width}}, {{field.low}}, "{{field.rw}}", {{field.volatile}}, {{field.reset}})
-      {%- endfor %}
+        {%- endfor %}
         self._set_lock()
         self.set_prediction(predict_t.PREDICT_DIRECT)
-    {%- endif %}
-  {%- endfor %}
-  {%- endif %}
+        {%- endif %}
+        {% endfor %}
+        {%- endif %}
 
 class REG_BLOCK_{{addrmap.inst_name | upper}}(uvm_reg_block):
     def __init__(self, name="REG_BLOCK_{{addrmap.inst_name | upper}}"):
         super().__init__(name)
         self.def_map = uvm_reg_map('map')
-        {# see documentation on pyuvm.s21_uvm_reg_map module #}
-        {# TODO here it should be set to the address within the hierarchy #}
+        {#- see documentation on pyuvm.s21_uvm_reg_map module #}
+        {#- TODO here it should be set to the address within the hierarchy #}
         self.def_map.configure(self, 0)
-  {% for inst in addrmap.insts %}
-    {% if inst.node_type == "REG" %}
+        {% for inst in addrmap.insts -%}
+        {% if inst.node_type == "REG" %}
         self.{{inst.inst_name | upper}} = REG_{{inst.inst_name | upper}}("{{inst.inst_name | upper}}")
-        {# TODO check if this works in a hierarchy. Currently the absolute address is used (good?) and the current REG_BLOCK is the parent (good?). #}
-        {# See documentation for the pyuvm.s20_uvm_reg module #}
+        {#- TODO check if this works in a hierarchy. Currently the absolute address is used (good?) and the current REG_BLOCK is the parent (good?). #}
+        {#- See documentation for the pyuvm.s20_uvm_reg module #}
         self.{{inst.inst_name | upper}}.configure(self, "{{"0x%x" | format(inst.absolute_address)}}", "", False, False)
-        {# see documentation on pyuvm.s21_uvm_reg_map module #}
+        {#- see documentation on pyuvm.s21_uvm_reg_map module #}
         self.def_map.add_reg(self.{{inst.inst_name | upper}}, "0x0", "{{inst.rw}}")
-    {%- endif %}
-  {%- endfor %}
-{%- endfor %}
+{%- endif %}
+{% endfor %}
+{% endfor %}
 
