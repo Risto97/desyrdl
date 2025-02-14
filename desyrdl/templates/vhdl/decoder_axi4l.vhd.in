@@ -697,7 +697,7 @@ begin
           when others =>
         end case;
       else
-        regf_reg_wr_stb({{rfns.reg_curr_idx}}-1 downto {{rfns.reg_rf_idx}}) <= (others => '0'); --{%- set rfns.reg_rf_idx = rfns.reg_curr_idx %}
+        regf_reg_wr_stb({{rfns.reg_curr_idx-1}} downto {{rfns.reg_rf_idx}}) <= (others => '0'); --{%- set rfns.reg_rf_idx = rfns.reg_curr_idx %}
       end if;
     end if;
   end process; --{% endfor %}
@@ -731,7 +731,7 @@ begin
 {%- if n_reg_insts > 0 %}
   -- registers
   ------------------------------------------------------------------------------
-  gen_reg_wr_str: for ridx in 0 to {{n_regs}}-1 generate
+  gen_reg_wr_str: for ridx in 0 to {{n_regs-1}} generate
     po_reg_wr_stb(ridx) <= reg_wr_stb(ridx) and wvalid;
   end generate;
   po_reg_data   <= wdata;
@@ -743,7 +743,7 @@ begin
   -- ===========================================================================
   -- reg files
   ------------------------------------------------------------------------------
-  gen_rf_wr_str: for ridx in 0 to {{n_regf_regs}}-1 generate
+  gen_rf_wr_str: for ridx in 0 to {{n_regf_regs-1}} generate
     po_rgf_reg_wr_stb(ridx) <= regf_reg_wr_stb(ridx) and wvalid;
   end generate;
   po_rgf_reg_data   <= wdata;
